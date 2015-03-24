@@ -43,10 +43,10 @@ class PrecompiledRepository : public WebRepository
 
     inline void freeFile(unsigned char *webpage) { };
 
-    inline virtual bool getFile(const std::string& URL, unsigned char **webpage, size_t *webpageLen, const char* params="", const char* cookies="")
+    inline virtual bool getFile(const std::string& url, unsigned char **webpage, size_t *webpageLen, char **respCookies, const HttpRequestType reqType, const char* reqParams="", const char* reqCookies="")
     {
       pthread_mutex_lock( &_mutex );
-      IndexMap::const_iterator i = indexMap.find (URL);
+      IndexMap::const_iterator i = indexMap.find (url);
       if (i == indexMap.end())
       {
         pthread_mutex_unlock( &_mutex );

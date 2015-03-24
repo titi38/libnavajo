@@ -92,7 +92,7 @@ void LocalRepository::printFilenames()
 
 /**********************************************************************/
 
-bool LocalRepository::getFile(const string& url, unsigned char **webpage, size_t *webpageLen, const char* params, const char* cookies)
+bool LocalRepository::getFile(const string& url, unsigned char **webpage, size_t *webpageLen, char **respCookies, const HttpRequestType reqType, const char* reqParams, const char* reqCookies)
 {
   bool found=false;
   const string *alias, *path;

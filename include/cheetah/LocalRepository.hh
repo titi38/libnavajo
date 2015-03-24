@@ -37,7 +37,7 @@ class LocalRepository : public WebRepository
     LocalRepository () { pthread_mutex_init(&_mutex, NULL); };
     virtual ~LocalRepository () { clearAliases(); };
 
-    virtual bool getFile(const string& url, unsigned char **webpage, size_t *webpageLen, const char* params="", const char* cookies="");
+    virtual bool getFile(const string& url, unsigned char **webpage, size_t *webpageLen, char **respCookies, const HttpRequestType reqType, const char* reqParams="", const char* reqCookies="");
     virtual void freeFile(unsigned char *webpage) { ::free(webpage); };
     void addDirectory(const string& alias, const string& dirPath);    
     void clearAliases();

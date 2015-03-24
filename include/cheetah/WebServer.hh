@@ -33,6 +33,7 @@
 #include "cheetah/WebRepository.hh"
 #include "cheetah/thread.h"
 
+
 class WebServer
 {
     SSL_CTX *sslCtx;
@@ -50,7 +51,7 @@ class WebServer
     void accept_request(int client, SSL *ssl=NULL);
     void fatalError(const char *);
     int setSocketRcvTimeout(int connectSocket, int seconds);
-    static std::string getHttpHeader(const char *messageType, const char *filename="", const size_t len=0, const bool keepAlive=true, const bool zipit=false);
+    static std::string getHttpHeader(const char *messageType, const char *filename="", const size_t len=0, const bool keepAlive=true, const bool zipit=false, const char* respCookies=NULL);
     static const char* get_mime_type(const char *name);
     u_short init();
 

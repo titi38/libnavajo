@@ -35,14 +35,14 @@ class MyDynamicPage: public DynamicPage
   string getPageString()
   {
     int cptExample=0;
-    HttpSession* mySession = getSession(true);
+/*    HttpSession* mySession = getSession(true);
     void *myAttribute = mySession->getAttribute("myAttribute"));
     if (myAttribute == NULL)
       mySession.setAttribute ( "myAttribute", (void*)&cptExample );
     else
       session.setAttribute( "myAttribute", (void*)&(++cptExample));
     cptExample=*((int*)mySession->getAttribute("myAttribute"));
-
+*/
 
     string response="<HTML><BODY>";
     string param;
@@ -79,7 +79,7 @@ int main()
 
   //uncomment to switch to https
   //webServer->setUseSSL(true, "serverCert.pem", "caFile.crt");
-  webServer->setUseSSL(true, "certs/lpsc-test.in2p3.fr.pem2", "certs/ca-chain.crt");
+//  webServer->setUseSSL(true, "certs/lpsc-test.in2p3.fr.pem2", "certs/ca-chain.crt");
 
   //uncomment to active X509 auth
   //webServer->setAuthPeerSSL();

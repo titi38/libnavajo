@@ -33,12 +33,12 @@ class DynamicRepository : public WebRepository
     
     inline void freeFile(unsigned char *webpage) { ::free (webpage); };
 
-    inline void add(std::string URL, DynamicPage *page) { indexMap.insert(pair<string, DynamicPage *>(URL, page)); };
+    inline void add(std::string url, DynamicPage *page) { indexMap.insert(pair<string, DynamicPage *>(url, page)); };
 
-    inline virtual bool getFile(const std::string& URL, unsigned char **webpage, size_t *webpageLen, const char* params="", const char* cookies="") //, const string &param
+    inline virtual bool getFile(const string& url, unsigned char **webpage, size_t *webpageLen, char **respCookies, const HttpRequestType reqType, const char* reqParams="", const char* reqCookies="")
     {
       pthread_mutex_lock( &_mutex );
-      IndexMap::const_iterator i = indexMap.find (URL);
+      IndexMap::const_iterator i = indexMap.find (url);
       if (i == indexMap.end())
       {
         pthread_mutex_unlock( &_mutex );
@@ -47,7 +47,7 @@ class DynamicRepository : public WebRepository
       else
       {
         pthread_mutex_unlock( &_mutex );
-        return i->second->getPage(params, webpage, webpageLen);
+        return i->second->getPage(reqParams, webpage, webpageLen);
       }
     };
 
