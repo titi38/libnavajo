@@ -74,6 +74,9 @@ const char WebServer::authStr[]="Authorization: Basic ";
 const int WebServer::verify_depth=512;
 char *WebServer::certpass=NULL;
 
+HttpSession::HttpSessionsContainerMap HttpSession::sessions;
+pthread_mutex_t HttpSession::sessions_mutex=PTHREAD_MUTEX_INITIALIZER;
+
 /*********************************************************************/
 
 WebServer::WebServer()
@@ -286,7 +289,7 @@ void WebServer::accept_request(int client, SSL *ssl)
 
   char httpVers[4]="";
   int keepAlive=-1;
-  bool gzipEnc=false;
+  bool zipSupport=false;
   bool isQueryStr=false;
   
   do
@@ -295,10 +298,11 @@ void WebServer::accept_request(int client, SSL *ssl)
     postContentLength=0;
     postContentTypeOk=false;
     *url='\0';
-    *requestParams='\0';  
+    *requestParams='\0';
+    *requestCookies='\0';
     crlfEmptyLineFound=false;
     keepAlive=-1;
-    gzipEnc=false;
+    zipSupport=false;
     isQueryStr=false;
 
     while (!crlfEmptyLineFound)
@@ -366,7 +370,7 @@ void WebServer::accept_request(int client, SSL *ssl)
           continue;
         }
 
-        if (strncasecmp(bufLine+j, "Accept-Encoding: ",17) == 0) { j+=17; if (strstr(bufLine+j,"gzip") != NULL) gzipEnc=true; continue; }
+        if (strncasecmp(bufLine+j, "Accept-Encoding: ",17) == 0) { j+=17; if (strstr(bufLine+j,"gzip") != NULL) zipSupport=true; continue; }
 
         if (strncasecmp(bufLine+j, "Content-Type: application/x-www-form-urlencoded", 47) == 0) { postContentTypeOk=true; continue; }
 
@@ -426,7 +430,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       bufLineLen=recvLine(client, requestParams, BUFSIZE);
 
     char logBuffer[BUFSIZE];
-    snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d gzipEnc=%d)\n", url+1, requestType, requestParams, requestCookies, httpVers, keepAlive, gzipEnc );
+    snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", url+1, requestType, requestParams, requestCookies, httpVers, keepAlive, zipSupport );
     LOG->append(_DEBUG_, logBuffer);
 
     // Process the query
@@ -438,26 +442,27 @@ void WebServer::accept_request(int client, SSL *ssl)
 
     unsigned char *webpage = NULL;
     size_t webpageLen = 0;
-    char *responseCookie = NULL;
+    std::vector<std::string> responseCookie;
     unsigned char *gzipWebPage=NULL;
     int sizeZip=0;
-    bool fileFound=false, zipfileFound=false;
+    bool fileFound=false, zippedFile=false;
 
 #ifdef DEBUG_TRACES
     printf( "url: %s?%s\n", url+1, requestParams ); fflush(NULL);
 #endif
 
+    HttpRequest request(requestType, url+1, requestParams, requestCookies);
+    HttpResponse response;
+
     std::vector<WebRepository *>::const_iterator repo=webRepositories.begin();
-    for( ; repo!=webRepositories.end() && !fileFound && !zipfileFound; repo++)
+    for( ; repo!=webRepositories.end() && !fileFound && !zippedFile; repo++)
     {
       if (*repo == NULL) continue;
 
-      fileFound = (*repo)->getFile(std::string(url+1), &webpage, &webpageLen, &responseCookie, requestType, requestParams, requestCookies);
-      if (!fileFound)
-        zipfileFound=(*repo)->getFile(std::string(url+1)+".gz", &gzipWebPage,  (size_t*)&sizeZip, &responseCookie, requestType, requestParams, requestCookies);
+      fileFound = (*repo)->getFile(&request, &response);
     }
 
-    if (!fileFound && !zipfileFound)
+    if (!fileFound)
     {
       char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page not found %s",  url+1);
       LOG->append(_WARNING_,bufLinestr);
@@ -469,12 +474,20 @@ void WebServer::accept_request(int client, SSL *ssl)
       return ;
     }
     else
+    {
       repo--;
-
+      response.getResponse(&webpage, &webpageLen, &responseCookie, &zippedFile);
+      if (zippedFile)
+      {
+        gzipWebPage = webpage;
+        sizeZip = webpageLen;
+      }
+    }
+    
     char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page found %s",  url+1);
     LOG->append(_DEBUG_,bufLinestr);
 
-    if (!gzipEnc && zipfileFound)
+    if (!zipSupport && zippedFile)
     {
       // Need to uncompress
       if ((int)(webpageLen=gunzip( &webpage, gzipWebPage, sizeZip )) < 0)
@@ -489,7 +502,7 @@ void WebServer::accept_request(int client, SSL *ssl)
     }
 
     // Need to compress
-    if (!zipfileFound && gzipEnc && (webpageLen > 2048))
+    if (!zippedFile && zipSupport && (webpageLen > 2048))
     {
       const char *mimetype=get_mime_type(url+1);
       if (mimetype != NULL && (strncmp(mimetype,"application",11) == 0 || strncmp(mimetype,"text",4) == 0))
@@ -512,27 +525,27 @@ void WebServer::accept_request(int client, SSL *ssl)
       }
     }
 
-    if (sizeZip>0 && gzipEnc)
+    if (sizeZip>0 && zipSupport)
     {  
-      std::string header = getHttpHeader("200 OK", url+1, sizeZip, keepAlive, true, responseCookie);
+      std::string header = getHttpHeader("200 OK", url+1, sizeZip, keepAlive, true, &responseCookie);
       httpSend(client, (const void*) header.c_str(), header.length(), io);
       httpSend(client, (const void*) gzipWebPage, sizeZip, io);
     }
     else
     {
-      std::string header = getHttpHeader("200 OK", url+1, webpageLen, keepAlive, false, responseCookie);
+      std::string header = getHttpHeader("200 OK", url+1, webpageLen, keepAlive, false, &responseCookie);
       httpSend(client, (const void*) header.c_str(), header.length(), io);
       httpSend(client, (const void*) webpage, webpageLen, io);
     }
 
-    if (sizeZip>0 && !zipfileFound) // cas compression = double desalloc
+    if (sizeZip>0 && !zippedFile) // cas compression = double desalloc
       free (gzipWebPage);
 
-    if (!gzipEnc && zipfileFound) // cas décompression = double desalloc
+    if (!zipSupport && zippedFile) // cas décompression = double desalloc
       free (webpage);
 
     (*repo)->freeFile(webpage); 
-    if (responseCookie != NULL) { free (responseCookie); responseCookie = NULL; }
+
   }
   while (keepAlive && !exiting);
 
@@ -647,7 +660,7 @@ const char* WebServer::get_mime_type(const char *name)
 * \return result of send function (successfull: >=0, otherwise <0)
 ***********************************************************************/
 
-std::string WebServer::getHttpHeader(const char *messageType, const char *filename, const size_t len, const bool keepAlive, const bool zipit, const char* respCookies)
+std::string WebServer::getHttpHeader(const char *messageType, const char *filename, const size_t len, const bool keepAlive, const bool zipit, const std::vector<std::string>* respCookies)
 {
   char timeBuf[200];
   time_t rawtime;
@@ -660,8 +673,10 @@ std::string WebServer::getHttpHeader(const char *messageType, const char *filena
   header+=std::string(timeBuf)+"\r\n";
 
   header+=std::string("Server: Cheetah/1.0\r\n");
+  
   if (respCookies != NULL)
-    header+="Set-Cookie: "+std::string(respCookies)+"\r\n";
+    for (unsigned i=0; i < respCookies->size(); i++)
+      header+="Set-Cookie: "+(*respCookies)[i]+"\r\n";
   if (strncmp(messageType, "401", 3) == 0)
     header+=std::string("WWW-Authenticate: Basic realm=\"Restricted area: please enter Login/Password\"\r\n");
   header+="Accept-Ranges: bytes\r\n";

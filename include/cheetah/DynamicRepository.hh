@@ -35,8 +35,10 @@ class DynamicRepository : public WebRepository
 
     inline void add(std::string url, DynamicPage *page) { indexMap.insert(pair<string, DynamicPage *>(url, page)); };
 
-    inline virtual bool getFile(const string& url, unsigned char **webpage, size_t *webpageLen, char **respCookies, const HttpRequestType reqType, const char* reqParams="", const char* reqCookies="")
+    inline virtual bool getFile(HttpRequest* request, HttpResponse *response)
     {
+      string url = request->getUrl();
+
       pthread_mutex_lock( &_mutex );
       IndexMap::const_iterator i = indexMap.find (url);
       if (i == indexMap.end())
@@ -47,7 +49,9 @@ class DynamicRepository : public WebRepository
       else
       {
         pthread_mutex_unlock( &_mutex );
-        return i->second->getPage(reqParams, webpage, webpageLen);
+        bool res = i->second->getPage( request, response );
+        response->addSessionCookie(request->getSessionId());
+        return res;
       }
     };
 

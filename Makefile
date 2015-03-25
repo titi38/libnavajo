@@ -1,4 +1,4 @@
-##############################
+#############################
 # LIBCHEETAH                 #
 # created by T.DESCOMBES     #
 #                    2015    #
@@ -83,14 +83,16 @@ clean::
 
 $(LIB_SHARED_NAME): $(LIBCHEETAH_OBJS)
 	@rm -f $@;
+	@[[ -d lib ]] || mkdir lib
 	$(LD) $(LDFLAGS) -o $@ -shared $(LIBCHEETAH_OBJS) $(LIBS)
 
 $(LIB_STATIC_NAME): $(LIBCHEETAH_OBJS) 	 
-	rm -f $@
+	@rm -f $@
 	$(AR) -rvs $@ $(LIBCHEETAH_OBJS)
 
 $(PRECOMPILER_NAME): ${PRECOMPILER_OBJS}
-	rm -f $@
+	@rm -f $@
+	@[[ -d bin ]] || mkdir bin
 	${LD} ${LDFLAGS} -o $@ ${PRECOMPILER_OBJS}
 
 $(EXAMPLE_NAME)::

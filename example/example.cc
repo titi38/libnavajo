@@ -7,7 +7,7 @@
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *
  * @version 1	
- * @date 27/01/14
+ * @date 27/01/15
  */
 //********************************************************
 
@@ -27,26 +27,27 @@ void exitFunction( int dummy )
 
 class MyDynamicPage: public DynamicPage
 {
-  bool getPage(unsigned char **webpage, size_t *webpageLen)
+  bool getPage(HttpRequest* request, HttpResponse *response)
   {
-    return pageFromString(getPageString(), webpage, webpageLen);
+    return fromString(getPageString(request), response);
   }
   
-  string getPageString()
+  string getPageString(HttpRequest* request)
   {
-    int cptExample=0;
-/*    HttpSession* mySession = getSession(true);
-    void *myAttribute = mySession->getAttribute("myAttribute"));
+    // example using session's object
+    int *cptExample=new int(0);
+    void *myAttribute = request->getSessionAttribute("myAttribute");
     if (myAttribute == NULL)
-      mySession.setAttribute ( "myAttribute", (void*)&cptExample );
+      request->setSessionAttribute ( "myAttribute", (void*)cptExample );
     else
-      session.setAttribute( "myAttribute", (void*)&(++cptExample));
-    cptExample=*((int*)mySession->getAttribute("myAttribute"));
-*/
+      cptExample=(int*)request->getSessionAttribute("myAttribute");
+
+    *cptExample=*cptExample+1;    
+    
 
     string response="<HTML><BODY>";
     string param;
-    if (getParameter("param1", param))
+    if (request->getParameter("param1", param))
     {
       //int pint=getValue<int>(param);
       response+="param1 has been set to "+param;
@@ -54,7 +55,7 @@ class MyDynamicPage: public DynamicPage
     else
       response+="param1 hasn't been set";
 
-    stringstream myAttributess; myAttributess << cptExample;
+    stringstream myAttributess; myAttributess << *cptExample;
     response+="<BR>my session attribute myAttribute contains "+myAttributess.str();
 
     response+="<HTML><BODY>";
@@ -86,7 +87,7 @@ int main()
   //webServer->addAuthPeerDN("/C=FR/O=CNRS/OU=UMR5821/CN=Thierry Descombes/emailAddress=thierry.descombes@lpsc.in2p3.fr");
 
   //uncomment to active login/passwd auth
-  webServer->addLoginPass("login","password");
+  //webServer->addLoginPass("login","password");
 
   //uncomment to use Pam authentification
   //webServer->usePamAuth("/etc/pam.d/login");

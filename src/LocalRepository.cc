@@ -92,10 +92,13 @@ void LocalRepository::printFilenames()
 
 /**********************************************************************/
 
-bool LocalRepository::getFile(const string& url, unsigned char **webpage, size_t *webpageLen, char **respCookies, const HttpRequestType reqType, const char* reqParams, const char* reqCookies)
+bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
 {
   bool found=false;
   const string *alias, *path;
+  string url = request->getUrl();
+  size_t webpageLen;
+  unsigned char *webpage;
   pthread_mutex_lock( &_mutex );
 
   if (!fileExist(url)) { pthread_mutex_unlock( &_mutex); return false; };
@@ -123,13 +126,13 @@ bool LocalRepository::getFile(const string& url, unsigned char **webpage, size_t
 
   // obtain file size.
   fseek (pFile , 0 , SEEK_END);
-  *webpageLen = ftell (pFile);
+  webpageLen = ftell (pFile);
   rewind (pFile);
 
-  if ( (*webpage = (unsigned char *)malloc( *webpageLen+1 * sizeof(char))) == NULL )
+  if ( (webpage = (unsigned char *)malloc( webpageLen+1 * sizeof(char))) == NULL )
     return false;
-  size_t nb=fread (*webpage,1,*webpageLen,pFile);
-  if (nb != *webpageLen)
+  size_t nb=fread (webpage,1,webpageLen,pFile);
+  if (nb != webpageLen)
   {
     char logBuffer[150];
     snprintf(logBuffer, 150, "Webserver : Error accessing files '%s'", filename.c_str() );
@@ -138,6 +141,7 @@ bool LocalRepository::getFile(const string& url, unsigned char **webpage, size_t
   }
   
   fclose (pFile);
+  response->setContent (webpage, webpageLen);
   return true;
 }
 
