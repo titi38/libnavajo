@@ -190,26 +190,38 @@ class HttpRequest
         return;
 
       if (b)
-         HttpSession::createSession(sessionId);
+         HttpSession::create(sessionId);
+    }
+
+    inline void removeSession()
+    {
+      if (sessionId == "") getSession();
+      HttpSession::remove(sessionId);
     }
 
     void setSessionAttribute ( const std::string &name, void* value )
     {
       if (sessionId == "") getSession();
-      HttpSession::setSessionAttribute(sessionId, name, value);
+      HttpSession::setAttribute(sessionId, name, value);
     }
       
     void *getSessionAttribute( const std::string &name )
     {
       if (sessionId == "") getSession();
-      return HttpSession::getSessionAttribute(sessionId, name);
+      return HttpSession::getAttribute(sessionId, name);
     }
 
     inline std::vector<std::string> getSessionAttributeNames()
     {
       if (sessionId == "") getSession();
-      return HttpSession::getSessionAttributeNames(sessionId);
-    }    
+      return HttpSession::getAttributeNames(sessionId);
+    }
+
+    inline void getSessionRemoveAttribute( const std::string &name )
+    {
+      if (sessionId == "") getSession();
+      HttpSession::removeAttribute( sessionId, name );
+    }
 
     inline void initSessionId() { sessionId = ""; };
     std::string getSessionId() const { return sessionId; };
