@@ -35,7 +35,9 @@ class MyDynamicPage: public DynamicPage
   string getPageString(HttpRequest* request)
   {
     // example using session's object
-    int *cptExample=new int(0);
+    int *cptExample=(int*)malloc(sizeof(int));
+    *cptExample=0;
+    
     void *myAttribute = request->getSessionAttribute("myAttribute");
     if (myAttribute == NULL)
       request->setSessionAttribute ( "myAttribute", (void*)cptExample );
@@ -43,7 +45,7 @@ class MyDynamicPage: public DynamicPage
       cptExample=(int*)request->getSessionAttribute("myAttribute");
 
     *cptExample=*cptExample+1;    
-    
+    //
 
     string response="<HTML><BODY>";
     string param;

@@ -76,6 +76,7 @@ char *WebServer::certpass=NULL;
 
 HttpSession::HttpSessionsContainerMap HttpSession::sessions;
 pthread_mutex_t HttpSession::sessions_mutex=PTHREAD_MUTEX_INITIALIZER;
+time_t HttpSession::lastExpirationSearchTime=0;
 
 /*********************************************************************/
 
