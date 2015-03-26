@@ -18,8 +18,8 @@
 #include <fstream>
 #include <streambuf>
 #include <sstream>
-#include "cheetah/LogRecorder.hh"
-#include "cheetah/LocalRepository.hh"
+#include "navajo/LogRecorder.hh"
+#include "navajo/LocalRepository.hh"
 
 
 /**********************************************************************/

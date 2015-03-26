@@ -23,7 +23,7 @@
 //
 //------------------------------------------------------------------------------
 
-#include "cheetah/LogSyslog.hh"
+#include "navajo/LogSyslog.hh"
 
 #include <syslog.h>
 #include <string.h>

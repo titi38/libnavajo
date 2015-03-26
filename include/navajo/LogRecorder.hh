@@ -32,7 +32,7 @@
 #include <string>
 #include <list>
 #include <set>
-#include "cheetah/LogOutput.hh"
+#include "navajo/LogOutput.hh"
 
 #define LOG LogRecorder::getInstance()
 

@@ -26,7 +26,7 @@
 
 
 #include <time.h>
-#include "cheetah/LogRecorder.hh"
+#include "navajo/LogRecorder.hh"
 
 
   /**

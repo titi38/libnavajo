@@ -31,7 +31,7 @@
 #include <fstream>
 #include <string>
 
-#include "cheetah/LogOutput.hh"
+#include "navajo/LogOutput.hh"
 
 using namespace std;
 

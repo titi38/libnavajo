@@ -1,5 +1,5 @@
-#include "cheetah/LogRecorder.hh"
-#include "cheetah/AuthPAM.hh"
+#include "navajo/LogRecorder.hh"
+#include "navajo/AuthPAM.hh"
 
 
 //------------------------------------------------------------------------------

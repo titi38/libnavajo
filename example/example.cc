@@ -2,7 +2,7 @@
 /**
  * @file  example.cc 
  *
- * @brief libcheetah example.
+ * @brief libnavajo example.
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *
@@ -13,8 +13,8 @@
 
 #include <signal.h> 
 #include <string.h> 
-#include "cheetah/libcheetah.hh"
-#include "cheetah/LogStdOutput.hh"
+#include "navajo/libnavajo.hh"
+#include "navajo/LogStdOutput.hh"
 
 WebServer *webServer = NULL;
 
@@ -74,7 +74,7 @@ int main()
   signal( SIGINT, exitFunction );
   
   LOG->addLogOutput(new LogStdOutput);
-  //LOG->addLogOutput(new LogFile("/var/log/cheetah.log"));
+  //LOG->addLogOutput(new LogFile("/var/log/navajo.log"));
 
   webServer = new WebServer;
 

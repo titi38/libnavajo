@@ -1,11 +1,11 @@
 #############################
-# LIBCHEETAH                 #
+# LIBNAVAJO                 #
 # created by T.DESCOMBES     #
 #                    2015    #
 ##############################
 
-LIBCHEETAH_VERSION=  "\"1.0.0a\""
-LIBCHEETAH_BUILD_DATE=`/bin/date +%s`
+LIBNAVAJO_VERSION=  "\"1.0.0a\""
+LIBNAVAJO_BUILD_DATE=`/bin/date +%s`
 
 UNAME := $(shell uname)
 
@@ -24,9 +24,9 @@ else
         LIBPAM=-lpam
 endif
 
-PRECOMPILER_NAME = bin/cheetahPrecompiler
-LIB_SHARED_NAME  = lib/libcheetah.so
-LIB_STATIC_NAME  = lib/libcheetah.a
+PRECOMPILER_NAME = bin/navajoPrecompiler
+LIB_SHARED_NAME  = lib/libnavajo.so
+LIB_STATIC_NAME  = lib/libnavajo.a
 EXAMPLE_NAME     = example/example
 
 CXX 	=  g++
@@ -34,10 +34,10 @@ CXX 	=  g++
 ifeq ($(OS),MACOSX)
 LIBSSL_DIR = /usr/local/Cellar/openssl/1.0.1j
 LIBS 	   = -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto $(LIBPAM)
-DEFS		=   -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT -DLIBCHEETAH_SOFTWARE_VERSION=$(LIBCHEETAH_VERSION) -DLIBCHEETAH_BUILD_DATE=$(LIBCHEETAH_BUILD_DATE) 
+DEFS		=   -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=$(LIBNAVAJO_VERSION) -DLIBNAVAJO_BUILD_DATE=$(LIBNAVAJO_BUILD_DATE) 
 else
 LIBS 	   = -lz -lssl -lcrypto -pthread $(LIBPAM)
-DEFS		=  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT -DLIBCHEETAH_SOFTWARE_VERSION=$(LIBCHEETAH_VERSION) -DLIBCHEETAH_BUILD_DATE=$(LIBCHEETAH_BUILD_DATE) 
+DEFS		=  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=$(LIBNAVAJO_VERSION) -DLIBNAVAJO_BUILD_DATE=$(LIBNAVAJO_BUILD_DATE) 
 endif
 
 CXXFLAGS    	=  -O3  -Wdeprecated-declarations
@@ -53,7 +53,7 @@ LDFLAGS        =  -Wall -Wno-unused -O3
 LIBTOOL = libtool
 AR = ar
 
-LIBCHEETAH_OBJS 	= \
+LIBNAVAJO_OBJS 	= \
 		  src/AuthPAM.o \
 		  src/LocalRepository.o \
 		  src/LogRecorder.o			\
@@ -62,7 +62,7 @@ LIBCHEETAH_OBJS 	= \
 		  src/LogStdOutput.o		\
 		  src/WebServer.o        
 
-PRECOMPILER_OBJS = src/cheetahPrecompiler.o
+PRECOMPILER_OBJS = src/navajoPrecompiler.o
 
 
 #######################
@@ -78,17 +78,17 @@ clean::
 	@echo Remove files...
 	@rm -f $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_NAME)
 	@find . \( -name "*.bak" -o -name "*.class" -o -name "*.o" -o -name "core*" -o -name "*~" \) -exec rm -f '{}' \;
-	@for i in $(LIBCHEETAH_OBJS); do  rm -f $$i ; done
+	@for i in $(LIBNAVAJO_OBJS); do  rm -f $$i ; done
 	$(MAKE) -C example -f Makefile $@
 
-$(LIB_SHARED_NAME): $(LIBCHEETAH_OBJS)
+$(LIB_SHARED_NAME): $(LIBNAVAJO_OBJS)
 	@rm -f $@;
 	@[[ -d lib ]] || mkdir lib
-	$(LD) $(LDFLAGS) -o $@ -shared $(LIBCHEETAH_OBJS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ -shared $(LIBNAVAJO_OBJS) $(LIBS)
 
-$(LIB_STATIC_NAME): $(LIBCHEETAH_OBJS) 	 
+$(LIB_STATIC_NAME): $(LIBNAVAJO_OBJS) 	 
 	@rm -f $@
-	$(AR) -rvs $@ $(LIBCHEETAH_OBJS)
+	$(AR) -rvs $@ $(LIBNAVAJO_OBJS)
 
 $(PRECOMPILER_NAME): ${PRECOMPILER_OBJS}
 	@rm -f $@

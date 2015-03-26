@@ -58,11 +58,11 @@
 #include <sstream>
 #include <iostream>
 
-#include "cheetah/WebServer.hh"
+#include "navajo/WebServer.hh"
 #if defined(LINUX) || defined(__darwin__)
-#include "cheetah/AuthPAM.hh"
+#include "navajo/AuthPAM.hh"
 #endif
-#include "cheetah/thread.h"
+#include "navajo/thread.h"
 #include "gzip.cc"
 
 
@@ -673,7 +673,7 @@ std::string WebServer::getHttpHeader(const char *messageType, const char *filena
   strftime (timeBuf,200,"Date: %a, %d %b %Y %H:%M:%S GMT", &timeinfo);
   header+=std::string(timeBuf)+"\r\n";
 
-  header+=std::string("Server: Cheetah/1.0\r\n");
+  header+=std::string("Server: Navajo/1.0\r\n");
   
   if (respCookies != NULL)
     for (unsigned i=0; i < respCookies->size(); i++)

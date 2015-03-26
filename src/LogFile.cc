@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cheetah/LogFile.hh"
+#include "navajo/LogFile.hh"
 
   /***********************************************************************/
   /**

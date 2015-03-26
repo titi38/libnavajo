@@ -17,7 +17,7 @@
 #include <string>
 #include <map>
 
-#include "cheetah/WebRepository.hh"
+#include "navajo/WebRepository.hh"
 
 
 class DynamicRepository : public WebRepository

@@ -28,10 +28,10 @@
 #include <map>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "cheetah/LogRecorder.hh"
-#include "cheetah/IpAddress.hh"
-#include "cheetah/WebRepository.hh"
-#include "cheetah/thread.h"
+#include "navajo/LogRecorder.hh"
+#include "navajo/IpAddress.hh"
+#include "navajo/WebRepository.hh"
+#include "navajo/thread.h"
 
 
 class WebServer

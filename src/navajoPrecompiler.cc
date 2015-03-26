@@ -63,7 +63,7 @@ int main (int argc, char *argv[])
 
 	ConversionEntry* conversionTable= (ConversionEntry*) malloc( (argc-1) * sizeof(ConversionEntry));
 
-	fprintf (stdout, "#include \"cheetah/PrecompiledRepository.hh\"\n\n");
+	fprintf (stdout, "#include \"navajo/PrecompiledRepository.hh\"\n\n");
 
 	fprintf (stdout, "namespace webRepository\n{\n");
 	for (count = 1; count < argc; count++)

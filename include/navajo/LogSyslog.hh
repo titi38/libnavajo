@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-// LogStdOutput.hh : display message to console
+// LogSyslog.hh : use syslogd
 //
 //------------------------------------------------------------------------------
 //
@@ -23,24 +23,33 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef LOGSTDOUTPUT_HH_
-#define LOGSTDOUTPUT_HH_
+#ifndef LOGSYSLOG_HH_
+#define LOGSYSLOG_HH_
 
-#include "cheetah/LogOutput.hh"
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <string>
 
+#include "navajo/LogOutput.hh"
 
+using namespace std;
 
   /**
-  * LogStdOutput - LogOutput 
+  * LogSyslog - LogOutput 
   */
-  class LogStdOutput : public LogOutput
+  class LogSyslog : public LogOutput
   {
     public:
-      LogStdOutput();
-      ~LogStdOutput();
-
-      void append(const LogSeverity& l, const std::string& m, const std::string &details="");
+      LogSyslog(const char *id="Navajo");
+      ~LogSyslog();
+  
+      void append(const LogSeverity& l, const std::string& m, const std::string& details="");
       void initialize();
+  
+    private:
+      char ident[30];
+
   
   };
   

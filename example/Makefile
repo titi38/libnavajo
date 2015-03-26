@@ -5,7 +5,7 @@
 ##############################
 
 OUTPUTFILENAME = PrecompiledRepository.cc
-CHEETAH_PRECOMPILER_EXEC = ../bin/cheetahPrecompiler
+NAVAJO_PRECOMPILER_EXEC = ../bin/navajoPrecompiler
 
 UNAME := $(shell uname)
 
@@ -21,10 +21,10 @@ CXX 	=  g++
 
 ifeq ($(OS),MACOSX)
 LIBSSL_DIR = /usr/local/Cellar/openssl/1.0.1j
-LIBS 	   = -lcheetah -L../lib -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto $(LIBPAM) 
+LIBS 	   = -lnavajo -L../lib -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto $(LIBPAM) 
 DEFS		=   -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT
 else
-LIBS 	   = -lcheetah -L../lib -lz -lssl -lcrypto -pthread $(LIBPAM)
+LIBS 	   = -lnavajo -L../lib -lz -lssl -lcrypto -pthread $(LIBPAM)
 DEFS		=  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT
 endif
 
@@ -58,7 +58,7 @@ PrecompiledRepository.o:
 	@echo Generate Cpp files from HTML repository
 	@rm -f $(OUTPUTFILENAME)
 	@find . \( -name "*~" -o -name "*.old" -o -name "*.bak" \) -exec rm -f '{}' \;
-	@cd exampleRepository; ../$(CHEETAH_PRECOMPILER_EXEC) `find . -type f | cut -c 3-` >> ../$(OUTPUTFILENAME) ; cd ..
+	@cd exampleRepository; ../$(NAVAJO_PRECOMPILER_EXEC) `find . -type f | cut -c 3-` >> ../$(OUTPUTFILENAME) ; cd ..
 	$(CXX) -c PrecompiledRepository.cc -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS)
 	
 $(EXAMPLE_NAME): $(EXAMPLE_OBJS) $(LIB_STATIC_NAME)

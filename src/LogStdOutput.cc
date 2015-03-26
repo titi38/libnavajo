@@ -24,7 +24,7 @@
 //------------------------------------------------------------------------------
 
 #include <stdio.h>
-#include "cheetah/LogStdOutput.hh"
+#include "navajo/LogStdOutput.hh"
 
 
 
