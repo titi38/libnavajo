@@ -31,7 +31,7 @@ class HttpSession
 
     /**********************************************************************/
 
-    static void create(std::string& id, time_t sessionLifeTime=20*6)
+    static void create(std::string& id, time_t sessionLifeTime=20*60)
     {
 
       const size_t idLength=128;
@@ -57,14 +57,16 @@ class HttpSession
       setAttribute(id, "session_expiration", expiration);
       
       // look for expired session
-      if (time(NULL) - lastExpirationSearchTime > 60)
+  //    if (time(NULL) - lastExpirationSearchTime > 60)
+      {
         removeExpiredSession();
-
+        lastExpirationSearchTime = time(NULL);
+      }
     };
     
     /**********************************************************************/
 
-    static void updateExpiration(const std::string& id, time_t sessionLifeTime=20*6)
+    static void updateExpiration(const std::string& id, time_t sessionLifeTime=20*60)
     {
       time_t *expiration=(time_t*)getAttribute(id, "session_expiration");
       if (expiration != NULL)
@@ -78,23 +80,47 @@ class HttpSession
 
       pthread_mutex_lock( &sessions_mutex );
       HttpSessionsContainerMap::iterator it = sessions.begin();
-      for (;it != sessions.end(); it++)
+      for (;it != sessions.end(); )
       {
         std::map <std::string, void*>* attributesMap=it->second;
         std::map <std::string, void*>::iterator it2 = attributesMap->find("session_expiration");
         time_t *expiration=NULL;
         if (it2 != attributesMap->end()) expiration=(time_t*) it2->second;
+
+if (expiration==NULL)
+printf("expiration==NULL\n");
+else
+printf("*expiration=%u (time=%u)\n",*expiration, time(NULL));
+
         if (expiration!=NULL && *expiration > time(NULL))
+        {
+          it++;
           continue;
+        }
+printf("removing session\n");
         removeAllAttribute(attributesMap);
         delete attributesMap;
-        sessions.erase(it);
+        it = sessions.erase(it);
       }
       pthread_mutex_unlock( &sessions_mutex );
+printf("NB SESSION: %u", sessions.size()); fflush(NULL);
     }
 
     /**********************************************************************/
 
+    static void removeAllSession()
+    {
+      pthread_mutex_lock( &sessions_mutex );
+      HttpSessionsContainerMap::iterator it = sessions.begin();
+      for (;it != sessions.end(); )
+      {
+        std::map <std::string, void*>* attributesMap=it->second;
+        removeAllAttribute(attributesMap);
+        delete attributesMap;
+        sessions.erase(it);
+      }    
+    }
+    
     static bool find(const std::string& id)
     {
 
