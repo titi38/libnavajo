@@ -19,6 +19,7 @@
 #include <string>
 #include <sstream>
 
+#include <stdlib.h>
 
 class HttpSession
 {
@@ -87,23 +88,17 @@ class HttpSession
         time_t *expiration=NULL;
         if (it2 != attributesMap->end()) expiration=(time_t*) it2->second;
 
-if (expiration==NULL)
-printf("expiration==NULL\n");
-else
-printf("*expiration=%u (time=%u)\n",*expiration, time(NULL));
-
         if (expiration!=NULL && *expiration > time(NULL))
         {
           it++;
           continue;
         }
-printf("removing session\n");
+
         removeAllAttribute(attributesMap);
         delete attributesMap;
         it = sessions.erase(it);
       }
       pthread_mutex_unlock( &sessions_mutex );
-printf("NB SESSION: %u", sessions.size()); fflush(NULL);
     }
 
     /**********************************************************************/

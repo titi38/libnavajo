@@ -35,12 +35,13 @@ ifeq ($(OS),MACOSX)
 LIBSSL_DIR = /usr/local/Cellar/openssl/1.0.1j
 LIBS 	   = -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto $(LIBPAM)
 DEFS		=   -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=$(LIBNAVAJO_VERSION) -DLIBNAVAJO_BUILD_DATE=$(LIBNAVAJO_BUILD_DATE) 
+CXXFLAGS        =  -O3  -Wdeprecated-declarations
 else
 LIBS 	   = -lz -lssl -lcrypto -pthread $(LIBPAM)
 DEFS		=  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=$(LIBNAVAJO_VERSION) -DLIBNAVAJO_BUILD_DATE=$(LIBNAVAJO_BUILD_DATE) 
+CXXFLAGS        =  -std=c++11 -O4  -Wdeprecated-declarations
 endif
 
-CXXFLAGS    	=  -O3  -Wdeprecated-declarations
 
 CPPFLAGS	= -I. \
        -I$(LIBSSL_DIR)/include \
