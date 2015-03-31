@@ -61,7 +61,7 @@ class MyDynamicPage: public DynamicPage
     response+="<BR>my session attribute myAttribute contains "+myAttributess.str();
 
     response+="<HTML><BODY>";
-    
+   
     return response;
   }
 };
@@ -100,7 +100,7 @@ int main()
   webServer->addRepository(&thePrecompRepo);
 
   LocalRepository myLocalRepo;
-  myLocalRepo.addDirectory("toto/tata", "./PrecompiledRepository/html");
+  myLocalRepo.addDirectory("toto/tata", "./exampleRepository/");
   // myLocalRepo.addDirectory(WEB_LOCATION, DIRECTORY);
   webServer->addRepository(&myLocalRepo);
 

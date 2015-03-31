@@ -28,8 +28,8 @@ class DynamicRepository : public WebRepository
     IndexMap indexMap;
     
   public:
-    DynamicRepository() {  };
-    virtual ~DynamicRepository() { pthread_mutex_init(&_mutex, NULL); indexMap.clear(); };
+    DynamicRepository() { pthread_mutex_init(&_mutex, NULL); };
+    virtual ~DynamicRepository() { indexMap.clear(); };
     
     inline void freeFile(unsigned char *webpage) { ::free (webpage); };
 

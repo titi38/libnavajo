@@ -31,11 +31,11 @@ class HttpRequest
   typedef std::map <std::string, std::string> HttpRequestParametersMap;
   typedef std::map <std::string, std::string> HttpRequestCookiesMap;  
 
-    const char *urlRequest;
-    HttpRequestType typeRequest;
-    HttpRequestCookiesMap cookies;
-    HttpRequestParametersMap parameters;
-    std::string sessionId;
+  const char *urlRequest;
+  HttpRequestType typeRequest;
+  HttpRequestCookiesMap cookies;
+  HttpRequestParametersMap parameters;
+  std::string sessionId;
 
   /**********************************************************************/
 
