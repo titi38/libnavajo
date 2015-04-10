@@ -169,6 +169,14 @@ class HttpRequest
       getParameter(name, res);
       return res;
     }
+    
+    /**********************************************************************/
+
+    inline bool hasParameter( const std::string& name ) const
+    {
+      std::string tmp;
+      return getParameter(name, tmp);
+    }
 
     /**********************************************************************/
 
@@ -179,7 +187,7 @@ class HttpRequest
        res.push_back(iter->first);
       return res;
     }
-
+    
     /**********************************************************************/
 
     inline void getSession(bool b = true)

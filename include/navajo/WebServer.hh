@@ -93,13 +93,14 @@ class WebServer
     void threadProcessing();
     void exit();
     
+    static std::string webServerName;
     bool disableIpV4, disableIpV6;
     ushort tcpPort;
     size_t threadsPoolSize;
     string device;
     
     bool sslEnabled;
-    string sslCertFile, sslCaFile, sslCertPwd;
+    std::string sslCertFile, sslCaFile, sslCertPwd;
     std::vector<std::string> authLoginPwdList;
     bool authPeerSsl;
     std::vector<std::string> authDnList;
@@ -116,6 +117,12 @@ class WebServer
   public:
     WebServer();
 
+    /**
+    * Set the web server name in the http header
+    * @param name: the new name
+    */ 
+    inline void setWebServerName(const std::string& name) { webServerName = name; }
+    
     /**
     * Set the size of the listener thread pool. 
     * @param nbThread: the number of thread available (Default value: 5)
@@ -192,7 +199,7 @@ class WebServer
     inline void listenIpV6only() { disableIpV4=true; };
 
     /**
-    * Fix network access restriction to webserver. 
+    * set network access restriction to webserver. 
     * @param ipnet: an IpNetwork of allowed web client to add
     */   
     inline void addHostsAllowed(const IpNetwork &ipnet) { hostsAllowed.push_back(ipnet); };    
@@ -225,6 +232,7 @@ class WebServer
     {
       LOG->append(_INFO_, "WebServer: Service is stopping !");
       exit();
+      threadWebServer=0;
     };
     
     /**
@@ -235,6 +243,10 @@ class WebServer
       wait_for_thread(threadWebServer);
     };
 
+    bool isRunning()
+    {
+      return threadWebServer != 0;
+    }
 };
 
 #endif

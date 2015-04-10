@@ -55,11 +55,6 @@ using namespace std;
 
 #define INET6_ADDRLEN 	16
 
-#define PROTO_ALL	0
-#define PROTO_UNDEFINED 255
-#define PORT_ALL	0
-#define PORT_UNDEFINED 	65535
-
 
 /***********************************************************************
  * IpAdress struct definition
@@ -167,12 +162,16 @@ class IpAddress
     return res;
   };
 
+  static pthread_mutex_t resolvIP_mutex;
+
   inline bool snresolve( char *hname, const size_t maxlength) const
   {
     int   error = 0;
     struct sockaddr_in sin;
     struct sockaddr_in6 sin6;
 
+    pthread_mutex_lock( &resolvIP_mutex );
+    
     if (ipversion == 4)
     {
       sin.sin_family=AF_INET;
@@ -187,6 +186,8 @@ class IpAddress
       error = getnameinfo((sockaddr*)&sin6, sizeof sin6, hname, maxlength, NULL, 0, NI_NAMEREQD);
     }
 
+    pthread_mutex_unlock( &resolvIP_mutex );
+    
     return (!error);
   };
 

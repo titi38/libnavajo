@@ -73,7 +73,9 @@
 const char WebServer::authStr[]="Authorization: Basic ";
 const int WebServer::verify_depth=512;
 char *WebServer::certpass=NULL;
+string WebServer::webServerName;
 
+pthread_mutex_t IpAddress::resolvIP_mutex = PTHREAD_MUTEX_INITIALIZER;
 HttpSession::HttpSessionsContainerMap HttpSession::sessions;
 pthread_mutex_t HttpSession::sessions_mutex=PTHREAD_MUTEX_INITIALIZER;
 time_t HttpSession::lastExpirationSearchTime=0;
@@ -85,6 +87,7 @@ WebServer::WebServer()
   sslCtx=NULL;
   s_server_session_id_context = 1;
 
+  webServerName=std::string("Server: Navajo/")+std::string(LIBNAVAJO_SOFTWARE_VERSION);
   exiting=false;
   exitedThread=0;
   httpdAuth=false;
@@ -673,7 +676,7 @@ std::string WebServer::getHttpHeader(const char *messageType, const char *filena
   strftime (timeBuf,200,"Date: %a, %d %b %Y %H:%M:%S GMT", &timeinfo);
   header+=std::string(timeBuf)+"\r\n";
 
-  header+=std::string("Server: Navajo/1.0\r\n");
+  header+=webServerName+"\r\n";
   
   if (respCookies != NULL)
     for (unsigned i=0; i < respCookies->size(); i++)
@@ -792,6 +795,7 @@ u_short WebServer::init()
   struct addrinfo  hints;
   struct addrinfo *result, *rp;
 
+  threadWebServer=0;
   nbServerSock=0;
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
