@@ -100,7 +100,7 @@ WebServer::WebServer()
   
   sslEnabled=false;
   authPeerSsl=false;
-  bool authPam=false;
+  authPam=false;
 
   pthread_mutex_init(&clientsSockLifo_mutex, NULL);
   pthread_cond_init(&clientsSockLifo_cond, NULL);

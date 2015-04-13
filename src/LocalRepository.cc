@@ -95,7 +95,7 @@ void LocalRepository::printFilenames()
 bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
 {
   bool found=false;
-  const string *alias, *path;
+  const string *alias=NULL, *path=NULL;
   string url = request->getUrl();
   size_t webpageLen;
   unsigned char *webpage;

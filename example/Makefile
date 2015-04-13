@@ -27,7 +27,7 @@ CXXFLAGS        =  -O3  -Wdeprecated-declarations
 else
 LIBS       = -lnavajo -L../lib -lz -lssl -lcrypto -pthread $(LIBPAM)
 DEFS            =  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT
-CXXFLAGS        =  -std=c++11 -O4  -Wdeprecated-declarations
+CXXFLAGS        =  -O4  -Wdeprecated-declarations
 endif
 
 

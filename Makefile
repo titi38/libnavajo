@@ -39,7 +39,7 @@ CXXFLAGS        =  -O3  -Wdeprecated-declarations
 else
 LIBS 	   = -lz -lssl -lcrypto -pthread $(LIBPAM)
 DEFS		=  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=$(LIBNAVAJO_VERSION) -DLIBNAVAJO_BUILD_DATE=$(LIBNAVAJO_BUILD_DATE) 
-CXXFLAGS        =  -std=c++11 -O4  -Wdeprecated-declarations
+CXXFLAGS        =   -O4  -Wdeprecated-declarations
 endif
 
 
