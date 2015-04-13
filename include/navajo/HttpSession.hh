@@ -96,7 +96,7 @@ class HttpSession
 
         removeAllAttribute(attributesMap);
         delete attributesMap;
-        it = sessions.erase(it);
+        sessions.erase(it++);
       }
       pthread_mutex_unlock( &sessions_mutex );
     }
@@ -112,7 +112,7 @@ class HttpSession
         std::map <std::string, void*>* attributesMap=it->second;
         removeAllAttribute(attributesMap);
         delete attributesMap;
-        sessions.erase(it);
+        sessions.erase(it++);
       }    
     }
     

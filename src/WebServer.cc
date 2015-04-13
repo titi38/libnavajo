@@ -290,7 +290,6 @@ void WebServer::accept_request(int client, SSL *ssl)
   unsigned i=0, j=0;
   
   bool authOK = !isAuthPam() && authLoginPwdList.size() == 0;
-
   char httpVers[4]="";
   int keepAlive=-1;
   bool zipSupport=false;
