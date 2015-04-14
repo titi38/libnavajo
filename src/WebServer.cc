@@ -204,7 +204,7 @@ bool WebServer::isUserAllowed(const string &pwdb64)
       if ( logPass == *it )
         authOK=true;
   }
-#ifdef LINUX
+#if defined(LINUX) || defined(__darwin__)
   if (!authOK && isAuthPam())
   {
     if (authPamUsersList.size())
@@ -549,7 +549,7 @@ void WebServer::accept_request(int client, SSL *ssl)
   }
   while (keepAlive && !exiting);
 
-  if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); };
+//  if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); };
 //  close(client);
 }
 
@@ -1012,16 +1012,16 @@ void WebServer::poolThreadProcessing()
   BIO *sbio;
   SSL *ssl=NULL;
   X509 *peer=NULL;
-  int r;
   bool authSSL=false;
 
   while( !clientsSockLifo.empty() || !exiting )
   {
     while( clientsSockLifo.empty() && !exiting)
-         pthread_cond_wait( &clientsSockLifo_cond, &clientsSockLifo_mutex );
+      pthread_cond_wait( &clientsSockLifo_cond, &clientsSockLifo_mutex );
 
     if (exiting)  { pthread_mutex_unlock( &clientsSockLifo_mutex ); break; }
 
+    // clientsSockLifo is not empty
     volatile int client=clientsSockLifo.top();
     clientsSockLifo.pop();
 
@@ -1033,7 +1033,7 @@ void WebServer::poolThreadProcessing()
       ssl=SSL_new(sslCtx);
       SSL_set_bio(ssl,sbio,sbio);
 
-      if((r=SSL_accept(ssl)<=0))
+      if (SSL_accept(ssl) <= 0)
       { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
         string msg="SSL accept error ";
         if (sslmsg != NULL) msg+=": "+string(sslmsg);
@@ -1058,18 +1058,22 @@ void WebServer::poolThreadProcessing()
 //        else printf ("SSL_get_verify_result(ssl) = %d\n", SSL_get_verify_result(ssl) );
         }
       }
-      else authSSL=true;
+      else
+        authSSL=true;
+
+      if (authSSL)
+        accept_request(client,ssl); 
+      else
+      {
+        if (sslEnabled)
+        { SSL_shutdown(ssl); SSL_free(ssl); }
+        else 
+          accept_request(client);
+      }
+
+      shutdown (client, SHUT_RDWR);      
+      close(client);     
     }
-
-    if (authSSL)
-      accept_request(client,ssl); 
-    else
-      accept_request(client);
-
-    if (sslEnabled)
-      { SSL_shutdown(ssl); SSL_free(ssl); }
-    close(client);
-    shutdown (client, SHUT_RDWR);      
   }
   exitedThread++;
 
@@ -1182,7 +1186,11 @@ void WebServer::threadProcessing()
     
       if ( hostsAllowed.size() 
         && !isIpBelongToIpNetwork(webClientAddr, hostsAllowed ) )
-              continue;
+        {
+          shutdown (client_sock, SHUT_RDWR);      
+          close(client_sock);
+          continue;
+        }
 
       //
 
@@ -1193,7 +1201,7 @@ void WebServer::threadProcessing()
         LOG->appendUniq(_ERROR_, "WebServer : An error occurred when attempting to access the socket (accept == -1)");
       else
       {
-        setSocketRcvTimeout(client_sock, 2);
+        setSocketRcvTimeout(client_sock, 5);
         clientsSockLifo.push(client_sock);
       }
 
