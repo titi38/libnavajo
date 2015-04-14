@@ -96,7 +96,7 @@ WebServer::WebServer()
   disableIpV4=false;
   disableIpV6=false;
   tcpPort=DEFAULT_HTTP_PORT;
-  threadsPoolSize=5;
+  threadsPoolSize=20;
   
   sslEnabled=false;
   authPeerSsl=false;
@@ -201,11 +201,8 @@ bool WebServer::isUserAllowed(const string &pwdb64)
   {
     string logPass=login+':'+pwd;
     for ( vector<string>::iterator it=httpAuthLoginPwd.begin(); it != httpAuthLoginPwd.end(); it++ )
-{
       if ( logPass == *it )
         authOK=true;
-printf ("compare: '%s' and '%s'\n", logPass.c_str(), it->c_str());
-}
   }
 #ifdef LINUX
   if (!authOK && isAuthPam())
@@ -330,7 +327,7 @@ void WebServer::accept_request(int client, SSL *ssl)
               SSL_shutdown(ssl);
             }
             SSL_free(ssl);
-            close(client);
+            //close(client);
             return ;      
         }
       }
@@ -342,7 +339,7 @@ void WebServer::accept_request(int client, SSL *ssl)
         if (sslEnabled)
           { SSL_shutdown(ssl); SSL_free(ssl); }
         //shutdown (client, SHUT_RDWR);      
-        close(client);
+        ///close(client);
             return ;
       }
 
@@ -416,7 +413,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       std::string msg = getHttpHeader( "401 Authorization Required", ".html", false);
       httpSend(client, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-      close(client);
+//      close(client);
       return ;
     }
 
@@ -425,7 +422,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       std::string msg = getNotImplementedErrorMsg();
       httpSend(client, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-        close(client);
+//        close(client);
       return ;
     }
 
@@ -473,7 +470,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       std::string msg = getNotFoundErrorMsg();
       httpSend(client, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-      close(client);
+//      close(client);
       return ;
     }
     else
@@ -499,7 +496,7 @@ void WebServer::accept_request(int client, SSL *ssl)
         std::string msg = getInternalServerErrorMsg();
         httpSend(client, (const void*) msg.c_str(), msg.length(), io);
         if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-        close(client);
+//        close(client);
         return ;
       }
     }
@@ -516,7 +513,7 @@ void WebServer::accept_request(int client, SSL *ssl)
           std::string msg = getInternalServerErrorMsg();
           httpSend(client, (const void*) msg.c_str(), msg.length(), io);
           if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-          close(client);
+//          close(client);
           return ;
         }
         else
@@ -553,7 +550,7 @@ void WebServer::accept_request(int client, SSL *ssl)
   while (keepAlive && !exiting);
 
   if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); };
-  close(client);
+//  close(client);
 }
 
 /***********************************************************************
@@ -1023,67 +1020,59 @@ void WebServer::poolThreadProcessing()
     while( clientsSockLifo.empty() && !exiting)
          pthread_cond_wait( &clientsSockLifo_cond, &clientsSockLifo_mutex );
 
-    if (exiting) break;
+    if (exiting)  { pthread_mutex_unlock( &clientsSockLifo_mutex ); break; }
 
-    if (!clientsSockLifo.empty())
+    volatile int client=clientsSockLifo.top();
+    clientsSockLifo.pop();
+
+    pthread_mutex_unlock( &clientsSockLifo_mutex );
+    
+    if (sslEnabled)
     {
-      volatile int client=clientsSockLifo.top();
-      clientsSockLifo.pop();
+      sbio=BIO_new_socket(client, BIO_NOCLOSE);
+      ssl=SSL_new(sslCtx);
+      SSL_set_bio(ssl,sbio,sbio);
 
-      if (sslEnabled)
+      if((r=SSL_accept(ssl)<=0))
+      { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
+        string msg="SSL accept error ";
+        if (sslmsg != NULL) msg+=": "+string(sslmsg);
+        LOG->append(_DEBUG_,msg);
+      }
+
+      if ( authPeerSsl )
       {
-        sbio=BIO_new_socket(client, BIO_NOCLOSE);
-        ssl=SSL_new(sslCtx);
-        SSL_set_bio(ssl,sbio,sbio);
-
-        if((r=SSL_accept(ssl)<=0))
-        { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
-          string msg="SSL accept error ";
-          if (sslmsg != NULL) msg+=": "+string(sslmsg);
-          LOG->append(_DEBUG_,msg);
-        }
-
-        if ( authPeerSsl )
+        authSSL=false;
+        if ( (peer = SSL_get_peer_certificate(ssl)) != NULL )
         {
-          authSSL=false;
-          if ( (peer = SSL_get_peer_certificate(ssl)) != NULL )
+          if (SSL_get_verify_result(ssl) == X509_V_OK)
           {
-            if (SSL_get_verify_result(ssl) == X509_V_OK)
-            {
-              // The client sent a certificate which verified OK
-              char *str = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);                  
+            // The client sent a certificate which verified OK
+            char *str = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);                  
 
-              if ((authSSL=isAuthorizedDN(str)) == true)
-                updatePeerDnHistory(std::string(str));
-              free (str);                           
-              X509_free(peer);
-            }
-//        else printf ("SSL_get_verify_result(ssl) = %d\n", SSL_get_verify_result(ssl) );
+            if ((authSSL=isAuthorizedDN(str)) == true)
+              updatePeerDnHistory(std::string(str));
+            free (str);                           
+            X509_free(peer);
           }
+//        else printf ("SSL_get_verify_result(ssl) = %d\n", SSL_get_verify_result(ssl) );
         }
-        else authSSL=true;
       }
+      else authSSL=true;
+    }
 
-      pthread_mutex_unlock( &clientsSockLifo_mutex );
+    if (authSSL)
+      accept_request(client,ssl); 
+    else
+      accept_request(client);
 
-      if (authSSL)
-        accept_request(client,ssl); 
-      else
-      {
-        if (sslEnabled)
-        { SSL_shutdown(ssl); SSL_free(ssl); }
-        else 
-          accept_request(client);
-      }
-
-      shutdown (client, SHUT_RDWR);      
-      close(client);
-
-      pthread_mutex_lock( &clientsSockLifo_mutex );
-    } 
+    if (sslEnabled)
+      { SSL_shutdown(ssl); SSL_free(ssl); }
+    close(client);
+    shutdown (client, SHUT_RDWR);      
   }
   exitedThread++;
-  pthread_mutex_unlock( &clientsSockLifo_mutex );
+
 }
 
 
