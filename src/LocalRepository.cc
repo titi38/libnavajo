@@ -38,7 +38,7 @@ bool LocalRepository::loadFilename_dir (const string& alias, const string& path,
     {
 	    if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) continue;
 
-	    if ((entry->d_type == DT_REG || entry->d_type == DT_LNK) && entry->d_name)
+	    if ((entry->d_type == DT_REG || entry->d_type == DT_LNK) && strlen(entry->d_name) )
 	      filenamesSet.insert(alias+subpath+"/"+entry->d_name);
 
 	    if (entry->d_type == DT_DIR)
