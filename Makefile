@@ -84,7 +84,7 @@ clean::
 
 $(LIB_SHARED_NAME): $(LIBNAVAJO_OBJS)
 	@rm -f $@;
-	@[[ -d lib ]] || mkdir lib
+	@[[ -d lib ]] || mkdir -p lib
 	$(LD) $(LDFLAGS) -o $@ -shared $(LIBNAVAJO_OBJS) $(LIBS)
 
 $(LIB_STATIC_NAME): $(LIBNAVAJO_OBJS) 	 
@@ -93,7 +93,7 @@ $(LIB_STATIC_NAME): $(LIBNAVAJO_OBJS)
 
 $(PRECOMPILER_NAME): ${PRECOMPILER_OBJS}
 	@rm -f $@
-	@[[ -d bin ]] || mkdir bin
+	@[[ -d bin ]] || mkdir -p bin
 	${LD} ${LDFLAGS} -o $@ ${PRECOMPILER_OBJS}
 
 $(EXAMPLE_NAME)::

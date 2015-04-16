@@ -82,10 +82,10 @@ int main()
   webServer->setThreadsPoolSize(1);
   //uncomment to switch to https
   //webServer->setUseSSL(true, "serverCert.pem", "caFile.crt");
-   webServer->setUseSSL(true, "/etc/znets/lpsc-test.in2p3.fr.pem2", "/etc/znets/ca-chain.crt");
+   webServer->setUseSSL(true, "/home/descombes/lpsc-test.in2p3.fr.pem2", "/home/descombes/ca-chain.crt");
 
   //uncomment to active X509 auth
-//  webServer->setAuthPeerSSL();
+  webServer->setAuthPeerSSL();
   webServer->addAuthPeerDN("/C=FR/O=CNRS/OU=UMR5821/CN=Thierry Descombes/emailAddress=thierry.descombes@lpsc.in2p3.fr");
 
   //uncomment to active login/passwd auth
