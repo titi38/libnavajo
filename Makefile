@@ -58,12 +58,12 @@ endif
 endif
 
 CPPFLAGS	= -I. \
-       -I$(LIBSSL_DIR)/include \
-		   -Iinclude
+                  -I$(LIBSSL_DIR)/include \
+                  -Iinclude
 		   
 LD		=  g++
 
-LDFLAGS        =  -Wall -Wno-unused -O3
+LDFLAGS         = -Wall -Wno-unused -O3
 
 LIBTOOL = libtool
 AR = ar

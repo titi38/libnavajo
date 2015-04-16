@@ -882,7 +882,7 @@ void WebServer::exit()
 }
 
 /***********************************************************************
-* password_cb: 
+* password_cb
 ************************************************************************/
 
 int WebServer::password_cb(char *buf, int num, int rwflag, void *userdata)
@@ -1042,7 +1042,8 @@ void WebServer::poolThreadProcessing()
 
       if ( authPeerSsl )
       {
-        authSSL=false;
+        authSSL=false;        
+        
         if ( (peer = SSL_get_peer_certificate(ssl)) != NULL )
         {
           if (SSL_get_verify_result(ssl) == X509_V_OK)
