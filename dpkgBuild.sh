@@ -1,16 +1,17 @@
 #!/bin/sh
 export DPKG_BUILD_ROOT=debianBuild
+rm -rf $DPKG_BUILD_ROOT
 mkdir -p $DPKG_BUILD_ROOT
 make install PREFIX=$DPKG_BUILD_ROOT/usr
 
-sudo find $DPKG_BUILD_ROOT -type f | sed "s/$DPKG_BUILD_ROOT.\(.*\)\/\(.*\)/\2\t\t\1/" > install
-sudo find $DPKG_BUILD_ROOT -type d | sed "s/$DPKG_BUILD_ROOT\///" | grep -v "$DPKG_BUILD_ROOT" > dirs
+find $DPKG_BUILD_ROOT -type f | sed "s/$DPKG_BUILD_ROOT.\(.*\)\/\(.*\)/\2\t\t\1/" > install
+find $DPKG_BUILD_ROOT -type d | sed "s/$DPKG_BUILD_ROOT\///" | grep -v "$DPKG_BUILD_ROOT" > dirs
 
-mkdir $DPKG_BUILD_ROOT/debian
-mv control $DPKG_BUILD_ROOT/debian
-mv dirs $DPKG_BUILD_ROOT/debian
+mkdir $DPKG_BUILD_ROOT/DEBIAN
+mv install $DPKG_BUILD_ROOT/DEBIAN
+mv dirs $DPKG_BUILD_ROOT/DEBIAN
 
-cat > $DPKG_BUILD_ROOT/debian/control << EOF_CONTROL
+cat > $DPKG_BUILD_ROOT/DEBIAN/control << EOF_CONTROL
 Package: libnavajo
 Section: Developpement
 Priority: optional
@@ -18,11 +19,10 @@ Maintainer: Thierry DESCOMBES <thierry.descombes@gmail.com>
 Architecture: amd64 
 Depends: openssl-devel, zlib1g-devel, pam-devel
 Version: 1.0
-Description: an implementation of a complete HTTP(S) server, complete, fast
-and lightweight.
+Description: an implementation of a complete HTTP(S) server, complete, fast and lightweight.
 EOF_CONTROL
 
-cat > $DPKG_BUILD_ROOT/debian/rules << EOF_RULES
+cat > $DPKG_BUILD_ROOT/DEBIAN/rules << EOF_RULES
 #!/usr/bin/make -f
 # -*- makefile -*-
 # Sample debian/rules that uses debhelper.
@@ -82,5 +82,5 @@ binary: binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary install configure
 EOF_RULES
 
-dpkg -b debian/ $DPKG_BUILD_ROOT libnavajo-1.0.amd64.deb
+dpkg -b $DPKG_BUILD_ROOT libnavajo-1.0.amd64.deb
 
