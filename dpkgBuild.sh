@@ -4,6 +4,8 @@ rm -rf $DPKG_BUILD_ROOT
 mkdir -p $DPKG_BUILD_ROOT
 make install PREFIX=$DPKG_BUILD_ROOT/usr
 
+mv -f $DPKG_BUILD_ROOT/usr/lib64 $DPKG_BUILD_ROOT/usr/lib
+
 find $DPKG_BUILD_ROOT -type f | sed "s/$DPKG_BUILD_ROOT.\(.*\)\/\(.*\)/\2\t\t\1/" > install
 find $DPKG_BUILD_ROOT -type d | sed "s/$DPKG_BUILD_ROOT\///" | grep -v "$DPKG_BUILD_ROOT" > dirs
 
