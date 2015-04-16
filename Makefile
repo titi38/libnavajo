@@ -123,7 +123,8 @@ install: $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
 	-@if [ ! -d $(PREFIX)/$(BIN_DIR) ]; then mkdir -p $(PREFIX)/$(BIN_DIR); fi
 	-@if [ ! -d $(PREFIX)/$(MAN_DIR) ]; then mkdir -p $(PREFIX)/$(MAN_DIR); fi
 	cp -r $(BIN_DIR) $(PREFIX); chmod 755 $(PREFIX)/$(BIN_DIR)/* 
-	cp -r $(INC_DIR) $(PREFIX); chmod 644 $(PREFIX)/$(INC_DIR)/* 
+	cp -r $(INC_DIR) $(PREFIX); find $(PREFIX)/$(INC_DIR)/navajo -type f -exec chmod 644 '{}' \; 
+	chmod 755 $(PREFIX)/$(INC_DIR)/navajo
 	cp -r $(LIB_DIR) $(PREFIX); chmod 755 $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_NAME) $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_ALIAS); 
 	chmod 644 $(PREFIX)/$(LIB_DIR)/$(LIB_STATIC_NAME); 
 	-@(cd $(PREFIX)/$(LIB_DIR); $(RANLIB) $(LIB_STATIC_NAME) || true) >/dev/null 2>&1
@@ -132,12 +133,10 @@ install: $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
 #	chmod 644 $(man3dir)/libnavajo.3
 
 uninstall:
-	cd $(includedir); \
-	cd $(libdir); rm -f libz.a; \
-	if test -f $(LIB_SHARED_NAME); then \
-	  rm -f $(LIB_SHARED_NAME) $(SHAREDLIB) $(SHAREDLIBM); \
-	fi
-	cd $(man3dir); rm -f zlib.3
+	@rm -rf $(PREFIX)/$(INC_DIR)/navajo \
+	@rm -f $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_NAME) $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_ALIAS) $(PREFIX)/$(LIB_DIR)/$(LIB_STATIC_NAME); \
+
+#	cd $(man3dir); rm -f libnavajo.3
 
 
 
