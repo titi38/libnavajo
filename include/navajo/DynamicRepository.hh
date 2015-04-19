@@ -2,12 +2,12 @@
 /**
  * @file  DynamicRepository.hh 
  *
- * @brief Get json files to webserver
+ * @brief Handles dynamic web repository
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *
  * @version 1	
- * @date 19/02/10 
+ * @date 19/02/15
  */
 //********************************************************
  

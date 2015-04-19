@@ -2,12 +2,12 @@
 /**
  * @file  IpAddress.hh
  *
- * @brief IpAddress V4 and V6
+ * @brief IpAddress V4 and V6 class definition
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *
  * @version 1	
- * @date 19/02/10 
+ * @date 19/02/15
  */
 //********************************************************
 

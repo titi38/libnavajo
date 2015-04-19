@@ -2,12 +2,12 @@
 /**
  * @file  DynamicPage.hh
  *
- * @brief Get json files to webserver
+ * @brief Dynamic page définition (abstract class)
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *
  * @version 1  
- * @date 19/02/10 
+ * @date 19/02/15
  */
 //********************************************************
 

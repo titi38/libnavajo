@@ -1,3 +1,16 @@
+//********************************************************
+/**
+ * @file  gzip.cc
+ *
+ * @brief zip compression facilities
+ *
+ * @author T.Descombes (thierry.descombes@gmail.com)
+ *
+ * @version 1        
+ * @date 19/02/15
+ */
+//********************************************************
+
 #include <stdexcept>
 #include "zlib.h"
 

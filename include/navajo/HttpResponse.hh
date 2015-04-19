@@ -2,7 +2,7 @@
 /**
  * @file  HttpRequest.hh 
  *
- * @brief Contains Http Request Parameters
+ * @brief The Http Request Parameters class
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *

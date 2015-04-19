@@ -1,3 +1,17 @@
+//********************************************************
+/**
+ * @file  navajoPrecompiler.cc 
+ *
+ * @brief Generate a C++ PrecompiledRepository class from
+ *        a given webrepository
+ *
+ * @author T.Descombes (thierry.descombes@gmail.com)
+ *
+ * @version 1        
+ * @date 19/02/15
+ */
+//********************************************************
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +63,13 @@ typedef struct
   size_t length;
 }  ConversionEntry;
 
+
+/**
+* @brief  Main function
+* @param argc the number of web files
+* @param argv the filenames (with absolute path)
+* @return 0 upon exit success
+*/ 
 int main (int argc, char *argv[])
 {
 	int count;
@@ -68,7 +89,6 @@ int main (int argc, char *argv[])
 	fprintf (stdout, "namespace webRepository\n{\n");
 	for (count = 1; count < argc; count++)
 	{
-		//printf("Processing file: %s\n", argv[count]);
 
 		FILE * pFile;
 		size_t lSize;
@@ -116,7 +136,6 @@ int main (int argc, char *argv[])
 		(*(conversionTable+count-1)).varName = (char*) malloc ((strlen(outFilename)+1)*sizeof(char));
 		(*(conversionTable+count-1)).length = lSize;
 		strcpy ((*(conversionTable+count-1)).varName, outFilename);
-
 	}
 	
   fprintf (stdout, "}\n\n");

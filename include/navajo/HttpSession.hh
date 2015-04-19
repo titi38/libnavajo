@@ -2,7 +2,7 @@
 /**
  * @file  HttpSession.hh 
  *
- * @brief Contains Http Sessions
+ * @brief The Http Sessions Manager class
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *

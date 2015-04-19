@@ -2,14 +2,15 @@
 /**
  * @file  AuthPAM.hh
  *
- * @brief 
+ * @brief PAM authentification for Unix systems
  *
- * @author T.Descombes (descombes@lpsc.in2p3.fr)
+ * @author T.Descombes (thierry.descombes@gmail.com)
  *
- * @version 1	
- * @date 19/02/10 
+ * @version 1        
+ * @date 19/02/15
  */
 //********************************************************
+
 
 
 #ifndef AUTHPAM_HH_

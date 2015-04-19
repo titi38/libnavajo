@@ -2,12 +2,12 @@
 /**
  * @file  LocalRepository.cc 
  *
- * @brief Local webfiles repository
+ * @brief Handles local web repository
  *
- * @author T.Descombes (descombes@lpsc.in2p3.fr)
+ * @author T.Descombes (thierry.descombes@gmail.com)
  *
- * @version 1	
- * @date 27/01/14
+ * @version 1        
+ * @date 19/02/15
  */
 //********************************************************
 

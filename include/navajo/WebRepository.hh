@@ -2,7 +2,7 @@
 /**
  * @file  WebRepository.hh 
  *
- * @brief Web Repository abstract class
+ * @brief Web Repository handler (abstract class)
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *

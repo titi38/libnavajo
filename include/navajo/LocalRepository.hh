@@ -1,18 +1,18 @@
 //********************************************************
 /**
- * @file  LocalRepository.hh 
+ * @file  LocalRepository.hh
  *
- * @brief Local aliases manager for webserver
+ * @brief Handles local web repository
  *
- * @author T.Descombes (descombes@lpsc.in2p3.fr)
+ * @author T.Descombes (thierry.descombes@gmail.com)
  *
- * @version 1	
- * @date 27/01/14
+ * @version 1        
+ * @date 19/02/15
  */
 //********************************************************
  
-#ifndef LocalRepository_HH_
-#define LocalRepository_HH_
+#ifndef LOCALREPOSITORY_HH_
+#define LOCALREPOSITORY_HH_
 
 #include "WebRepository.hh"
 

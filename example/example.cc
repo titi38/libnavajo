@@ -2,7 +2,7 @@
 /**
  * @file  example.cc 
  *
- * @brief libnavajo example.
+ * @brief libnavajo example code.
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *

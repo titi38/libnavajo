@@ -2,17 +2,17 @@
 /**
  * @file  PrecompiledRepository.hh
  *
- * @brief class to access the files of the precompiled HTTP Repository
+ * @brief Handles a precompiled web repository
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *
  * @version 1	
- * @date 19/02/10 
+ * @date 19/02/15
  */
 //********************************************************
 
-#ifndef PrecompiledRepository_HH_
-#define PrecompiledRepository_HH_
+#ifndef PRECOMPILEDREPOSITORY_HH_
+#define PRECOMPILEDREPOSITORY_HH_
 
 #include <string>
 #include <map>
