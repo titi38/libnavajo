@@ -1061,20 +1061,20 @@ void WebServer::poolThreadProcessing()
       }
       else
         authSSL=true;
-
-      if (authSSL)
-        accept_request(client,ssl); 
-      else
-      {
-        if (sslEnabled)
-        { SSL_shutdown(ssl); SSL_free(ssl); }
-        else 
-          accept_request(client);
-      }
-
-      shutdown (client, SHUT_RDWR);      
-      close(client);     
     }
+
+    if (authSSL)
+      accept_request(client,ssl); 
+    else
+    {
+      if (sslEnabled)
+      { SSL_shutdown(ssl); SSL_free(ssl); }
+      else 
+        accept_request(client);
+    }
+
+    shutdown (client, SHUT_RDWR);      
+    close(client);     
   }
   exitedThread++;
 
