@@ -90,7 +90,7 @@ rm -rf %{buildroot}
 %{_libdir}/lib*.so
 %{_libdir}/lib*.a
 %{_includedir}/*
-
+%{_bindir}/navajoPrecompiler
 
 %changelog
 * Thu Apr 16 2015 Thierry Descombes <thierry.descombes@gmail.com> 1.0.0-el6
