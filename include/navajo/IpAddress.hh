@@ -2,7 +2,7 @@
 /**
  * @file  IpAddress.hh
  *
- * @brief IpAddress V4 and V6 class definition
+ * @brief Ip Address (V4 and V6) class definition
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *

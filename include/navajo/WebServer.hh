@@ -217,7 +217,7 @@ class WebServer
     inline std::map<std::string,time_t>& getPeerDnHistory() { return peerDnHistory; };
  
     /**
-    * startService: the webserver starts working
+    * startService: the webserver starts
     */ 
     void startService()
     {
@@ -226,7 +226,7 @@ class WebServer
     };
     
     /**
-    * stopService: the webserver stops working
+    * stopService: the webserver stops
     */ 
     void stopService() 
     {
@@ -236,13 +236,16 @@ class WebServer
     };
     
     /**
-    * wait until the webserver stops working
+    * wait until the webserver is stopped
     */ 
     void wait()
     {
       wait_for_thread(threadWebServer);
     };
 
+    /**
+    * is the webserver runnning ?
+    */ 
     bool isRunning()
     {
       return threadWebServer != 0;

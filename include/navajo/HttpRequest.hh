@@ -38,7 +38,10 @@ class HttpRequest
   std::string sessionId;
 
   /**********************************************************************/
-
+  /**
+  * decode all http parameters and fill the parameters Map
+  * @param p: raw string containing all the http parameters
+  */  
   inline void decodParams( const std::string& p )
   {
     size_t start = 0, end = 0;
@@ -90,7 +93,11 @@ class HttpRequest
   };
 
   /**********************************************************************/
-
+  /**
+  * decode all http cookies and fill the cookies Map
+  * @param c: raw string containing all the cockies definitions
+  */  
+  
   inline void decodCookies( const std::string& c )
   {
     std::stringstream ss(c);
@@ -111,7 +118,11 @@ class HttpRequest
   public:
   
     /**********************************************************************/
-
+    /**
+    * get cookie value
+    * @param name: the cookie name
+    */  
+  
     inline std::string getCookie( const std::string& name ) const
     {
       std::string res="";
@@ -120,7 +131,12 @@ class HttpRequest
     }
     
     /**********************************************************************/
-  
+    /**
+    * get cookie value
+    * @param name: the cookie name
+    * @param value: the cookie value
+    * @return true is the cookie exist
+    */  
     inline bool getCookie( const std::string& name, std::string &value ) const
     {
       if(!cookies.empty())
@@ -136,7 +152,10 @@ class HttpRequest
     }
     
     /**********************************************************************/
-
+    /**
+    * get cookies list
+    * @return a vector containing all cookies names
+    */ 
     inline std::vector<std::string> getCookiesNames() const
     {
       std::vector<std::string> res;
@@ -146,7 +165,12 @@ class HttpRequest
     }
 
     /**********************************************************************/
-  
+    /**
+    * get parameter value
+    * @param name: the parameter name
+    * @param value: the parameter value
+    * @return true is the parameter exist
+    */   
     inline bool getParameter( const std::string& name, std::string &value ) const
     {
       if(!parameters.empty())
@@ -162,7 +186,11 @@ class HttpRequest
     }
 
     /**********************************************************************/
-
+    /**
+    * get parameter value
+    * @param name: the parameter name
+    * @return the parameter value
+    */  
     inline std::string getParameter( const std::string& name ) const
     {
       std::string res="";
@@ -171,7 +199,11 @@ class HttpRequest
     }
     
     /**********************************************************************/
-
+    /**
+    * does the parameter exist ?
+    * @param name: the parameter name
+    * @return true is the parameter exist
+    */   
     inline bool hasParameter( const std::string& name ) const
     {
       std::string tmp;
@@ -179,7 +211,10 @@ class HttpRequest
     }
 
     /**********************************************************************/
-
+    /**
+    * get parameters list
+    * @return a vector containing all parameters names
+    */ 
     inline std::vector<std::string> getParameterNames() const
     {
       std::vector<std::string> res;
@@ -189,7 +224,10 @@ class HttpRequest
     }
     
     /**********************************************************************/
-
+    /**
+    * is there a session cookie
+    * @param b: if true (default), create a server session if none exists
+    */ 
     inline void getSession(bool b = true)
     {
       sessionId = getCookie("SID");
@@ -200,42 +238,77 @@ class HttpRequest
       if (b)
          HttpSession::create(sessionId);
     }
-
+    
+    /**
+    * remove the server session
+    */ 
     inline void removeSession()
     {
       if (sessionId == "") getSession();
       HttpSession::remove(sessionId);
     }
 
+    /**
+    * add an attribute to the server session
+    * @param name: the attribute name
+    * @param value: the attribute value
+    */ 
     void setSessionAttribute ( const std::string &name, void* value )
     {
       if (sessionId == "") getSession();
       HttpSession::setAttribute(sessionId, name, value);
     }
-      
+    
+    /**
+    * get an attribute of the server session
+    * @param name: the attribute name
+    * @return the attribute value
+    */ 
     void *getSessionAttribute( const std::string &name )
     {
       if (sessionId == "") getSession();
       return HttpSession::getAttribute(sessionId, name);
     }
-
+    
+    /**
+    * get the list of the attribute's Names of the server session
+    * @return a vector containing all attribute's names
+    */ 
     inline std::vector<std::string> getSessionAttributeNames()
     {
       if (sessionId == "") getSession();
       return HttpSession::getAttributeNames(sessionId);
     }
 
+    /**
+    * remove an attribute of the server session (if found)
+    * @param name: the attribute name
+    */ 
     inline void getSessionRemoveAttribute( const std::string &name )
     {
       if (sessionId == "") getSession();
       HttpSession::removeAttribute( sessionId, name );
     }
 
+    /**
+    * initialize sessionId value
+    */ 
     inline void initSessionId() { sessionId = ""; };
+
+    /**
+    * get sessionId value
+    * @return the sessionId value
+    */    
     std::string getSessionId() const { return sessionId; };
 
     /**********************************************************************/
-        
+    /**
+    * HttpRequest constructor
+    * @param type:  the Http Request Type ( GET/POST/...)
+    * @param url:  the requested url
+    * @param params:  raw http parameters string
+    * @cookies params: raw http cookies string
+    */         
     HttpRequest(const HttpRequestType type, const char *url, const char *params, const char *cookies) 
     { 
       typeRequest = type;
@@ -247,7 +320,16 @@ class HttpRequest
       initSessionId();
     };
     
+    /**
+    * get url    
+    * @return the requested url
+    */
     inline const char *getUrl() const { return urlRequest; };
+    
+    /**
+    * get request type    
+    * @return the Http Request Type ( GET/POST/...)
+    */
     inline HttpRequestType getRequestType() const { return typeRequest; };
     
 };

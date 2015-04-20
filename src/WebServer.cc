@@ -3,8 +3,8 @@
  * @file  WebServer.cc 
  *
  * @brief HTTP multithreaded Server 
- * rfc2660 rfc2616 compliant (HTTP1.1)
- * rfc5280 X509 authentification
+ *        rfc2660 rfc2616 compliant (HTTP1.1)
+ *        rfc5280 X509 authentification
  *
  * @author T.Descombes (thierry.descombes@gmail.com)
  *

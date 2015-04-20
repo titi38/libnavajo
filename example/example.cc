@@ -101,7 +101,7 @@ int main()
   webServer->addRepository(&thePrecompRepo);
 
   LocalRepository myLocalRepo;
-  myLocalRepo.addDirectory("toto/tata", "./exampleRepository/");
+  myLocalRepo.addDirectory("docs", "../docs/html"); // if doxygen documentation is generated in "docs" folder, we will browse it at http://localhost:8080/docs/index.html
   // myLocalRepo.addDirectory(WEB_LOCATION, DIRECTORY);
   webServer->addRepository(&myLocalRepo);
 

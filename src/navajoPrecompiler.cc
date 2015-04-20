@@ -2,8 +2,7 @@
 /**
  * @file  navajoPrecompiler.cc 
  *
- * @brief Generate a C++ PrecompiledRepository class from
- *        a given webrepository
+ * @brief Tool to generate a C++ PrecompiledRepository class
  *
  * @author T.Descombes (thierry.descombes@gmail.com)
  *

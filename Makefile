@@ -98,6 +98,10 @@ clean::
 	@for i in $(LIBNAVAJO_OBJS); do  rm -f $$i ; done
 	$(MAKE) -C example -f Makefile $@
 
+docs::
+	@mkdir -p docs
+	@doxygen doxygen.conf
+
 $(LIB_SHARED_NAME): $(LIBNAVAJO_OBJS)
 	@rm -f $(LIB_DIR)/$@;
 	@[[ -d $(LIB_DIR) ]] || mkdir -p $(LIB_DIR)
@@ -135,7 +139,6 @@ install: $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
 uninstall:
 	@rm -rf $(PREFIX)/$(INC_DIR)/navajo \
 	@rm -f $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_NAME) $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_ALIAS) $(PREFIX)/$(LIB_DIR)/$(LIB_STATIC_NAME); \
-
 #	cd $(man3dir); rm -f libnavajo.3
 
 

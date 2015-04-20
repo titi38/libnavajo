@@ -2,7 +2,7 @@
 /**
  * @file  LogFile.cc
  *
- * @brief write log messages to a file
+ * @brief Write log messages to a file
  *
  * @author T.Descombes (thierry.descombes@gmail.com)
  *
