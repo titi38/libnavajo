@@ -27,12 +27,17 @@ class HttpSession
   static HttpSessionsContainerMap sessions;
   static pthread_mutex_t sessions_mutex; 
   static time_t lastExpirationSearchTime;
+  static time_t sessionLifeTime;
   
   public:
 
+    inline static void setSessionLifeTime(const time_t sec) { sessionLifeTime = sec; };
+
+    inline static time_t getSessionLifeTime() { return sessionLifeTime; };
+
     /**********************************************************************/
 
-    static void create(std::string& id, time_t sessionLifeTime=20*60)
+    static void create(std::string& id)
     {
 
       const size_t idLength=128;
@@ -57,8 +62,8 @@ class HttpSession
       *expiration=time(NULL)+sessionLifeTime;
       setAttribute(id, "session_expiration", expiration);
       
-      // look for expired session
-  //    if (time(NULL) - lastExpirationSearchTime > 60)
+      // look for expired session (max every minute)
+      if (time(NULL) > lastExpirationSearchTime + 60)
       {
         removeExpiredSession();
         lastExpirationSearchTime = time(NULL);
@@ -67,7 +72,7 @@ class HttpSession
     
     /**********************************************************************/
 
-    static void updateExpiration(const std::string& id, time_t sessionLifeTime=20*60)
+    static void updateExpiration(const std::string& id)
     {
       time_t *expiration=(time_t*)getAttribute(id, "session_expiration");
       if (expiration != NULL)

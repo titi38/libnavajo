@@ -79,6 +79,7 @@ pthread_mutex_t IpAddress::resolvIP_mutex = PTHREAD_MUTEX_INITIALIZER;
 HttpSession::HttpSessionsContainerMap HttpSession::sessions;
 pthread_mutex_t HttpSession::sessions_mutex=PTHREAD_MUTEX_INITIALIZER;
 time_t HttpSession::lastExpirationSearchTime=0;
+time_t HttpSession::sessionLifeTime=20*60;
 
 /*********************************************************************/
 
@@ -232,7 +233,7 @@ bool WebServer::isUserAllowed(const string &pwdb64)
 
 /***********************************************************************
 * recvLine:  Receive an ascii line from a socket
-* \param c - the socket connected to the client
+* @param c - the socket connected to the client
 * \return always NULL
 ***********************************************************************/
 
@@ -257,19 +258,19 @@ size_t WebServer::recvLine(int client, char *bufLine, size_t nsize)
 
 /***********************************************************************
 * accept_request:  Process a request
-* \param c - the socket connected to the client
+* @param c - the socket connected to the client
 * \return always NULL
 ***********************************************************************/
 
 void WebServer::accept_request(int client, SSL *ssl)
 {
   char bufLine[BUFSIZE];
-
   HttpRequestType requestType;
   size_t postContentLength=0;
   bool postContentTypeOk=false;
   char url[BUFSIZE];
-  //char paramsGet[255];
+  size_t nbFileKeepAlive=5;
+
   char requestParams[BUFSIZE], requestCookies[BUFSIZE];
   struct stat st;
   size_t bufLineLen=0;
@@ -327,7 +328,6 @@ void WebServer::accept_request(int client, SSL *ssl)
               SSL_shutdown(ssl);
             }
             SSL_free(ssl);
-            //close(client);
             return ;      
         }
       }
@@ -338,9 +338,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       {
         if (sslEnabled)
           { SSL_shutdown(ssl); SSL_free(ssl); }
-        //shutdown (client, SHUT_RDWR);      
-        ///close(client);
-            return ;
+        return ;
       }
 
       if ( bufLineLen <= 2) 
@@ -410,10 +408,9 @@ void WebServer::accept_request(int client, SSL *ssl)
 
     if (!authOK)
     {
-      std::string msg = getHttpHeader( "401 Authorization Required", ".html", false);
+      std::string msg = getHttpHeader( "401 Authorization Required", 0, false);
       httpSend(client, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-//      close(client);
       return ;
     }
 
@@ -422,7 +419,6 @@ void WebServer::accept_request(int client, SSL *ssl)
       std::string msg = getNotImplementedErrorMsg();
       httpSend(client, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-//        close(client);
       return ;
     }
 
@@ -437,12 +433,11 @@ void WebServer::accept_request(int client, SSL *ssl)
     if (keepAlive==-1) 
       keepAlive = ( strncmp (httpVers,"1.1", 3) >= 0 );
 
-    if (strcmp(url,"/") == 0)
-        strcpy (url, "/index.html");
+    if ( (url[strlen(url) - 1] == '/') && (strlen(url)+12 < BUFSIZE) )
+        strcpy (url + strlen(url) - 1, "/index.html");
 
     unsigned char *webpage = NULL;
     size_t webpageLen = 0;
-    std::vector<std::string> responseCookie;
     unsigned char *gzipWebPage=NULL;
     int sizeZip=0;
     bool fileFound=false, zippedFile=false;
@@ -452,7 +447,7 @@ void WebServer::accept_request(int client, SSL *ssl)
 #endif
 
     HttpRequest request(requestType, url+1, requestParams, requestCookies);
-    HttpResponse response;
+    HttpResponse response(get_mime_type(url+1));
 
     std::vector<WebRepository *>::const_iterator repo=webRepositories.begin();
     for( ; repo!=webRepositories.end() && !fileFound && !zippedFile; repo++)
@@ -470,13 +465,12 @@ void WebServer::accept_request(int client, SSL *ssl)
       std::string msg = getNotFoundErrorMsg();
       httpSend(client, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-//      close(client);
       return ;
     }
     else
     {
       repo--;
-      response.getResponse(&webpage, &webpageLen, &responseCookie, &zippedFile);
+      response.getContent(&webpage, &webpageLen, &zippedFile);
       if (zippedFile)
       {
         gzipWebPage = webpage;
@@ -496,7 +490,6 @@ void WebServer::accept_request(int client, SSL *ssl)
         std::string msg = getInternalServerErrorMsg();
         httpSend(client, (const void*) msg.c_str(), msg.length(), io);
         if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-//        close(client);
         return ;
       }
     }
@@ -504,7 +497,7 @@ void WebServer::accept_request(int client, SSL *ssl)
     // Need to compress
     if (!zippedFile && zipSupport && (webpageLen > 2048))
     {
-      const char *mimetype=get_mime_type(url+1);
+      const char *mimetype=response.getMimeType().c_str();
       if (mimetype != NULL && (strncmp(mimetype,"application",11) == 0 || strncmp(mimetype,"text",4) == 0))
       {  
         if ((int)(sizeZip=gzip( &gzipWebPage, webpage, webpageLen )) < 0)
@@ -513,7 +506,6 @@ void WebServer::accept_request(int client, SSL *ssl)
           std::string msg = getInternalServerErrorMsg();
           httpSend(client, (const void*) msg.c_str(), msg.length(), io);
           if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
-//          close(client);
           return ;
         }
         else
@@ -525,15 +517,17 @@ void WebServer::accept_request(int client, SSL *ssl)
       }
     }
 
+    if (keepAlive && !(--nbFileKeepAlive)) keepAlive=false;
+
     if (sizeZip>0 && zipSupport)
     {  
-      std::string header = getHttpHeader("200 OK", url+1, sizeZip, keepAlive, true, &responseCookie);
+      std::string header = getHttpHeader("200 OK", sizeZip, keepAlive, true, &response);
       httpSend(client, (const void*) header.c_str(), header.length(), io);
       httpSend(client, (const void*) gzipWebPage, sizeZip, io);
     }
     else
     {
-      std::string header = getHttpHeader("200 OK", url+1, webpageLen, keepAlive, false, &responseCookie);
+      std::string header = getHttpHeader("200 OK", webpageLen, keepAlive, false, &response);
       httpSend(client, (const void*) header.c_str(), header.length(), io);
       httpSend(client, (const void*) webpage, webpageLen, io);
     }
@@ -549,8 +543,6 @@ void WebServer::accept_request(int client, SSL *ssl)
   }
   while (keepAlive && !exiting);
 
-//  if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); };
-//  close(client);
 }
 
 /***********************************************************************
@@ -579,7 +571,7 @@ void WebServer::httpSend(int s, const void *buf, size_t len, BIO *io)
 
 /***********************************************************************
 * fatalError:  Print out a system error and exit
-* \param s - error message
+* @param s - error message
 ***********************************************************************/
 
 void WebServer::fatalError(const char *s)
@@ -591,8 +583,8 @@ void WebServer::fatalError(const char *s)
 
 /***********************************************************************
 * setSocketRcvTimeout:  Place a timeout on the socket
-* \param socket -  socket descriptor
-* \param seconds - number of seconds
+* @param socket -  socket descriptor
+* @param seconds - number of seconds
 * \return result of setsockopt (successfull: 0, otherwise -1)
 ***********************************************************************/
 
@@ -610,7 +602,7 @@ int WebServer::setSocketRcvTimeout(int socket, int seconds)
 
 /***********************************************************************
 * get_mime_type: return valid mime_type using filename's extension 
-* \param name - filename
+* @param name - filename
 * \return mime_type or NULL is no found
 ***********************************************************************/
 
@@ -652,15 +644,16 @@ const char* WebServer::get_mime_type(const char *name)
 }
 
 /***********************************************************************
-* sendHeader: generate HTTP header and send it to client
-* \param client - client socket descriptor
-* \param messageType - HTTP message type
-* \param filename - optional filename
-* \param len - optional file length
+* getHttpHeader: generate HTTP header
+* @param messageType - client socket descriptor
+* @param len - HTTP message type
+* @param keepAlive 
+* @param zipped - true is content will be compressed
+* @param response - the HttpResponse
 * \return result of send function (successfull: >=0, otherwise <0)
 ***********************************************************************/
 
-std::string WebServer::getHttpHeader(const char *messageType, const char *filename, const size_t len, const bool keepAlive, const bool zipit, const std::vector<std::string>* respCookies)
+std::string WebServer::getHttpHeader(const char *messageType, const size_t len, const bool keepAlive, const bool zipped, HttpResponse* response)
 {
   char timeBuf[200];
   time_t rawtime;
@@ -674,9 +667,13 @@ std::string WebServer::getHttpHeader(const char *messageType, const char *filena
 
   header+=webServerName+"\r\n";
   
-  if (respCookies != NULL)
-    for (unsigned i=0; i < respCookies->size(); i++)
-      header+="Set-Cookie: "+(*respCookies)[i]+"\r\n";
+  if (response != NULL)
+  {
+    std::vector<std::string>& cookies=response->getCookies();
+    for (unsigned i=0; i < cookies.size(); i++)
+      header+="Set-Cookie: " + cookies[i] + "\r\n";
+  }
+   
   if (strncmp(messageType, "401", 3) == 0)
     header+=std::string("WWW-Authenticate: Basic realm=\"Restricted area: please enter Login/Password\"\r\n");
   header+="Accept-Ranges: bytes\r\n";
@@ -686,10 +683,12 @@ std::string WebServer::getHttpHeader(const char *messageType, const char *filena
   else
     header+="Connection: close\r\n";
 
-  const char *mimetype=get_mime_type(filename);
-  if (mimetype != NULL) { header+="Content-Type: ";  header+= std::string(mimetype) + "\r\n"; };
+  string mimetype="text/html";
+  if (response != NULL)
+    mimetype=response->getMimeType();
+  header+="Content-Type: "+ mimetype  + "\r\n";
   
-  if (zipit)
+  if (zipped)
     header+="Content-Encoding: gzip\r\n";
   
   if (len)
@@ -705,7 +704,7 @@ std::string WebServer::getHttpHeader(const char *messageType, const char *filena
 
 /**********************************************************************
 * sendBadRequestError: send a 400 Bad Request Message
-* \param client - client socket descriptor
+* @param client - client socket descriptor
 * \return result of send function (successfull: >=0, otherwise <0)
 ***********************************************************************/
 
@@ -714,7 +713,7 @@ std::string  WebServer::getBadRequestErrorMsg()
   std::string errorMessage="<HTML><HEAD>\n<TITLE>400 Bad Request</TITLE>\n</HEAD><body>\n<h1>Bad Request</h1>\n \
                 <p>Your browser sent a request that this server could not understand.<br />\n</p>\n</body></HTML>\n";
 
-  std::string header=getHttpHeader( "400 Bad Request", ".html", errorMessage.length(), false);
+  std::string header=getHttpHeader( "400 Bad Request", errorMessage.length(), false);
 
   return header+errorMessage;
 }
@@ -722,7 +721,7 @@ std::string  WebServer::getBadRequestErrorMsg()
 
 /***********************************************************************
 * sendNotFoundError: send a 404 not found error message
-* \param client - client socket descriptor
+* @param client - client socket descriptor
 * \return result of send function (successfull: >=0, otherwise <0)
 ***********************************************************************/
 
@@ -732,7 +731,7 @@ std::string WebServer::getNotFoundErrorMsg()
                 "<p>\n\n\nThe requested URL was not found on this server.\n\n\n\n    If you entered the URL manually please check your spelling and try again.\n\n\n</p>\n" \
                 "<h2>Error 404</h2></body></HTML>\n";
  
-  std::string header=getHttpHeader( "404 Not Found", ".html", errorMessage.length(), false );
+  std::string header=getHttpHeader( "404 Not Found", errorMessage.length(), false );
 
   return header+errorMessage;
 
@@ -741,7 +740,7 @@ std::string WebServer::getNotFoundErrorMsg()
 
 /***********************************************************************
 * sendInternalServerError: send a 500 Internal Server Error
-* \param client - client socket descriptor
+* @param client - client socket descriptor
 * \return result of send function (successfull: >=0, otherwise <0)
 ***********************************************************************/
 
@@ -750,7 +749,7 @@ std::string WebServer::getInternalServerErrorMsg()
   std::string errorMessage="<HTML><HEAD><TITLE>Internal Server Error!</TITLE><body><h1>Internal Server Error!</h1>\n" \
                 "<p>\n\n\nSomething happens.\n\n\n\n    If you entered the URL manually please check your spelling and try again.\n\n\n</p>\n" \
                 "<h2>Error 500</h2></body></HTML>\n";
-  std::string header=getHttpHeader( "500 Internal Server Error", ".html", errorMessage.length(), false );
+  std::string header=getHttpHeader( "500 Internal Server Error", errorMessage.length(), false );
 
   return header+errorMessage;
 }
@@ -758,7 +757,7 @@ std::string WebServer::getInternalServerErrorMsg()
 
 /***********************************************************************
 * sendInternalServerError: send a 501 Method Not Implemented
-* \param client - client socket descriptor
+* @param client - client socket descriptor
 * \return result of send function (successfull: >=0, otherwise <0)
 ***********************************************************************/
 
@@ -769,7 +768,7 @@ std::string WebServer::getNotImplementedErrorMsg()
                 "If you entered the URL manually please check your spelling and try again.\n\n\n</p>\n" \
                 "<h2>Error 501</h2></body></HTML>\n";
 
-  std::string header=getHttpHeader( "501 Method Not Implemented", ".html", errorMessage.length(), false );
+  std::string header=getHttpHeader( "501 Method Not Implemented", errorMessage.length(), false );
 
   return header+errorMessage;
 }
@@ -777,7 +776,7 @@ std::string WebServer::getNotImplementedErrorMsg()
 
 /***********************************************************************
 * init: Initialize server listening socket
-* \param port - port server to use. If port is 0, port value is modified
+* @param port - port server to use. If port is 0, port value is modified
 *                 dynamically.
 * \return Server socket descriptor
 ***********************************************************************/
@@ -1096,7 +1095,7 @@ void WebServer::initPoolThreads()
 
 /***********************************************************************
 * startThread: Launch http server
-* \param p - port server to use. If port is 0, port value will be modified
+* @param p - port server to use. If port is 0, port value will be modified
 *                 dynamically.
 * \return NULL
 ************************************************************************/
