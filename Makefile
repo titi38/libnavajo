@@ -5,7 +5,7 @@
 ##############################
 
 LIBNAVAJO_MVERSION= "1"
-LIBNAVAJO_VERSION=  "\"1.0.0a\""
+LIBNAVAJO_VERSION=  "\"1.0.0\""
 LIBNAVAJO_BUILD_DATE=`/bin/date +%s`
 
 

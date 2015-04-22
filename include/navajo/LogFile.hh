@@ -1,6 +1,6 @@
 //********************************************************
 /**
- * @file  LogFile.cc
+ * @file  LogFile.hh
  *
  * @brief Write log messages to a file
  *
