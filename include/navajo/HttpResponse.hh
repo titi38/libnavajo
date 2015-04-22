@@ -108,7 +108,7 @@ class HttpResponse
 
       if (secure) cookieEntry+="; secure";
             
-      if (httpOnly) cookieEntry+="; httpOnly";
+      if (httpOnly) cookieEntry+="; HttpOnly";
       
       responseCookies.push_back(cookieEntry);
     }
@@ -126,6 +126,7 @@ class HttpResponse
     /************************************************************************/
     /**
     * get the http response's cookies
+    * @return the cookies vector
     */     
     inline std::vector<std::string>& getCookies()
     {

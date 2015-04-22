@@ -447,7 +447,9 @@ void WebServer::accept_request(int client, SSL *ssl)
 #endif
 
     HttpRequest request(requestType, url+1, requestParams, requestCookies);
-    HttpResponse response(get_mime_type(url+1));
+    const char *mime=get_mime_type(url+1); 
+    string mimeStr; if (mime != NULL) mimeStr=mime;
+    HttpResponse response(mimeStr);
 
     std::vector<WebRepository *>::const_iterator repo=webRepositories.begin();
     for( ; repo!=webRepositories.end() && !fileFound && !zippedFile; repo++)
