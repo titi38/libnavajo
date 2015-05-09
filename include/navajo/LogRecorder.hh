@@ -34,7 +34,7 @@ using namespace std;
   {
 
      pthread_mutex_t log_mutex;
-
+     bool debugMode;
      std::set<string> uniqLog; // Only one entry !
      
     public:
@@ -61,7 +61,7 @@ using namespace std;
 		
 	      theLogRecorder=NULL;
       }
-      
+      void setDebugMode(bool d=true) { debugMode=d; };
       void addLogOutput(LogOutput *);
       void removeLogOutputs();
       void append(const LogSeverity& l, const std::string& msg, const std::string& details="");

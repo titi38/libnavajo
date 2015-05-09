@@ -26,20 +26,18 @@
   {
     switch (l)
     {
-	case _DEBUG_:
-        case _WARNING_:
-	case _ALERT_:
-        case _INFO_:
-	  fprintf(stdout,"%s\n",message.c_str()); fflush(NULL);
-	  break;
-
-        case _ERROR_:
-        case _FATAL_:
-	default:
-	  fprintf(stderr,"%s\n",message.c_str()); 
-	  break;
+      case _DEBUG_:
+      case _WARNING_:
+      case _ALERT_:
+      case _INFO_:
+        fprintf(stdout,"%s\n",message.c_str()); fflush(NULL);
+        break;
+      case _ERROR_:
+      case _FATAL_:
+      default:
+        fprintf(stderr,"%s\n",message.c_str()); 
+        break;
     }
-
   }
 
   /***********************************************************************/

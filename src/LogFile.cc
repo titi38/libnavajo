@@ -40,8 +40,8 @@
 
     if (file->fail())
     {
-    	cerr <<"Can't open " << filename << endl;
-    	exit(1);
+      	cerr <<"Can't open " << filename << endl;
+      	exit(1);
     }
   }
 
@@ -65,11 +65,11 @@
 
   LogFile::~LogFile()
   {
-      if (file!=NULL)
-      {
-        file->close();
+    if (file!=NULL)
+    {
+      file->close();
       	delete file;
-      }
+    }
   }
 
   /***********************************************************************/

@@ -228,45 +228,50 @@ class HttpRequest
     * is there a session cookie
     * @param b: if true (default), create a server session if none exists
     */ 
-    inline void getSession(bool b = true)
+    inline void getSession()
     {
       sessionId = getCookie("SID");
-      
       if (sessionId.length() && HttpSession::find(sessionId))
         return;
-
-      if (b)
-         HttpSession::create(sessionId);
+      initSessionId();
     }
     
     /**
-    * remove the server session
+    * create the session cookie
+    */ 
+    inline void createSession()
+    {
+      HttpSession::create(sessionId);
+    }
+    
+    /**
+    * remove the session cookie
     */ 
     inline void removeSession()
     {
-      if (sessionId == "") getSession();
+      if (sessionId == "") return;
       HttpSession::remove(sessionId);
     }
 
     /**
-    * add an attribute to the server session
+    * add an attribute to the session
     * @param name: the attribute name
     * @param value: the attribute value
     */ 
     void setSessionAttribute ( const std::string &name, void* value )
     {
-      if (sessionId == "") getSession();
+      if (sessionId == "") createSession();
       HttpSession::setAttribute(sessionId, name, value);
     }
     
     /**
     * get an attribute of the server session
     * @param name: the attribute name
-    * @return the attribute value
+    * @return the attribute value or NULL if not found
     */ 
     void *getSessionAttribute( const std::string &name )
     {
-      if (sessionId == "") getSession();
+      if (sessionId == "") return NULL;
       return HttpSession::getAttribute(sessionId, name);
     }
     
@@ -276,7 +281,7 @@ class HttpRequest
     */ 
     inline std::vector<std::string> getSessionAttributeNames()
     {
-      if (sessionId == "") getSession();
+      if (sessionId == "") return std::vector<std::string>();;
       return HttpSession::getAttributeNames(sessionId);
     }
 
@@ -286,8 +291,8 @@ class HttpRequest
     */ 
     inline void getSessionRemoveAttribute( const std::string &name )
     {
-      if (sessionId == "") getSession();
-      HttpSession::removeAttribute( sessionId, name );
+      if (sessionId != "")
+        HttpSession::removeAttribute( sessionId, name );
     }
 
     /**
@@ -317,7 +322,7 @@ class HttpRequest
         decodParams(params);
       if (cookies != NULL && strlen(cookies))
         decodCookies(cookies);        
-      initSessionId();
+      getSession();
     };
     
     /**

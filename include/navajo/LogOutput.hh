@@ -18,10 +18,10 @@
 
       typedef enum 
       {
-		_DEBUG_,
+        _DEBUG_,
         _INFO_,
         _WARNING_,
-		_ALERT_,
+        _ALERT_,
         _ERROR_,
         _FATAL_
       } LogSeverity;
@@ -29,12 +29,12 @@
 
   class LogOutput
   {
-        bool withDateTime;
-	bool withEndline;
+    bool withDateTime;
+    bool withEndline;
 
     protected:
-	inline void setWithDateTime(bool b) { withDateTime=b; };
-	inline void setWithEndline(bool b) { withEndline=b; };
+      inline void setWithDateTime(bool b) { withDateTime=b; };
+      inline void setWithEndline(bool b) { withEndline=b; };
 
  
     public:

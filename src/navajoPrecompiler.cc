@@ -14,7 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <dirent.h>
+#include <vector>
+#include <string>
 
 void dump_buffer(FILE *f, unsigned n, const unsigned char* buf)
 {
@@ -57,12 +59,55 @@ char * str_replace_first(char * buffer, const char * s, const char * by)
 
 typedef struct
 {
-  char *URL;
-  char *varName;
+  std::string URL;
+  std::string varName;
   size_t length;
 }  ConversionEntry;
 
+std::vector< std::string > filenamesVec;
 
+/**********************************************************************/
+
+bool loadFilename_dir (const std::string& path, const std::string& subpath="")
+{
+    struct dirent *entry;
+    int ret = 1;
+    DIR *dir;
+    std::string fullPath=path+'/'+subpath;
+
+    std::string spath=subpath;
+	  if (subpath != "")
+      spath+='/';
+
+    dir = opendir (fullPath.c_str());
+    if (dir == NULL) return false;
+    while ((entry = readdir (dir)) != NULL ) 
+    {
+	    if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) continue;
+      
+	    if ((entry->d_type == DT_REG || entry->d_type == DT_LNK) && strlen(entry->d_name) )
+        filenamesVec.push_back(spath+entry->d_name);
+
+	    if (entry->d_type == DT_DIR)
+	      loadFilename_dir(path, spath+entry->d_name);
+    }
+    return true;
+}
+
+/**********************************************************************/
+
+void parseDirectory( const std::string& dirPath )
+{
+  char resolved_path[4096];
+  
+  if (realpath(dirPath.c_str(), resolved_path) == NULL)
+    return ;
+
+  if (!loadFilename_dir(resolved_path))
+	  return ;
+}
+
+/**********************************************************************/
 /**
 * @brief  Main function
 * @param argc the number of web files
@@ -71,31 +116,42 @@ typedef struct
 */ 
 int main (int argc, char *argv[])
 {
-	int count;
-
 	if (argc <= 1)
 	{
-		printf("Usage: %s [file ...]\n", argv[0]);
-		printf("   ex: %s `find . -type f | cut -c 3-` > PrecompiledRepository.cc\n\n",  argv[0]);
+		printf("Usage: %s [dir ...]\n", argv[0]);
+//		printf("   ex: %s `find . -type f | cut -c 3-` > PrecompiledRepository.cc\n\n",  argv[0]);
 		fflush(NULL);
 		exit(EXIT_FAILURE);
 	}
 
-	ConversionEntry* conversionTable= (ConversionEntry*) malloc( (argc-1) * sizeof(ConversionEntry));
+  std::string directory=argv[1];
+  while (directory.length() && directory[directory.length()-1] == '/')
+    directory = directory.substr(0,directory.length()-1);
+  parseDirectory(directory); 
+  if (!filenamesVec.size())
+  {
+		fprintf(stderr, "ERROR: The directory '%s' is empty or not fount !\n", directory.c_str()); 
+		exit(EXIT_FAILURE);
+  }
+
+	ConversionEntry* conversionTable= (ConversionEntry*) malloc( filenamesVec.size() * sizeof(ConversionEntry));
 
 	fprintf (stdout, "#include \"navajo/PrecompiledRepository.hh\"\n\n");
-
 	fprintf (stdout, "namespace webRepository\n{\n");
-	for (count = 1; count < argc; count++)
+
+	int i;
+	for (int i = 0; i < filenamesVec.size(); i++)
 	{
 
 		FILE * pFile;
 		size_t lSize;
 		unsigned char * buffer;
 
-		pFile = fopen ( argv[count] , "rb" );
+    std::string filename=directory + '/' + filenamesVec[i];
+
+		pFile = fopen ( filename.c_str() , "rb" );
 		if (pFile==NULL)
-		{ fprintf(stderr, "ERROR: can't read file: %s\n", argv[count]); exit (1); }
+		{ fprintf(stderr, "ERROR: can't read file: %s\n", filenamesVec[i].c_str()); exit (1); }
 
 		// obtain file size.
 		fseek (pFile , 0 , SEEK_END);
@@ -105,47 +161,44 @@ int main (int argc, char *argv[])
 		// allocate memory to contain the whole file.
 		buffer = (unsigned char*) malloc (lSize);
 		if (buffer == NULL)
- 		{ fprintf(stderr, "ERROR: can't malloc reading file: %s\n", argv[count]); exit (2); }
+ 		{ fprintf(stderr, "ERROR: can't malloc reading file: %s\n", filenamesVec[i].c_str()); exit (2); }
 
 		// copy the file into the buffer.
 		if (fread (buffer,1,lSize,pFile) != lSize)
 		{
-		  fprintf(stderr,"\nCan't read file %s ... ABORT !\n", argv[count] );
+		  fprintf(stderr,"\nCan't read file %s ... ABORT !\n", filenamesVec[i].c_str() );
 		  exit(1);
 		};
 
-		/*** the whole file is loaded in the buffer. ***/
-
 		/*** write it in the C++ format ***/
-		char outFilename[100];
-		snprintf( outFilename, 100, "%s", argv[count] );
 		FILE *outFile = stdout; //fopen ( outFilename  , "w" );
-		while (str_replace_first(outFilename, ".", "_") != NULL);
-		while (str_replace_first(outFilename, "/", "_") != NULL);
-		while (str_replace_first(outFilename, " ", "_") != NULL);
-		while (str_replace_first(outFilename, "-", "_") != NULL);
-		fprintf (stdout, "  static const unsigned char %s[] =\n", outFilename);
+
+		std::string outFilename = filenamesVec[i];
+    std::replace( outFilename.begin(), outFilename.end(), '.', '_'); 
+    std::replace( outFilename.begin(), outFilename.end(), '/', '_'); 
+    std::replace( outFilename.begin(), outFilename.end(), ' ', '_'); 
+    std::replace( outFilename.begin(), outFilename.end(), '-', '_'); 
+
+		fprintf (stdout, "  static const unsigned char %s[] =\n", outFilename.c_str());
 		fprintf (stdout, "  {\n" );
 		dump_buffer(stdout,lSize, const_cast<unsigned char*>(buffer));
 		fprintf (stdout, "\n  };\n\n");
 		fclose (pFile);
 		free (buffer);
 
-		(*(conversionTable+count-1)).URL = argv[count];
-		(*(conversionTable+count-1)).varName = (char*) malloc ((strlen(outFilename)+1)*sizeof(char));
-		(*(conversionTable+count-1)).length = lSize;
-		strcpy ((*(conversionTable+count-1)).varName, outFilename);
+		(*(conversionTable+i)).URL = filenamesVec[i];
+		(*(conversionTable+i)).varName = outFilename;
+		(*(conversionTable+i)).length = lSize;
 	}
 	
   fprintf (stdout, "}\n\n");
   
   fprintf (stdout, "PrecompiledRepository::IndexMap PrecompiledRepository::indexMap;\n");
   fprintf (stdout,"\nvoid PrecompiledRepository::initIndexMap()\n{\n");
-  
-	for (count = 1; count < argc; count++)
+
+	for (i = 0; i < filenamesVec.size(); i++)
 	{
-		fprintf (stdout,"    indexMap.insert(IndexMap::value_type(\"%s\",PrecompiledRepository::WebStaticPage((const unsigned char*)&webRepository::%s, sizeof webRepository::%s)));\n", (*(conversionTable+count-1)).URL, (*(conversionTable+count-1)).varName, (*(conversionTable+count-1)).varName );
-		free ((*(conversionTable+count-1)).varName);
+		fprintf (stdout,"    indexMap.insert(IndexMap::value_type(\"%s\",PrecompiledRepository::WebStaticPage((const unsigned char*)&webRepository::%s, sizeof webRepository::%s)));\n", (*(conversionTable+i)).URL.c_str(), (*(conversionTable+i)).varName.c_str(), (*(conversionTable+i)).varName.c_str() );
 	}
 	fprintf (stdout,"}\n");
   free (conversionTable);

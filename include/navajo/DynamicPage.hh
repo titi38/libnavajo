@@ -28,8 +28,19 @@ class DynamicPage
     /**********************************************************************/
      
     template<class T> static inline T getValue (string s)
-        { if (!s.length()) return (T)-1; 
-	     std::istringstream iss(s); T tmp; iss>>tmp;  return tmp; };
+    { 
+      if (!s.length())
+       throw std::bad_cast();
+       
+	     std::istringstream iss(s); 
+	     T tmp; iss>>tmp;   
+	       
+	     if(iss.fail())
+	       throw std::bad_cast();
+	      
+	      return tmp;
+
+	  };
     
     /**********************************************************************/
 

@@ -3,7 +3,7 @@
  * @file  WebServer.cc 
  *
  * @brief HTTP multithreaded Server 
- *        rfc2660 rfc2616 compliant (HTTP1.1)
+ *        rfc2616 compliant (HTTP1.1)
  *        rfc5280 X509 authentification
  *
  * @author T.Descombes (thierry.descombes@gmail.com)
@@ -473,6 +473,15 @@ void WebServer::accept_request(int client, SSL *ssl)
     {
       repo--;
       response.getContent(&webpage, &webpageLen, &zippedFile);
+      
+      if ( webpage == NULL || !webpageLen)
+      {
+        std::string msg = getNoContentErrorMsg();
+        httpSend(client, (const void*) msg.c_str(), msg.length(), io);
+        if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
+        return;
+      }
+        
       if (zippedFile)
       {
         gzipWebPage = webpage;
@@ -535,10 +544,18 @@ void WebServer::accept_request(int client, SSL *ssl)
     }
 
     if (sizeZip>0 && !zippedFile) // cas compression = double desalloc
+    {
       free (gzipWebPage);
+      (*repo)->freeFile(webpage); 
+      continue;
+    }
 
     if (!zipSupport && zippedFile) // cas décompression = double desalloc
+    {
       free (webpage);
+      (*repo)->freeFile(gzipWebPage);
+      continue;
+    }
 
     (*repo)->freeFile(webpage); 
 
@@ -705,9 +722,21 @@ std::string WebServer::getHttpHeader(const char *messageType, const size_t len, 
 
 
 /**********************************************************************
+* getNoContentErrorMsg: send a 204 No Content Message
+* \return the http message to send
+***********************************************************************/
+
+std::string WebServer::getNoContentErrorMsg()
+{
+  std::string header=getHttpHeader( "204 No Content", 0, false );
+
+  return header;
+
+}
+
+/**********************************************************************
 * sendBadRequestError: send a 400 Bad Request Message
-* @param client - client socket descriptor
-* \return result of send function (successfull: >=0, otherwise <0)
+* \return the http message to send
 ***********************************************************************/
 
 std::string  WebServer::getBadRequestErrorMsg()
@@ -720,11 +749,9 @@ std::string  WebServer::getBadRequestErrorMsg()
   return header+errorMessage;
 }
 
-
 /***********************************************************************
 * sendNotFoundError: send a 404 not found error message
-* @param client - client socket descriptor
-* \return result of send function (successfull: >=0, otherwise <0)
+* \return the http message to send
 ***********************************************************************/
 
 std::string WebServer::getNotFoundErrorMsg()
@@ -739,11 +766,9 @@ std::string WebServer::getNotFoundErrorMsg()
 
 }
 
-
 /***********************************************************************
 * sendInternalServerError: send a 500 Internal Server Error
-* @param client - client socket descriptor
-* \return result of send function (successfull: >=0, otherwise <0)
+* \return the http message to send
 ***********************************************************************/
 
 std::string WebServer::getInternalServerErrorMsg()
@@ -759,8 +784,7 @@ std::string WebServer::getInternalServerErrorMsg()
 
 /***********************************************************************
 * sendInternalServerError: send a 501 Method Not Implemented
-* @param client - client socket descriptor
-* \return result of send function (successfull: >=0, otherwise <0)
+* \return the http message to send
 ***********************************************************************/
 
 std::string WebServer::getNotImplementedErrorMsg()
@@ -778,9 +802,7 @@ std::string WebServer::getNotImplementedErrorMsg()
 
 /***********************************************************************
 * init: Initialize server listening socket
-* @param port - port server to use. If port is 0, port value is modified
-*                 dynamically.
-* \return Server socket descriptor
+* \return Port server used
 ***********************************************************************/
 
 u_short WebServer::init()
@@ -945,7 +967,7 @@ int WebServer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 * initialize_ctx: 
 ************************************************************************/
 
-void WebServer::initialize_ctx(const char *keyfile, const char *certfile, const char *password)
+void WebServer::initialize_ctx(const char *certfile, const char *cafile, const char *password)
 {
   /* Global system initialization*/
   SSL_library_init();
@@ -955,7 +977,7 @@ void WebServer::initialize_ctx(const char *keyfile, const char *certfile, const 
   sslCtx=SSL_CTX_new(SSLv23_method());
 
   /* Load our keys and certificates*/
-  if(!(SSL_CTX_use_certificate_chain_file(sslCtx, keyfile)))
+  if(!(SSL_CTX_use_certificate_chain_file(sslCtx, certfile)))
   {
     LOG->append(_FATAL_,"OpenSSL error: Can't read certificate file");
     ::exit(1);
@@ -963,7 +985,7 @@ void WebServer::initialize_ctx(const char *keyfile, const char *certfile, const 
 
   certpass=(char*)password;
   SSL_CTX_set_default_passwd_cb(sslCtx, WebServer::password_cb);
-  if(!(SSL_CTX_use_PrivateKey_file(sslCtx, keyfile,SSL_FILETYPE_PEM)))
+  if(!(SSL_CTX_use_PrivateKey_file(sslCtx, certfile, SSL_FILETYPE_PEM)))
   {
     LOG->append(_FATAL_,"OpenSSL error: Can't read key file");
     ::exit(1);
@@ -973,7 +995,7 @@ void WebServer::initialize_ctx(const char *keyfile, const char *certfile, const 
 
   if ( authPeerSsl )
   {
-      if(!(SSL_CTX_load_verify_locations(sslCtx, certfile,0)))
+      if(!(SSL_CTX_load_verify_locations(sslCtx, cafile,0)))
       {
         LOG->append(_FATAL_,"OpenSSL error: Can't read CA list");
         ::exit(1);
@@ -1235,7 +1257,10 @@ void WebServer::threadProcessing()
 }
 
 /***********************************************************************
-* base64_decode: 
+* base64_decode 
+  thanks to  René Nyffenegger rene.nyffenegger@adp-gmbh.ch for his
+  public implementation of this algorithm
+*
 ************************************************************************/
 
 std::string WebServer::base64_decode(const std::string& encoded_string)

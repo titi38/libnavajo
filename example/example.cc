@@ -29,40 +29,38 @@ class MyDynamicPage: public DynamicPage
 {
   bool getPage(HttpRequest* request, HttpResponse *response)
   {
-    return fromString(getPageString(request), response);
-  }
-  
-  string getPageString(HttpRequest* request)
-  {
     // example using session's object
-    int *cptExample=(int*)malloc(sizeof(int));
-    *cptExample=0;
+    int *cptExample=NULL;
     
     void *myAttribute = request->getSessionAttribute("myAttribute");
     if (myAttribute == NULL)
+    {
+      cptExample=(int*)malloc(sizeof(int));
+      *cptExample=0;
       request->setSessionAttribute ( "myAttribute", (void*)cptExample );
+    }
     else
       cptExample=(int*)request->getSessionAttribute("myAttribute");
 
     *cptExample=*cptExample+1;    
     //
 
-    string response="<HTML><BODY>";
+    string content="<HTML><BODY>";
     string param;
     if (request->getParameter("param1", param))
     {
       //int pint=getValue<int>(param);
-      response+="param1 has been set to "+param;
+      content+="param1 has been set to "+param;
     }
     else
-      response+="param1 hasn't been set";
+      content+="param1 hasn't been set";
 
     stringstream myAttributess; myAttributess << *cptExample;
-    response+="<BR>my session attribute myAttribute contains "+myAttributess.str();
+    content+="<BR/>my session attribute myAttribute contains "+myAttributess.str();
 
-    response+="<HTML><BODY>";
+    content+="</BODY></HTML>";
    
-    return response;
+    return fromString(content, response);
   }
 };
 
@@ -81,10 +79,10 @@ int main()
   webServer->listenTo(8080);
 //  webServer->setThreadsPoolSize(1);
   //uncomment to switch to https
-  //webServer->setUseSSL(true, "serverCert.pem", "caFile.crt");
+  //webServer->setUseSSL(true, "serverCert.pem", "MyPwd");
 
   //uncomment to active X509 auth
-  //webServer->setAuthPeerSSL();
+  //webServer->setAuthPeerSSL(true, "cachain.pem");
   //webServer->addAuthPeerDN("/C=FR/O=CNRS/OU=UMR5821/CN=Thierry Descombes/emailAddress=thierry.descombes@lpsc.in2p3.fr");
 
   //webServer->addHostsAllowed(IpNetwork(string("134.158.40.0/21")));
@@ -97,17 +95,17 @@ int main()
 
 
   // Fill the web repository with local files, statically compiled files or dynamic files
-  PrecompiledRepository thePrecompRepo;
+  PrecompiledRepository thePrecompRepo  ;
   webServer->addRepository(&thePrecompRepo);
 
   LocalRepository myLocalRepo;
-  myLocalRepo.addDirectory("docs", "../docs/html"); // if doxygen documentation is generated in "docs" folder, we will browse it at http://localhost:8080/docs/index.html
+  myLocalRepo.addDirectory("/docs", "../docs/html"); // if doxygen documentation is generated in "docs" folder, we will browse it at http://localhost:8080/docs/index.html
   // myLocalRepo.addDirectory(WEB_LOCATION, DIRECTORY);
   webServer->addRepository(&myLocalRepo);
 
   MyDynamicPage page1;
   DynamicRepository myRepo;
-  myRepo.add("dynpage.html",&page1); // unusual html extension for a dynamic page !
+  myRepo.add("/dynpage.html",&page1); // unusual html extension for a dynamic page !
   webServer->addRepository(&myRepo);
 
   webServer->startService();
@@ -115,6 +113,7 @@ int main()
   // Your Processing here !
   //...
   webServer->wait();
-
+  
+  LogRecorder::freeInstance();
   return 0;
 }

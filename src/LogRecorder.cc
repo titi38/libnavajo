@@ -53,21 +53,21 @@
   {
     pthread_mutex_lock( &log_mutex );
 
-    if (l != _DEBUG_)
+    if (l != _DEBUG_ || debugMode)
     {
       for( std::list<LogOutput *>::iterator it=logOutputsList_.begin(); 
            it!=logOutputsList_.end(); 
-	   it++ )
+     it++ )
       {
-	std::string msg;
+        std::string msg;
 
-	if ((*it)->isWithDateTime())
-	  msg=getDateStr() + m;
-	else msg=m;
+        if ((*it)->isWithDateTime())
+          msg=getDateStr() + m;
+        else msg=m;
 
-	if ((*it)->isWithEndline())
-	   msg+= std::string("\n") ;
-	   
+        if ((*it)->isWithEndline())
+          msg+= std::string("\n") ;
+     
         (*it)->append(l, msg, details);
       }
     }   
@@ -95,7 +95,7 @@
   {
     for( std::list<LogOutput *>::iterator it=logOutputsList_.begin(); 
            it!=logOutputsList_.end(); 
-	   it++ )
+     it++ )
       delete *it;
 
     logOutputsList_.clear();
@@ -108,6 +108,7 @@
 
   LogRecorder::LogRecorder()
   {
+    debugMode=false;
     pthread_mutex_init(&log_mutex, NULL);
   }
   

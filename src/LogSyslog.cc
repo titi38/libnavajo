@@ -29,25 +29,25 @@
     int type;
     switch (l)
     {
-	case _DEBUG_:
-	  type=LOG_DEBUG;
-	  break;
-        case _WARNING_:
-	  type=LOG_WARNING;
-	  break;
-	case _ALERT_:
-	  type=LOG_ALERT;
-	  break;
-        case _ERROR_:
-	  type=LOG_ERR;
-	  break;
-        case _FATAL_:
-	  type=LOG_EMERG;
-	  break;
-        case _INFO_:
-	default:
-	  type=LOG_INFO;
-	  break;
+      case _DEBUG_:
+        type=LOG_DEBUG;
+        break;
+      case _WARNING_:
+        type=LOG_WARNING;
+        break;
+      case _ALERT_:
+        type=LOG_ALERT;
+        break;
+      case _ERROR_:
+        type=LOG_ERR;
+        break;
+      case _FATAL_:
+        type=LOG_EMERG;
+        break;
+      case _INFO_:
+      default:
+        type=LOG_INFO;
+        break;
     }
     syslog(type, "%s", message.c_str());
 
@@ -60,8 +60,8 @@
 
   void LogSyslog::initialize()
   {
-      openlog(ident,LOG_PID,LOG_USER);
-      setWithDateTime(false);
+    openlog(ident,LOG_PID,LOG_USER);
+    setWithDateTime(false);
   }
 
 

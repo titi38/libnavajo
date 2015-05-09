@@ -39,7 +39,7 @@ class WebServer
     SSL_CTX *sslCtx;
     int s_server_session_id_context;
     static char *certpass;
-    void initialize_ctx(const char *keyfile, const char *certfile, const char *password);
+    void initialize_ctx(const char *certfile, const char *cafile, const char *password);
     static int password_cb(char *buf, int num, int rwflag, void *userdata);
 
     bool isUserAllowed(const string &logpassb64);
@@ -55,6 +55,7 @@ class WebServer
     static const char* get_mime_type(const char *name);
     u_short init();
 
+    static std::string getNoContentErrorMsg();
     static std::string getBadRequestErrorMsg();
     static std::string getNotFoundErrorMsg();
     static std::string getInternalServerErrorMsg();
@@ -145,17 +146,17 @@ class WebServer
     * Enabled or disabled HTTPS
     * @param ssl: boolean. SSL connections are used if ssl is true.
     * @param certFile: the path to cert file
-    * @param caFile: the path to ca file
     * @param certPwd: optional certificat password
     */   
-    inline void setUseSSL(bool ssl, const char* certFile = "", const char* caFile = "", const char* certPwd = "")
-        { sslEnabled = ssl; sslCertFile = certFile; sslCaFile = caFile; sslCertPwd = certPwd; };
+    inline void setUseSSL(bool ssl, const char* certFile = "", const char* certPwd = "")
+        { sslEnabled = ssl; sslCertFile = certFile; sslCertPwd = certPwd; };
 
     /**
     * Enabled or disabled X509 authentification
     * @param a: boolean. X509 authentification is required if a is true.
+    * @param caFile: the path to cachain file
     */
-    inline void setAuthPeerSSL(const bool a = true) { authPeerSsl = a; };
+    inline void setAuthPeerSSL(const bool a = true, const char* caFile = "") { authPeerSsl = a; sslCaFile = caFile; };
 
     /**
     * Restricted X509 authentification to a DN user list. Add this given DN.

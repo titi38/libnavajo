@@ -33,7 +33,11 @@ class DynamicRepository : public WebRepository
     
     inline void freeFile(unsigned char *webpage) { ::free (webpage); };
 
-    inline void add(std::string url, DynamicPage *page) { indexMap.insert(pair<string, DynamicPage *>(url, page)); };
+    inline void add(std::string url, DynamicPage *page)
+    { 
+      size_t i=0; 
+      while (url.size() && url[i]=='/') i++;
+      indexMap.insert(pair<string, DynamicPage *>(url.substr(i, url.size()-i), page)); };
 
     inline virtual bool getFile(HttpRequest* request, HttpResponse *response)
     {
