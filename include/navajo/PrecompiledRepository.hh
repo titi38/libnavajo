@@ -34,9 +34,17 @@ class PrecompiledRepository : public WebRepository
 
     typedef std::map<std::string, const WebStaticPage> IndexMap;
     static IndexMap indexMap;
+    static std::string location; 
     
   public:
-    PrecompiledRepository() { pthread_mutex_init(&_mutex, NULL); if (!indexMap.size()) initIndexMap(); };
+    PrecompiledRepository(const std::string& l="")
+    { 
+      location=l;
+      while (location.size() && location[0]=='/') location.erase(0, 1);
+      while (location.size() && location[location.size()-1]=='/') location.erase(location.size() - 1);
+      pthread_mutex_init(&_mutex, NULL);
+      if (!indexMap.size()) initIndexMap(); 
+    };
     virtual ~PrecompiledRepository() { indexMap.clear(); };
     
     static void initIndexMap();
@@ -46,6 +54,13 @@ class PrecompiledRepository : public WebRepository
     inline virtual bool getFile(HttpRequest* request, HttpResponse *response)
     {
       std::string url = request->getUrl();
+      if (url.compare(0, location.length(), location) != 0)
+        return false;
+
+      url.erase(0, location.length());
+      while (url.size() && url[0]=='/') url.erase(0, 1);
+      if (!url.size()) url="index.html";
+      
       size_t webpageLen;
       unsigned char *webpage;
       pthread_mutex_lock( &_mutex );

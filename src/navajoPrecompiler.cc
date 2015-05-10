@@ -194,6 +194,7 @@ int main (int argc, char *argv[])
   fprintf (stdout, "}\n\n");
   
   fprintf (stdout, "PrecompiledRepository::IndexMap PrecompiledRepository::indexMap;\n");
+  fprintf (stdout, "std::string PrecompiledRepository::location;\n");
   fprintf (stdout,"\nvoid PrecompiledRepository::initIndexMap()\n{\n");
 
 	for (i = 0; i < filenamesVec.size(); i++)
