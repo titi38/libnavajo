@@ -17,6 +17,7 @@
 #include <dirent.h>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 void dump_buffer(FILE *f, unsigned n, const unsigned char* buf)
 {
@@ -59,8 +60,8 @@ char * str_replace_first(char * buffer, const char * s, const char * by)
 
 typedef struct
 {
-  std::string URL;
-  std::string varName;
+  std::string* URL;
+  std::string* varName;
   size_t length;
 }  ConversionEntry;
 
@@ -139,8 +140,7 @@ int main (int argc, char *argv[])
 	fprintf (stdout, "#include \"navajo/PrecompiledRepository.hh\"\n\n");
 	fprintf (stdout, "namespace webRepository\n{\n");
 
-	int i;
-	for (int i = 0; i < filenamesVec.size(); i++)
+	for (size_t i = 0; i < filenamesVec.size(); i++)
 	{
 
 		FILE * pFile;
@@ -159,7 +159,7 @@ int main (int argc, char *argv[])
 		rewind (pFile);
 
 		// allocate memory to contain the whole file.
-		buffer = (unsigned char*) malloc (lSize);
+		buffer = (unsigned char*) malloc ((lSize+1)*sizeof(unsigned char));
 		if (buffer == NULL)
  		{ fprintf(stderr, "ERROR: can't malloc reading file: %s\n", filenamesVec[i].c_str()); exit (2); }
 
@@ -169,9 +169,6 @@ int main (int argc, char *argv[])
 		  fprintf(stderr,"\nCan't read file %s ... ABORT !\n", filenamesVec[i].c_str() );
 		  exit(1);
 		};
-
-		/*** write it in the C++ format ***/
-		FILE *outFile = stdout; //fopen ( outFilename  , "w" );
 
 		std::string outFilename = filenamesVec[i];
     std::replace( outFilename.begin(), outFilename.end(), '.', '_'); 
@@ -186,8 +183,8 @@ int main (int argc, char *argv[])
 		fclose (pFile);
 		free (buffer);
 
-		(*(conversionTable+i)).URL = filenamesVec[i];
-		(*(conversionTable+i)).varName = outFilename;
+		(*(conversionTable+i)).URL = new std::string(filenamesVec[i]);
+		(*(conversionTable+i)).varName = new std::string(outFilename);
 		(*(conversionTable+i)).length = lSize;
 	}
 	
@@ -197,9 +194,11 @@ int main (int argc, char *argv[])
   fprintf (stdout, "std::string PrecompiledRepository::location;\n");
   fprintf (stdout,"\nvoid PrecompiledRepository::initIndexMap()\n{\n");
 
-	for (i = 0; i < filenamesVec.size(); i++)
+	for (size_t i = 0; i < filenamesVec.size(); i++)
 	{
-		fprintf (stdout,"    indexMap.insert(IndexMap::value_type(\"%s\",PrecompiledRepository::WebStaticPage((const unsigned char*)&webRepository::%s, sizeof webRepository::%s)));\n", (*(conversionTable+i)).URL.c_str(), (*(conversionTable+i)).varName.c_str(), (*(conversionTable+i)).varName.c_str() );
+		fprintf (stdout,"    indexMap.insert(IndexMap::value_type(\"%s\",PrecompiledRepository::WebStaticPage((const unsigned char*)&webRepository::%s, sizeof webRepository::%s)));\n", (*(conversionTable+i)).URL->c_str(), (*(conversionTable+i)).varName->c_str(), (*(conversionTable+i)).varName->c_str() );
+		delete (*(conversionTable+i)).URL;
+		delete (*(conversionTable+i)).varName;
 	}
 	fprintf (stdout,"}\n");
   free (conversionTable);

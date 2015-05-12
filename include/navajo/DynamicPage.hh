@@ -15,7 +15,7 @@
 #define DYNAMICPAGE_HH_
 
 #include <string>
-
+#include <typeinfo> 
 
 class DynamicPage
 {
