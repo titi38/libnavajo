@@ -39,8 +39,11 @@ bool LocalRepository::loadFilename_dir (const string& alias, const string& path,
 	    if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) continue;
 
 	    if ((entry->d_type == DT_REG || entry->d_type == DT_LNK) && strlen(entry->d_name) )
-	      filenamesSet.insert(alias+subpath+"/"+entry->d_name);
-
+	    {
+	      string filename=alias+subpath+"/"+entry->d_name;
+	      while (filename.size() && filename[0]=='/') filename.erase(0, 1);
+	      filenamesSet.insert(filename);
+      }
 	    if (entry->d_type == DT_DIR)
 	      loadFilename_dir(alias, path, subpath+"/"+entry->d_name);
     }
@@ -115,14 +118,23 @@ bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
     
   pthread_mutex_unlock( &_mutex);
   if (!found) return false;
-   
+
   string resultat, filename=url;
 
-  filename.replace(0, alias->size(), path->c_str());
+  if (alias->size())
+    filename.replace(0, alias->size(), *path);
+  else
+    filename=*path+'/'+filename;
 
   FILE *pFile = fopen ( filename.c_str() , "rb" );
   if (pFile==NULL)
-  { return false; }
+  {
+    char logBuffer[150];
+    snprintf(logBuffer, 150, "Webserver : Error opening file '%s'", filename.c_str() );
+    LOG->append(_ERROR_, logBuffer);
+    return false;
+  }
+  
 
   // obtain file size.
   fseek (pFile , 0 , SEEK_END);
@@ -135,7 +147,7 @@ bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
   if (nb != webpageLen)
   {
     char logBuffer[150];
-    snprintf(logBuffer, 150, "Webserver : Error accessing files '%s'", filename.c_str() );
+    snprintf(logBuffer, 150, "Webserver : Error accessing file '%s'", filename.c_str() );
     LOG->append(_ERROR_, logBuffer);
     return false;
   }

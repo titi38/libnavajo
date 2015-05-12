@@ -1,0 +1,81 @@
+##############################
+# EXAMPLE 2                  #
+# created by T.DESCOMBES     #
+#                    2015    #
+##############################
+
+OUTPUTFILENAME = PrecompiledRepository.cc
+NAVAJO_PRECOMPILER_EXEC = ../bin/navajoPrecompiler
+
+UNAME := $(shell uname)
+LBITS := $(shell getconf LONG_BIT)
+
+ifeq ($(UNAME), Linux)
+OS = LINUX
+else ifeq ($(UNAME), Darwin)
+OS = MACOSX
+else
+OS = OTHER
+endif
+
+DLOPEN_PAM=0
+ifeq ($(DLOPEN_PAM),1)
+        LIBPAM=-ldl
+else
+        LIBPAM=-lpam
+endif
+
+LIB_DIR      = lib
+CXX 	=  g++
+
+ifeq ($(OS),MACOSX)
+LIBSSL_DIR = /usr/local/Cellar/openssl/1.0.1j
+LIBS       = -lnavajo -L../$(LIB_DIR) -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto $(LIBPAM)
+DEFS            =   -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT
+CXXFLAGS        =  -O3  -Wdeprecated-declarations
+else
+ifeq ($(LBITS),64)
+  LIB_DIR=lib64
+endif
+LIBS       = -lnavajo -L../$(LIB_DIR) -lz -lssl -lcrypto -pthread $(LIBPAM)
+DEFS            =  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT
+CXXFLAGS        =  -O4  -Wdeprecated-declarations
+endif
+
+
+CPPFLAGS	= -I. \
+       -I$(LIBSSL_DIR)/include \
+		   -I../include
+
+LD		=  g++
+
+LDFLAGS        =  -Wall -Wno-unused -O3   
+
+EXAMPLE_NAME     = example2
+
+EXAMPLE_OBJS = \
+		  example2.o
+
+
+#######################
+# DEPENDENCE'S RULES  #
+#######################
+
+%.o: %.cc
+	$(CXX) -c $< -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
+	
+all: $(EXAMPLE_NAME)
+	
+$(EXAMPLE_NAME): $(EXAMPLE_OBJS) $(LIB_STATIC_NAME)
+	rm -f $@
+	$(LD) $(LDFLAGS) -o $@ $(EXAMPLE_OBJS) $(LIB_STATIC_NAME) $(LIBS) 
+
+clean:
+	@rm -f $(OUTPUTFILENAME) 
+	@for i in $(EXAMPLE_OBJS); do  rm -f $$i ; done
+
+
+
+
+
+

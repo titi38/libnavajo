@@ -330,7 +330,7 @@ class HttpRequest
     * @return the requested url
     */
     inline const char *getUrl() const { return urlRequest; };
-    
+
     /**
     * get request type    
     * @return the Http Request Type ( GET/POST/...)

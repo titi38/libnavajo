@@ -22,9 +22,10 @@ class HttpResponse
   std::vector<std::string> responseCookies;
   bool zippedFile;
   std::string mimeType;
+  std::string forwardToUrl;
 
   public:
-    HttpResponse(std::string mime="") : responseContent (NULL), responseContentLength (0), zippedFile (false), mimeType(mime)
+    HttpResponse(std::string mime="") : responseContent (NULL), responseContentLength (0), zippedFile (false), mimeType(mime), forwardToUrl("")
     {
     }
     
@@ -152,6 +153,27 @@ class HttpResponse
     {
       return mimeType;
     }
+
+    /************************************************************************/
+    /**
+    * Request redirection to a new url
+    * @param url: the new url
+    */    
+    void forwardTo(const std::string& url)
+    {
+      forwardToUrl=url;
+    }
+
+    /************************************************************************/
+    /**
+    * get the new url
+    * @return the new url
+    */    
+    std::string getForwardedUrl()
+    {
+      return forwardToUrl;
+    }
+    
 };
 
 

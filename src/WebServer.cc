@@ -452,11 +452,21 @@ void WebServer::accept_request(int client, SSL *ssl)
     HttpResponse response(mimeStr);
 
     std::vector<WebRepository *>::const_iterator repo=webRepositories.begin();
-    for( ; repo!=webRepositories.end() && !fileFound && !zippedFile; repo++)
+    for( ; repo!=webRepositories.end() && !fileFound && !zippedFile;)
     {
       if (*repo == NULL) continue;
 
       fileFound = (*repo)->getFile(&request, &response);
+      if (fileFound && response.getForwardedUrl() != "")
+      {
+        strncpy( url+1, response.getForwardedUrl().c_str(), BUFSIZE - 1);
+        *(url + BUFSIZE - 1)='\0';
+        response.forwardTo("");
+        repo=webRepositories.begin(); fileFound=false;
+      }
+      else
+         repo++;
+      printf ("URL : %s\n", request.getUrl());
     }
 
     if (!fileFound)

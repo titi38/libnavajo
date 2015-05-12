@@ -1,0 +1,47 @@
+<html>
+  <head>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["gauge"]});
+      google.setOnLoadCallback(initChart);
+         
+      function updateChart(value, chart, data, options)
+      {
+        data.setValue(0, 1, value);
+        chart.draw(data, options);   
+      }
+
+      function updateAjax(chart, data, options) {
+          $.ajax({
+              url : 'cpuvalue.txt',
+              success : function(value) { if (value > 0)
+              updateChart(value,chart, data, options)
+              }
+          });
+          //updateChart( 60 + Math.round(20 * Math.random()),chart, data, options);
+      }
+      function initChart()
+      {
+       var chart = new google.visualization.Gauge(document.getElementById('chart_div'));
+       var data = google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          ['CPU', 55]
+        ]);
+        var options = {
+          width: 400, height: 120,
+          redFrom: 90, redTo: 100,
+          yellowFrom:75, yellowTo: 90,
+          minorTicks: 5
+        };
+        setInterval(function() { updateAjax(chart, data, options); }, 1000);
+      }
+
+    </script>
+  </head>
+  <body>
+    <div id="chart_div" style="width: 400px; height: 120px;"></div>
+    
+ 
+  </body>
+</html>

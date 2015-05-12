@@ -54,7 +54,8 @@ class DynamicRepository : public WebRepository
       {
         pthread_mutex_unlock( &_mutex );
         bool res = i->second->getPage( request, response );
-        response->addSessionCookie(request->getSessionId());
+        if (request->getSessionId().size())
+          response->addSessionCookie(request->getSessionId());
         return res;
       }
     };

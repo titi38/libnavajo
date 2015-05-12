@@ -33,6 +33,7 @@ LIB_SHARED_ALIAS  = libnavajo.so
 LIB_STATIC_NAME  = libnavajo.a
 
 EXAMPLE_NAME     = example/example
+EXAMPLE2_NAME	 = example2/example2
 
 PREFIX       = /usr/local/libnavajo
 LIB_DIR      = lib
@@ -89,11 +90,11 @@ PRECOMPILER_OBJS = src/navajoPrecompiler.o
 %.o: %.cc
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
 
-all:: 	$(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_NAME)
+all:: 	$(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_NAME) $(EXAMPLE2_NAME)
 
 clean::
 	@echo Remove files...
-	@rm -f $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_NAME)
+	@rm -f $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_NAME) $(EXAMPLE2_NAME)
 	@find . \( -name "*.bak" -o -name "*.class" -o -name "*.o" -o -name "core*" -o -name "*~" \) -exec rm -f '{}' \;
 	@for i in $(LIBNAVAJO_OBJS); do  rm -f $$i ; done
 	$(MAKE) -C example -f Makefile $@
@@ -120,6 +121,9 @@ $(PRECOMPILER_NAME): $(PRECOMPILER_OBJS)
 
 $(EXAMPLE_NAME)::
 	$(MAKE) -C example -f Makefile
+
+$(EXAMPLE2_NAME)::
+	$(MAKE) -C example2 -f Makefile
 
 install: $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
 	-@if [ ! -d $(PREFIX)/$(LIB_DIR) ]; then mkdir -p $(PREFIX)/$(LIB_DIR); fi
