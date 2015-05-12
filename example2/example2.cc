@@ -6,7 +6,7 @@
  *
  * @author T.Descombes (descombes@lpsc.in2p3.fr)
  *
- * @version 1	
+ * @version 1  
  * @date 27/01/15
  */
 //********************************************************
@@ -29,10 +29,10 @@ void exitFunction( int dummy )
   
   int getCpuLoad(void)
   {
-    char	    buf[1024];
+    char buf[1024];
     static FILE     *proc_stat_fd;
     int result = -1;
-    unsigned long work, total;
+    unsigned long work=0, total=0;
 
     if ((proc_stat_fd = fopen("/proc/stat", "r")) == NULL)
       return -1;
@@ -41,13 +41,14 @@ void exitFunction( int dummy )
     {
       if (!strncmp("cpu ", buf, 4))
       {
-        unsigned long	user=0, nice=0, sys=0, idle=0, iowait=0, irq=0, softirq=0;
+        unsigned long  user=0, nice=0, sys=0, idle=0, iowait=0, irq=0, softirq=0;
         int n = sscanf(buf+5, "%lu %lu %lu %lu %lu %lu %lu", &user, &nice, &sys, &idle, &iowait, &irq, &softirq);
-        	work=user+nice+sys;
-        	total=work+idle;
-        	if (n>=5) total+=iowait;
-        	if (n>=6) total+=irq;
-        	if (n==7) total+=softirq;
+        if (n<5) return -1;
+        work=user+nice+sys;
+        total=work+idle;
+        if (n>=5) total+=iowait;
+        if (n>=6) total+=irq;
+        if (n==7) total+=softirq;
       }
     }
     fclose (proc_stat_fd);
@@ -67,22 +68,22 @@ class MyDynamicRepository : public DynamicRepository
     class MyDynamicPage : public DynamicPage
     {
       protected:
-	      bool isValidSession(HttpRequest* request)
-	      {
-	        void *myAttribute = request->getSessionAttribute("username");
+        bool isValidSession(HttpRequest* request)
+        {
+          void *myAttribute = request->getSessionAttribute("username");
           return myAttribute != NULL;
-	      }
-	      bool checkCredentials(const string& login, const string& password)
-	      {
-	        return login == "libnavajo" && password == "libnavajo";
-	      }
+        }
+        bool checkCredentials(const string& login, const string& password)
+        {
+          return login == "libnavajo" && password == "libnavajo";
+        }
     };
     
     class CpuValue: public MyDynamicPage
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-       // if (!isValidSession(request)) return false;
+        if (!isValidSession(request)) return false;
         ostringstream ss;
         ss << getCpuLoad();
         return fromString(ss.str(), response);
@@ -94,24 +95,26 @@ class MyDynamicRepository : public DynamicRepository
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
         string pageId;
-        if (!isValidSession(request))
+
+        if (request->getParameter("pageId", pageId) && pageId == "LOGIN")
         {
-          if (request->getParameter("pageId", pageId) && pageId == "LOGIN")
+          string login, password;
+          if (request->getParameter("inputLogin", login) && request->getParameter("inputPassword", password)
+              && checkCredentials(login, password))
           {
-            string login, password;
-            if (request->getParameter("inputLogin", login) && request->getParameter("inputPassword", password)
-                && checkCredentials(login, password))
-            {
-              char *username = (char*)malloc((login.length()+1)*sizeof(char));
-              strcpy(username, login.c_str());
-              request->setSessionAttribute ( "username", (void*)username );
-              response->forwardTo("gauge.html"); 
-              return true;
-            }
+            char *username = (char*)malloc((login.length()+1)*sizeof(char));
+            strcpy(username, login.c_str());
+            request->setSessionAttribute ( "username", (void*)username );
+            response->forwardTo("gauge.html"); 
+            return true;
           }
+        } 
+
+        if (request->getParameter("pageId", pageId) && pageId == "GAUGE") // Button disconnect
+          request->removeSession();
+
+        if (!isValidSession(request))
           response->forwardTo("login.html");
-          return true;      
-        }
         else
           response->forwardTo("gauge.html");       
         
@@ -147,7 +150,6 @@ int main()
 
   LocalRepository myLocalRepo;
   myLocalRepo.addDirectory("", "./html"); 
-  myLocalRepo.printFilenames();
   webServer->addRepository(&myLocalRepo);
 
   MyDynamicRepository myRepo;

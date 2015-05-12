@@ -466,7 +466,6 @@ void WebServer::accept_request(int client, SSL *ssl)
       }
       else
          repo++;
-      printf ("URL : %s\n", request.getUrl());
     }
 
     if (!fileFound)
@@ -653,6 +652,7 @@ const char* WebServer::get_mime_type(const char *name)
   if (strcmp(extLowerCase, ".gif") == 0) return "image/gif";
   if (strcmp(extLowerCase, ".png") == 0) return "image/png";
   if (strcmp(extLowerCase, ".css") == 0) return "text/css";
+  if (strcmp(extLowerCase, ".txt") == 0) return "text/plain";
   if (strcmp(extLowerCase, ".au") == 0) return "audio/basic";
   if (strcmp(extLowerCase, ".wav") == 0) return "audio/wav";
   if (strcmp(extLowerCase, ".avi") == 0) return "video/x-msvideo";

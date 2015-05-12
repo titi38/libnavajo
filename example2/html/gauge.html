@@ -1,5 +1,7 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
+    <meta charset="utf-8">
     <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
@@ -15,11 +17,10 @@
       function updateAjax(chart, data, options) {
           $.ajax({
               url : 'cpuvalue.txt',
-              success : function(value) { if (value > 0)
-              updateChart(value,chart, data, options)
+              success : function(value) { 
+                if (value > 0) updateChart(value,chart, data, options);
               }
           });
-          //updateChart( 60 + Math.round(20 * Math.random()),chart, data, options);
       }
       function initChart()
       {
@@ -38,10 +39,14 @@
       }
 
     </script>
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
   </head>
   <body>
-    <div id="chart_div" style="width: 400px; height: 120px;"></div>
-    
- 
+    <div id="chart_div" style="width: 150px; height: 120px; padding: 15px; margin: 0 auto"></div>    
+    <BR/><BR/>
+    <form method="post" action="index.html" style="max-width: 150px; padding: 15px; margin: 0 auto;">
+      <input type="hidden" name="pageId" value="GAUGE"/>
+      <button type="submit" class="btn btn-primary btn-block">Disconnect</button>
+    </form>
   </body>
 </html>
