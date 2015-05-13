@@ -49,11 +49,11 @@
   * \param l - type of entry
   * \param m - message
   */
-  void LogRecorder::append(const LogSeverity& l, const std::string& m, const std::string& details)
+  void LogRecorder::append(const NavajoLogSeverity& l, const std::string& m, const std::string& details)
   {
     pthread_mutex_lock( &log_mutex );
 
-    if (l != _DEBUG_ || debugMode)
+    if (l != NVJ_DEBUG || debugMode)
     {
       for( std::list<LogOutput *>::iterator it=logOutputsList_.begin(); 
            it!=logOutputsList_.end(); 

@@ -22,7 +22,7 @@
   * \param l - type of entry
   * \param m - message
   */
-  void LogFile::append(const LogSeverity& l, const std::string& message, const std::string& details)
+  void LogFile::append(const NavajoLogSeverity& l, const std::string& message, const std::string& details)
   {
     if (file!=NULL)
       (*file) << message << endl;

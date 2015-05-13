@@ -23,28 +23,28 @@
   * \param l - LogSeverity
   * \param m - message
   */
-  void LogSyslog::append(const LogSeverity& l, const std::string& message, const std::string& details)
+  void LogSyslog::append(const NavajoLogSeverity& l, const std::string& message, const std::string& details)
   {
 
     int type;
     switch (l)
     {
-      case _DEBUG_:
+      case NVJ_DEBUG:
         type=LOG_DEBUG;
         break;
-      case _WARNING_:
+      case NVJ_WARNING:
         type=LOG_WARNING;
         break;
-      case _ALERT_:
+      case NVJ_ALERT:
         type=LOG_ALERT;
         break;
-      case _ERROR_:
+      case NVJ_ERROR:
         type=LOG_ERR;
         break;
-      case _FATAL_:
+      case NVJ_FATAL:
         type=LOG_EMERG;
         break;
-      case _INFO_:
+      case NVJ_INFO:
       default:
         type=LOG_INFO;
         break;

@@ -222,7 +222,7 @@ class WebServer
     */ 
     void startService()
     {
-      LOG->append(_INFO_, "WebServer: Service is starting !");
+      NVJ_LOG->append(NVJ_INFO, "WebServer: Service is starting !");
       create_thread( &threadWebServer, WebServer::startThread, this );
     };
     
@@ -231,7 +231,7 @@ class WebServer
     */ 
     void stopService() 
     {
-      LOG->append(_INFO_, "WebServer: Service is stopping !");
+      NVJ_LOG->append(NVJ_INFO, "WebServer: Service is stopping !");
       exit();
       threadWebServer=0;
     };

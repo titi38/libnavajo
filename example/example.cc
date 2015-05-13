@@ -71,8 +71,8 @@ int main()
   signal( SIGTERM, exitFunction );
   signal( SIGINT, exitFunction );
   
-  LOG->addLogOutput(new LogStdOutput);
-  //LOG->addLogOutput(new LogFile("/var/log/navajo.log"));
+  NVJ_LOG->addLogOutput(new LogStdOutput);
+  //NVJ_LOG->addLogOutput(new LogFile("/var/log/navajo.log"));
 
   webServer = new WebServer;
 

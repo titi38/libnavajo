@@ -131,7 +131,7 @@ bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
   {
     char logBuffer[150];
     snprintf(logBuffer, 150, "Webserver : Error opening file '%s'", filename.c_str() );
-    LOG->append(_ERROR_, logBuffer);
+    NVJ_LOG->append(NVJ_ERROR, logBuffer);
     return false;
   }
   
@@ -148,7 +148,7 @@ bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
   {
     char logBuffer[150];
     snprintf(logBuffer, 150, "Webserver : Error accessing file '%s'", filename.c_str() );
-    LOG->append(_ERROR_, logBuffer);
+    NVJ_LOG->append(NVJ_ERROR, logBuffer);
     return false;
   }
   

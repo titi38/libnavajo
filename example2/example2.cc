@@ -139,7 +139,7 @@ int main()
   signal( SIGTERM, exitFunction );
   signal( SIGINT, exitFunction );
   
-  LOG->addLogOutput(new LogStdOutput);
+  NVJ_LOG->addLogOutput(new LogStdOutput);
 
   webServer = new WebServer;
 

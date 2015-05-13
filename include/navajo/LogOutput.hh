@@ -18,13 +18,13 @@
 
       typedef enum 
       {
-        _DEBUG_,
-        _INFO_,
-        _WARNING_,
-        _ALERT_,
-        _ERROR_,
-        _FATAL_
-      } LogSeverity;
+        NVJ_DEBUG,
+        NVJ_INFO,
+        NVJ_WARNING,
+        NVJ_ALERT,
+        NVJ_ERROR,
+        NVJ_FATAL
+      } NavajoLogSeverity;
 
 
   class LogOutput
@@ -40,7 +40,7 @@
     public:
       LogOutput(): withDateTime(true),withEndline(false) { };
       virtual void initialize() = 0;
-      virtual void append(const LogSeverity& l, const std::string& m, const std::string &details) = 0;
+      virtual void append(const NavajoLogSeverity& l, const std::string& m, const std::string &details) = 0;
       virtual ~LogOutput() {};
       inline bool isWithDateTime() { return withDateTime; };
       inline bool isWithEndline() { return withEndline; };

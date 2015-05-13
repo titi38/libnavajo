@@ -22,18 +22,18 @@
   * \param l - LogSeverity
   * \param m - message
   */
-  void LogStdOutput::append(const LogSeverity& l, const std::string& message, const std::string& details)
+  void LogStdOutput::append(const NavajoLogSeverity& l, const std::string& message, const std::string& details)
   {
     switch (l)
     {
-      case _DEBUG_:
-      case _WARNING_:
-      case _ALERT_:
-      case _INFO_:
+      case NVJ_DEBUG:
+      case NVJ_WARNING:
+      case NVJ_ALERT:
+      case NVJ_INFO:
         fprintf(stdout,"%s\n",message.c_str()); fflush(NULL);
         break;
-      case _ERROR_:
-      case _FATAL_:
+      case NVJ_ERROR:
+      case NVJ_FATAL:
       default:
         fprintf(stderr,"%s\n",message.c_str()); 
         break;

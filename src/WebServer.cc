@@ -130,7 +130,7 @@ void WebServer::updatePeerIpHistory(IpAddress& ip)
   }
 
   if (dispPeer)
-     LOG->append(_INFO_,std::string ("WebServer: Connection from IP: ") + ip.str());
+     NVJ_LOG->append(NVJ_INFO,std::string ("WebServer: Connection from IP: ") + ip.str());
 }
 
 /*********************************************************************/
@@ -155,7 +155,7 @@ void WebServer::updatePeerDnHistory(std::string dn)
   }
 
   if (dispPeer)
-    LOG->append(_INFO_,"WebServer: Authorized DN: "+dn);
+    NVJ_LOG->append(NVJ_INFO,"WebServer: Authorized DN: "+dn);
 
   pthread_mutex_unlock( &peerDnHistory_mutex );
 }
@@ -220,12 +220,12 @@ bool WebServer::isUserAllowed(const string &pwdb64)
 #endif
   if (authOK)
   {
-    LOG->append(_INFO_,"WebServer: Authentification passed for user '"+login+"'");
+    NVJ_LOG->append(NVJ_INFO,"WebServer: Authentification passed for user '"+login+"'");
     if (i == usersAuthHistory.end())
       usersAuthHistory[pwdb64]=t;
   }
   else
-    LOG->append(_INFO_,"WebServer: Authentification failed for user '"+login+"'");
+    NVJ_LOG->append(NVJ_INFO,"WebServer: Authentification failed for user '"+login+"'");
 
   pthread_mutex_unlock( &usersAuthHistory_mutex );
   return authOK;
@@ -427,7 +427,7 @@ void WebServer::accept_request(int client, SSL *ssl)
 
     char logBuffer[BUFSIZE];
     snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", url+1, requestType, requestParams, requestCookies, httpVers, keepAlive, zipSupport );
-    LOG->append(_DEBUG_, logBuffer);
+    NVJ_LOG->append(NVJ_DEBUG, logBuffer);
 
     // Process the query
     if (keepAlive==-1) 
@@ -471,7 +471,7 @@ void WebServer::accept_request(int client, SSL *ssl)
     if (!fileFound)
     {
       char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page not found %s",  url+1);
-      LOG->append(_WARNING_,bufLinestr);
+      NVJ_LOG->append(NVJ_WARNING,bufLinestr);
 
       std::string msg = getNotFoundErrorMsg();
       httpSend(client, (const void*) msg.c_str(), msg.length(), io);
@@ -499,14 +499,14 @@ void WebServer::accept_request(int client, SSL *ssl)
     }
     
     char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page found %s",  url+1);
-    LOG->append(_DEBUG_,bufLinestr);
+    NVJ_LOG->append(NVJ_DEBUG,bufLinestr);
 
     if (!zipSupport && zippedFile)
     {
       // Need to uncompress
       if ((int)(webpageLen=gunzip( &webpage, gzipWebPage, sizeZip )) < 0)
       {
-        LOG->append(_ERROR_, "Webserver: gunzip decompression failed !");
+        NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip decompression failed !");
         std::string msg = getInternalServerErrorMsg();
         httpSend(client, (const void*) msg.c_str(), msg.length(), io);
         if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
@@ -522,7 +522,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       {  
         if ((int)(sizeZip=gzip( &gzipWebPage, webpage, webpageLen )) < 0)
         {
-          LOG->append(_ERROR_, "Webserver: gunzip compression failed !");
+          NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip compression failed !");
           std::string msg = getInternalServerErrorMsg();
           httpSend(client, (const void*) msg.c_str(), msg.length(), io);
           if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
@@ -585,7 +585,7 @@ void WebServer::httpSend(int s, const void *buf, size_t len, BIO *io)
     {
       if(! BIO_should_retry(io))
       {
-          LOG->append(_WARNING_, "WebServer: BIO_write failed !");
+          NVJ_LOG->append(NVJ_WARNING, "WebServer: BIO_write failed !");
           return ;
       }
       // retry
@@ -604,7 +604,7 @@ void WebServer::httpSend(int s, const void *buf, size_t len, BIO *io)
 
 void WebServer::fatalError(const char *s)
 {
-  LOG->append(_FATAL_,s);
+  NVJ_LOG->append(NVJ_FATAL,s);
   perror(s);
   ::exit(1);
 }
@@ -853,7 +853,7 @@ u_short WebServer::init()
     if (device.length())
     {
 #ifndef LINUX
-      LOG->append(_WARNING_, "WebServer: HttpdDevice parameter will be ignored on your system");
+      NVJ_LOG->append(NVJ_WARNING, "WebServer: HttpdDevice parameter will be ignored on your system");
 #else
       setsockopt( server_sock [ nbServerSock ], SOL_SOCKET, SO_BINDTODEVICE, device.c_str(), device.length());
 #endif
@@ -873,7 +873,7 @@ u_short WebServer::init()
       setsockoptCompat( server_sock [ nbServerSock ], IPPROTO_IPV6, IPV6_V6ONLY, &v6Only, sizeof( v6Only ) ) ;
                 
 #else
-      LOG->append(_WARNING_, "WebServer: Cannot set IPV6_V6ONLY socket option.  Closing IPv6 socket.");
+      NVJ_LOG->append(NVJ_WARNING, "WebServer: Cannot set IPV6_V6ONLY socket option.  Closing IPv6 socket.");
       close(  server_sock[ nbServerSock ] );
       continue; 
 #endif
@@ -955,7 +955,7 @@ int WebServer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
     char buftmp[300];
     snprintf(buftmp, 300, "X509_verify_cert error: num=%d:%s:depth=%d:%s", err,
               X509_verify_cert_error_string(err), depth, buf);
-    LOG->append(_INFO_,buftmp);
+    NVJ_LOG->append(NVJ_INFO,buftmp);
   }
 
   /*
@@ -966,7 +966,7 @@ int WebServer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
   {
    X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), buf, 256);
    char buftmp[300]; snprintf(buftmp, 300, "X509_verify_cert error: issuer= %s", buf);
-     LOG->append(_INFO_,buftmp);
+     NVJ_LOG->append(NVJ_INFO,buftmp);
   }
 
   return 1;
@@ -989,7 +989,7 @@ void WebServer::initialize_ctx(const char *certfile, const char *cafile, const c
   /* Load our keys and certificates*/
   if(!(SSL_CTX_use_certificate_chain_file(sslCtx, certfile)))
   {
-    LOG->append(_FATAL_,"OpenSSL error: Can't read certificate file");
+    NVJ_LOG->append(NVJ_FATAL,"OpenSSL error: Can't read certificate file");
     ::exit(1);
   }
 
@@ -997,7 +997,7 @@ void WebServer::initialize_ctx(const char *certfile, const char *cafile, const c
   SSL_CTX_set_default_passwd_cb(sslCtx, WebServer::password_cb);
   if(!(SSL_CTX_use_PrivateKey_file(sslCtx, certfile, SSL_FILETYPE_PEM)))
   {
-    LOG->append(_FATAL_,"OpenSSL error: Can't read key file");
+    NVJ_LOG->append(NVJ_FATAL,"OpenSSL error: Can't read key file");
     ::exit(1);
   }
 
@@ -1007,7 +1007,7 @@ void WebServer::initialize_ctx(const char *certfile, const char *cafile, const c
   {
       if(!(SSL_CTX_load_verify_locations(sslCtx, cafile,0)))
       {
-        LOG->append(_FATAL_,"OpenSSL error: Can't read CA list");
+        NVJ_LOG->append(NVJ_FATAL,"OpenSSL error: Can't read CA list");
         ::exit(1);
       }
 
@@ -1070,7 +1070,7 @@ void WebServer::poolThreadProcessing()
       { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
         string msg="SSL accept error ";
         if (sslmsg != NULL) msg+=": "+string(sslmsg);
-        LOG->append(_DEBUG_,msg);
+        NVJ_LOG->append(NVJ_DEBUG,msg);
       }
 
       if ( authPeerSsl )
@@ -1162,12 +1162,12 @@ void WebServer::threadProcessing()
 #if defined(LINUX) || defined(__darwin__)
           AuthPAM::start();
 #else
-          LOG->appendUniq(_ERROR_, "WebServer : WARNING authPAM will be ignored on your system");
+          NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : WARNING authPAM will be ignored on your system");
 #endif
   }
 
   char buf[300]; snprintf(buf, 300, "WebServer : Listen on port %d", port);
-  LOG->append(_INFO_,buf);
+  NVJ_LOG->append(NVJ_INFO,buf);
 
   struct pollfd *pfd;
   if ( (pfd = (pollfd *)malloc( nbServerSock * sizeof( struct pollfd ) )) == NULL )
@@ -1232,7 +1232,7 @@ void WebServer::threadProcessing()
 
       updatePeerIpHistory(webClientAddr);
       if (client_sock == -1)
-        LOG->appendUniq(_ERROR_, "WebServer : An error occurred when attempting to access the socket (accept == -1)");
+        NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : An error occurred when attempting to access the socket (accept == -1)");
       else
       {
         setSocketRcvTimeout(client_sock, 5);

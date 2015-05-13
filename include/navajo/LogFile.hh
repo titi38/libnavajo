@@ -32,7 +32,7 @@ using namespace std;
       LogFile(const char *filename);
       ~LogFile();
   
-      void append(const LogSeverity& l, const std::string& m, const std::string& details="");
+      void append(const NavajoLogSeverity& l, const std::string& m, const std::string& details="");
       void initialize();
   
     private:
