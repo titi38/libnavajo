@@ -94,9 +94,9 @@ class MyDynamicRepository : public DynamicRepository
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-        string pageId;
+        string param;
 
-        if (request->getParameter("pageId", pageId) && pageId == "LOGIN")
+        if (request->getParameter("pageId", param) && param == "LOGIN")
         {
           string login, password;
           if (request->getParameter("inputLogin", login) && request->getParameter("inputPassword", password)
@@ -110,7 +110,7 @@ class MyDynamicRepository : public DynamicRepository
           }
         } 
 
-        if (request->getParameter("pageId", pageId) && pageId == "GAUGE") // Button disconnect
+        if (request->getParameter("disconnect", param)) // Button disconnect
           request->removeSession();
 
         if (!isValidSession(request))
@@ -122,17 +122,12 @@ class MyDynamicRepository : public DynamicRepository
       }
 
     } controller;
-    
-    void init()
-    {
-      add("cpuvalue.txt",&cpuValue);
-      add("index.html",&controller);
-    }
      
   public:
     MyDynamicRepository() : DynamicRepository()
     {
-     init();
+      add("cpuvalue.txt",&cpuValue);
+      add("index.html",&controller);
     }
 };
 
