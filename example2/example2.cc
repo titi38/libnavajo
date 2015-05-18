@@ -1,6 +1,6 @@
 //********************************************************
 /**
- * @file  example.cc 
+ * @file  example2.cc 
  *
  * @brief libnavajo example code.
  *
@@ -110,7 +110,7 @@ class MyDynamicRepository : public DynamicRepository
           }
         } 
 
-        if (request->getParameter("disconnect", param)) // Button disconnect
+        if (request->hasParameter("disconnect")) // Button disconnect
           request->removeSession();
 
         if (!isValidSession(request))
