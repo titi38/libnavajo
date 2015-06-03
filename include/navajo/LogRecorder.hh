@@ -64,8 +64,8 @@ using namespace std;
       void setDebugMode(bool d=true) { debugMode=d; };
       void addLogOutput(LogOutput *);
       void removeLogOutputs();
-      void append(const NavajoLogSeverity& l, const std::string& msg, const std::string& details="");
-      inline void appendUniq(const NavajoLogSeverity& l, const std::string& msg, const std::string& details="")
+      void append(const NvjLogSeverity& l, const std::string& msg, const std::string& details="");
+      inline void appendUniq(const NvjLogSeverity& l, const std::string& msg, const std::string& details="")
       { 
 	      set<string>::iterator it;
 	      it=uniqLog.find(msg+details);

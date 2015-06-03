@@ -16,15 +16,15 @@
 
 #include <string>
 
-      typedef enum 
-      {
+  typedef enum 
+  {
         NVJ_DEBUG,
         NVJ_INFO,
         NVJ_WARNING,
         NVJ_ALERT,
         NVJ_ERROR,
         NVJ_FATAL
-      } NavajoLogSeverity;
+  } NvjLogSeverity;
 
 
   class LogOutput
@@ -40,7 +40,7 @@
     public:
       LogOutput(): withDateTime(true),withEndline(false) { };
       virtual void initialize() = 0;
-      virtual void append(const NavajoLogSeverity& l, const std::string& m, const std::string &details) = 0;
+      virtual void append(const NvjLogSeverity& l, const std::string& m, const std::string &details) = 0;
       virtual ~LogOutput() {};
       inline bool isWithDateTime() { return withDateTime; };
       inline bool isWithEndline() { return withEndline; };

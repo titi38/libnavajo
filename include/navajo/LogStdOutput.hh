@@ -27,7 +27,7 @@
       LogStdOutput();
       ~LogStdOutput();
 
-      void append(const NavajoLogSeverity& l, const std::string& m, const std::string &details="");
+      void append(const NvjLogSeverity& l, const std::string& m, const std::string &details="");
       void initialize();
   
   };
