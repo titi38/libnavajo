@@ -32,7 +32,7 @@
 #include "navajo/IpAddress.hh"
 #include "navajo/WebRepository.hh"
 #include "navajo/thread.h"
-
+#include "navajo/nvj_gzip.h"
 
 class WebServer
 {

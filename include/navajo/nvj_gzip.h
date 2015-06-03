@@ -18,7 +18,7 @@
 
 //********************************************************
 
-inline size_t gzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc )
+inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc )
 {
   unsigned have;
   z_stream strm;
@@ -77,7 +77,7 @@ inline size_t gzip( unsigned char** dst, const unsigned char* src, const size_t 
 
 //********************************************************
 
-inline size_t gunzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc )
+inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc )
 {
   unsigned have;
   z_stream strm;

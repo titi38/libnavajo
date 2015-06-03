@@ -63,7 +63,6 @@
 #include "navajo/AuthPAM.hh"
 #endif
 #include "navajo/thread.h"
-#include "gzip.cc"
 
 
 #define DEFAULT_HTTP_PORT 8080
@@ -504,7 +503,7 @@ void WebServer::accept_request(int client, SSL *ssl)
     if (!zipSupport && zippedFile)
     {
       // Need to uncompress
-      if ((int)(webpageLen=gunzip( &webpage, gzipWebPage, sizeZip )) < 0)
+      if ((int)(webpageLen=nvj_gunzip( &webpage, gzipWebPage, sizeZip )) < 0)
       {
         NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip decompression failed !");
         std::string msg = getInternalServerErrorMsg();
@@ -520,7 +519,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       const char *mimetype=response.getMimeType().c_str();
       if (mimetype != NULL && (strncmp(mimetype,"application",11) == 0 || strncmp(mimetype,"text",4) == 0))
       {  
-        if ((int)(sizeZip=gzip( &gzipWebPage, webpage, webpageLen )) < 0)
+        if ((int)(sizeZip=nvj_gzip( &gzipWebPage, webpage, webpageLen )) < 0)
         {
           NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip compression failed !");
           std::string msg = getInternalServerErrorMsg();
