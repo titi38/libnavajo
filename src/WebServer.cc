@@ -713,9 +713,9 @@ std::string WebServer::getHttpHeader(const char *messageType, const size_t len, 
   {
     if ( response->isCORS() )
     {
-      header+="Access-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: ";
+      header += "Access-Control-Allow-Origin: " + response->getCORSdomain() + "\r\nAccess-Control-Allow-Credentials: ";
       if ( response->isCORSwithCredentials() )
-        header+="true\r\n";
+        header += "true\r\n";
       else header+="false\r\n";
     } 
 
