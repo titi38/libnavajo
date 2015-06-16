@@ -14,6 +14,7 @@
 #ifndef HTTPREQUEST_HH_
 #define HTTPREQUEST_HH_
 
+#include "navajo/IpAddress.hh"
 #include <map>
 #include <vector>
 #include <string>
@@ -33,6 +34,9 @@ class HttpRequest
 
   const char *url;
   const char *origin;
+  IpAddress peerIpAddress;
+  std::string *x509peerDN;
+  std::string httpAuthUsername;
   HttpRequestMethod httpMethod;
   HttpRequestCookiesMap cookies;
   HttpRequestParametersMap parameters;
@@ -315,11 +319,14 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin) 
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const string &username, const IpAddress &ip, string* peerDN=NULL) 
     { 
       httpMethod = type;
       this->url = url;
       this->origin = origin;
+      httpAuthUsername=username;
+      this->peerIpAddress=ip;
+      if (peerDN != NULL) x509peerDN=peerDN;
       if (params != NULL && strlen(params))
         decodParams(params);
       if (cookies != NULL && strlen(cookies))
@@ -327,23 +334,58 @@ class HttpRequest
       getSession();
     };
     
+    /**********************************************************************/
     /**
     * get url    
     * @return the requested url
     */
     inline const char *getUrl() const { return url; };
 
+    /**********************************************************************/
     /**
     * get request type    
     * @return the Http Request Type ( GET/POST/...)
     */
     inline HttpRequestMethod getRequestType() const { return httpMethod; };
   
+    /**********************************************************************/
     /**
     * get request origin    
     * @return the Http Request Origin
     */
     inline const char* getRequestOrigin() const { return origin; };
+    
+    /**********************************************************************/
+    /**
+    * get peer IP address    
+    * @return the ip address
+    */
+    inline IpAddress& getPeerIpAddress()
+    {
+      return peerIpAddress;
+    };
+    
+    /**********************************************************************/
+    /**
+    * get http authentification username
+    * @return the login
+    */    
+    inline string& getHttpAuthUsername()
+    {
+      return httpAuthUsername;
+    };
+
+    /**********************************************************************/
+    /**
+    * get peer x509 dn 
+    * @return the DN of the peer certificate
+    */   
+    inline string& getX509PeerDN()
+    {
+      return *x509peerDN;
+    };
+    
+    
 };
 
 //****************************************************************************

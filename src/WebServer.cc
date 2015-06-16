@@ -102,8 +102,8 @@ WebServer::WebServer()
   authPeerSsl=false;
   authPam=false;
 
-  pthread_mutex_init(&clientsSockLifo_mutex, NULL);
-  pthread_cond_init(&clientsSockLifo_cond, NULL);
+  pthread_mutex_init(&clientsQueue_mutex, NULL);
+  pthread_cond_init(&clientsQueue_cond, NULL);
 
   pthread_mutex_init(&peerDnHistory_mutex, NULL);
   pthread_mutex_init(&usersAuthHistory_mutex, NULL);
@@ -160,8 +160,13 @@ void WebServer::updatePeerDnHistory(std::string dn)
 }
 
 /*********************************************************************/
-
-bool WebServer::isUserAllowed(const string &pwdb64)
+/**
+* Http login authentification
+* @param name: the login/password string in base64 format  
+* @param name: set to the decoded login name  
+* @return true if user is allowed
+*/ 
+bool WebServer::isUserAllowed(const string &pwdb64, string& login)
 {
 
   pthread_mutex_lock( &usersAuthHistory_mutex );
@@ -193,7 +198,7 @@ bool WebServer::isUserAllowed(const string &pwdb64)
     return false;
   }
 
-  string login=loginPwd.substr(0,loginPwdSep);
+  login=loginPwd.substr(0,loginPwdSep);
   string pwd=loginPwd.substr(loginPwdSep+1);
 
   vector<string> httpAuthLoginPwd=authLoginPwdList;
@@ -261,7 +266,7 @@ size_t WebServer::recvLine(int client, char *bufLine, size_t nsize)
 * \return always NULL
 ***********************************************************************/
 
-void WebServer::accept_request(int client, SSL *ssl)
+void WebServer::accept_request(ClientSockData* client, SSL *ssl)
 {
   char bufLine[BUFSIZE];
   HttpRequestMethod requestMethod;
@@ -271,6 +276,7 @@ void WebServer::accept_request(int client, SSL *ssl)
   size_t nbFileKeepAlive=5;
 
   char requestParams[BUFSIZE], requestCookies[BUFSIZE], requestOrigin[BUFSIZE];
+  string username;
   struct stat st;
   size_t bufLineLen=0;
   BIO *io = NULL,*ssl_bio = NULL;
@@ -301,6 +307,7 @@ void WebServer::accept_request(int client, SSL *ssl)
     *requestParams='\0';
     *requestCookies='\0';
     *requestOrigin='\0';
+    username="";
     crlfEmptyLineFound=false;
     keepAlive=-1;
     zipSupport=false;
@@ -324,7 +331,7 @@ void WebServer::accept_request(int client, SSL *ssl)
             r=SSL_shutdown(ssl);
             if(!r)
             {
-              shutdown(client,1);
+              shutdown(client->socketId, 1);
               SSL_shutdown(ssl);
             }
             SSL_free(ssl);
@@ -332,7 +339,7 @@ void WebServer::accept_request(int client, SSL *ssl)
         }
       }
       else
-        bufLineLen=recvLine(client, bufLine, BUFSIZE-1);
+        bufLineLen=recvLine(client->socketId, bufLine, BUFSIZE-1);
 
       if (bufLineLen == 0 || exiting)
       {
@@ -357,7 +364,7 @@ void WebServer::accept_request(int client, SSL *ssl)
           while ( j < (unsigned)bufLineLen && *(bufLine + j) != 0x0d && *(bufLine + j) != 0x0a)
             pwdb64+=*(bufLine + j++);;
           if (!authOK)
-            authOK=isUserAllowed(pwdb64);
+            authOK=isUserAllowed(pwdb64, username);
           continue;
         }
                  
@@ -412,7 +419,7 @@ void WebServer::accept_request(int client, SSL *ssl)
     if (!authOK)
     {
       std::string msg = getHttpHeader( "401 Authorization Required", 0, false);
-      httpSend(client, (const void*) msg.c_str(), msg.length(), io);
+      httpSend(client->socketId, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
       return ;
     }
@@ -420,13 +427,13 @@ void WebServer::accept_request(int client, SSL *ssl)
     if ( requestMethod == UNKNOWN_METHOD )
     {
       std::string msg = getNotImplementedErrorMsg();
-      httpSend(client, (const void*) msg.c_str(), msg.length(), io);
+      httpSend(client->socketId, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
       return ;
     }
 
     if ( requestMethod == POST_METHOD )
-      bufLineLen=recvLine(client, requestParams, BUFSIZE);
+      bufLineLen=recvLine(client->socketId, requestParams, BUFSIZE);
 
     char logBuffer[BUFSIZE];
     snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", url+1, requestMethod, requestParams, requestCookies, httpVers, keepAlive, zipSupport );
@@ -449,7 +456,7 @@ void WebServer::accept_request(int client, SSL *ssl)
     printf( "url: %s?%s\n", url+1, requestParams ); fflush(NULL);
 #endif
 
-    HttpRequest request(requestMethod, url+1, requestParams, requestCookies, requestOrigin);
+    HttpRequest request(requestMethod, url+1, requestParams, requestCookies, requestOrigin, username, client->ip, client->peerDN);
     const char *mime=get_mime_type(url+1); 
     string mimeStr; if (mime != NULL) mimeStr=mime;
     HttpResponse response(mimeStr);
@@ -477,7 +484,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       NVJ_LOG->append(NVJ_WARNING,bufLinestr);
 
       std::string msg = getNotFoundErrorMsg();
-      httpSend(client, (const void*) msg.c_str(), msg.length(), io);
+      httpSend(client->socketId, (const void*) msg.c_str(), msg.length(), io);
       if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
       return ;
     }
@@ -489,7 +496,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       if ( webpage == NULL || !webpageLen)
       {
         std::string msg = getNoContentErrorMsg();
-        httpSend(client, (const void*) msg.c_str(), msg.length(), io);
+        httpSend(client->socketId, (const void*) msg.c_str(), msg.length(), io);
         if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
         return;
       }
@@ -511,7 +518,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       {
         NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip decompression failed !");
         std::string msg = getInternalServerErrorMsg();
-        httpSend(client, (const void*) msg.c_str(), msg.length(), io);
+        httpSend(client->socketId, (const void*) msg.c_str(), msg.length(), io);
         if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
         return ;
       }
@@ -527,7 +534,7 @@ void WebServer::accept_request(int client, SSL *ssl)
         {
           NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip compression failed !");
           std::string msg = getInternalServerErrorMsg();
-          httpSend(client, (const void*) msg.c_str(), msg.length(), io);
+          httpSend(client->socketId, (const void*) msg.c_str(), msg.length(), io);
           if (sslEnabled) { SSL_shutdown(ssl); SSL_free(ssl); }
           return ;
         }
@@ -545,14 +552,14 @@ void WebServer::accept_request(int client, SSL *ssl)
     if (sizeZip>0 && zipSupport)
     {  
       std::string header = getHttpHeader("200 OK", sizeZip, keepAlive, true, &response);
-      httpSend(client, (const void*) header.c_str(), header.length(), io);
-      httpSend(client, (const void*) gzipWebPage, sizeZip, io);
+      httpSend(client->socketId, (const void*) header.c_str(), header.length(), io);
+      httpSend(client->socketId, (const void*) gzipWebPage, sizeZip, io);
     }
     else
     {
       std::string header = getHttpHeader("200 OK", webpageLen, keepAlive, false, &response);
-      httpSend(client, (const void*) header.c_str(), header.length(), io);
-      httpSend(client, (const void*) webpage, webpageLen, io);
+      httpSend(client->socketId, (const void*) header.c_str(), header.length(), io);
+      httpSend(client->socketId, (const void*) webpage, webpageLen, io);
     }
 
     if (sizeZip>0 && !zippedFile) // cas compression = double desalloc
@@ -915,7 +922,7 @@ u_short WebServer::init()
 
 void WebServer::exit()
 {
-  pthread_mutex_lock( &clientsSockLifo_mutex );
+  pthread_mutex_lock( &clientsQueue_mutex );
   exiting=true;
 
   while (nbServerSock>0)
@@ -924,7 +931,7 @@ void WebServer::exit()
     close (server_sock[ nbServerSock ]);
   }
 
-  pthread_mutex_unlock( &clientsSockLifo_mutex );
+  pthread_mutex_unlock( &clientsQueue_mutex );
 }
 
 /***********************************************************************
@@ -1053,29 +1060,31 @@ void *WebServer::startPoolThread(void *t)
   
 void WebServer::poolThreadProcessing()
 {
-  pthread_mutex_lock( &clientsSockLifo_mutex );
+  pthread_mutex_lock( &clientsQueue_mutex );
 
   BIO *sbio;
   SSL *ssl=NULL;
   X509 *peer=NULL;
   bool authSSL=false;
 
-  while( !clientsSockLifo.empty() || !exiting )
+  while( !clientsQueue.empty() || !exiting )
   {
-    while( clientsSockLifo.empty() && !exiting)
-      pthread_cond_wait( &clientsSockLifo_cond, &clientsSockLifo_mutex );
+    while( clientsQueue.empty() && !exiting)
+      pthread_cond_wait( &clientsQueue_cond, &clientsQueue_mutex );
 
-    if (exiting)  { pthread_mutex_unlock( &clientsSockLifo_mutex ); break; }
+    if (exiting)  { pthread_mutex_unlock( &clientsQueue_mutex ); break; }
 
     // clientsSockLifo is not empty
-    volatile int client=clientsSockLifo.top();
-    clientsSockLifo.pop();
+//    volatile int client=clientsSockLifo.top();
+//    clientsSockLifo.pop();
+    ClientSockData* client = clientsQueue.front();
+    clientsQueue.pop();
 
-    pthread_mutex_unlock( &clientsSockLifo_mutex );
+    pthread_mutex_unlock( &clientsQueue_mutex );
     
     if (sslEnabled)
     {
-      sbio=BIO_new_socket(client, BIO_NOCLOSE);
+      sbio=BIO_new_socket(client->socketId, BIO_NOCLOSE);
       ssl=SSL_new(sslCtx);
       SSL_set_bio(ssl,sbio,sbio);
 
@@ -1098,11 +1107,13 @@ void WebServer::poolThreadProcessing()
             char *str = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);                  
 
             if ((authSSL=isAuthorizedDN(str)) == true)
-              updatePeerDnHistory(std::string(str));
+            {
+              client->peerDN = new std::string(str);
+              updatePeerDnHistory(*(client->peerDN));
+            }
             free (str);                           
             X509_free(peer);
           }
-//        else printf ("SSL_get_verify_result(ssl) = %d\n", SSL_get_verify_result(ssl) );
         }
       }
       else
@@ -1110,17 +1121,23 @@ void WebServer::poolThreadProcessing()
     }
 
     if (authSSL)
-      accept_request(client,ssl); 
+    {
+      accept_request(client, ssl);
+      freeClientSockData(client);
+    }
     else
     {
       if (sslEnabled)
       { SSL_shutdown(ssl); SSL_free(ssl); }
-      else 
+      else
+      {
         accept_request(client);
+        freeClientSockData(client);
+      }
     }
 
-    shutdown (client, SHUT_RDWR);      
-    close(client);     
+    shutdown (client->socketId, SHUT_RDWR);      
+    close(client->socketId);     
   }
   exitedThread++;
 
@@ -1241,7 +1258,7 @@ void WebServer::threadProcessing()
 
       //
 
-      pthread_mutex_lock( &clientsSockLifo_mutex );
+      pthread_mutex_lock( &clientsQueue_mutex );
 
       updatePeerIpHistory(webClientAddr);
       if (client_sock == -1)
@@ -1249,18 +1266,22 @@ void WebServer::threadProcessing()
       else
       {
         setSocketRcvTimeout(client_sock, 5);
-        clientsSockLifo.push(client_sock);
+        ClientSockData* client=(ClientSockData*)malloc(sizeof(ClientSockData));
+        client->socketId=client_sock;
+        client->ip=webClientAddr;
+        client->peerDN=NULL;
+        clientsQueue.push(client);
       }
 
-      pthread_cond_broadcast (& clientsSockLifo_cond);
-      pthread_mutex_unlock( &clientsSockLifo_mutex );   
+      pthread_cond_broadcast (& clientsQueue_cond);
+      pthread_mutex_unlock( &clientsQueue_mutex );   
     }
   }
 
 
   while (exitedThread != threadsPoolSize)
   {
-    pthread_cond_broadcast (& clientsSockLifo_cond);
+    pthread_cond_broadcast (& clientsQueue_cond);
     usleep(500);
   }
 
@@ -1270,7 +1291,7 @@ void WebServer::threadProcessing()
   if (sslEnabled)
     SSL_CTX_free(sslCtx);
 
-  pthread_mutex_destroy(&clientsSockLifo_mutex);
+  pthread_mutex_destroy(&clientsQueue_mutex);
 
 #if defined(LINUX) || defined(__darwin__)
   if (isAuthPam())

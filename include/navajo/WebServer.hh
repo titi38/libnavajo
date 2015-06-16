@@ -23,7 +23,7 @@
 #define SO_NOSIGPIPE    0x0800
 #endif
 
-#include <stack>
+#include <queue>
 #include <string>
 #include <map>
 #include <openssl/ssl.h>
@@ -39,16 +39,35 @@ class WebServer
     SSL_CTX *sslCtx;
     int s_server_session_id_context;
     static char *certpass;
+
+    typedef struct
+    {
+      int socketId;
+      IpAddress ip;
+      string *peerDN;
+    }
+    ClientSockData;
+    
+    inline void freeClientSockData(ClientSockData *c)
+    {
+      if (c->peerDN != NULL) delete c->peerDN;
+      free(c);
+    };
+    
+    std::queue<ClientSockData *> clientsQueue;
+    pthread_cond_t clientsQueue_cond;
+    pthread_mutex_t clientsQueue_mutex;
+
     void initialize_ctx(const char *certfile, const char *cafile, const char *password);
     static int password_cb(char *buf, int num, int rwflag, void *userdata);
 
-    bool isUserAllowed(const string &logpassb64);
+    bool isUserAllowed(const string &logpassb64, string &username);
     bool isAuthorizedDN(const std::string str);
 
     void httpSend(int s, const void *buf, size_t len, BIO *b);
 
     size_t recvLine(int client, char *bufLine, size_t);
-    void accept_request(int client, SSL *ssl=NULL);
+    void accept_request(ClientSockData* client, SSL *ssl=NULL);
     void fatalError(const char *);
     int setSocketRcvTimeout(int connectSocket, int seconds);
     static std::string getHttpHeader(const char *messageType, const size_t len=0, const bool keepAlive=true, const bool zipped=false, HttpResponse* response=NULL);
@@ -71,11 +90,6 @@ class WebServer
     volatile size_t exitedThread;
     volatile int server_sock [ 3 ];
     volatile size_t nbServerSock;
-
-    std::stack<int> clientsSockLifo;
-    pthread_cond_t clientsSockLifo_cond;
-    pthread_mutex_t clientsSockLifo_mutex;
-
     
     const static char authStr[];
 
