@@ -23,7 +23,7 @@
 
 //****************************************************************************
 
-typedef enum { UNKNOWN_METHOD = 0, GET_METHOD = 1, POST_METHOD = 2 } HttpRequestType;
+typedef enum { UNKNOWN_METHOD = 0, GET_METHOD = 1, POST_METHOD = 2 } HttpRequestMethod;
 
 
 class HttpRequest
@@ -31,8 +31,9 @@ class HttpRequest
   typedef std::map <std::string, std::string> HttpRequestParametersMap;
   typedef std::map <std::string, std::string> HttpRequestCookiesMap;  
 
-  const char *urlRequest;
-  HttpRequestType typeRequest;
+  const char *url;
+  const char *origin;
+  HttpRequestMethod httpMethod;
   HttpRequestCookiesMap cookies;
   HttpRequestParametersMap parameters;
   std::string sessionId;
@@ -314,10 +315,11 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestType type, const char *url, const char *params, const char *cookies) 
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin) 
     { 
-      typeRequest = type;
-      urlRequest = url;
+      httpMethod = type;
+      this->url = url;
+      this->origin = origin;
       if (params != NULL && strlen(params))
         decodParams(params);
       if (cookies != NULL && strlen(cookies))
@@ -329,14 +331,19 @@ class HttpRequest
     * get url    
     * @return the requested url
     */
-    inline const char *getUrl() const { return urlRequest; };
+    inline const char *getUrl() const { return url; };
 
     /**
     * get request type    
     * @return the Http Request Type ( GET/POST/...)
     */
-    inline HttpRequestType getRequestType() const { return typeRequest; };
-    
+    inline HttpRequestMethod getRequestType() const { return httpMethod; };
+  
+    /**
+    * get request origin    
+    * @return the Http Request Origin
+    */
+    inline const char* getRequestOrigin() const { return origin; };
 };
 
 //****************************************************************************

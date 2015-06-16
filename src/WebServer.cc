@@ -87,7 +87,7 @@ WebServer::WebServer()
   sslCtx=NULL;
   s_server_session_id_context = 1;
 
-  webServerName=std::string("Server: Navajo/")+std::string(LIBNAVAJO_SOFTWARE_VERSION);
+  webServerName=std::string("Server: libNavajo/")+std::string(LIBNAVAJO_SOFTWARE_VERSION);
   exiting=false;
   exitedThread=0;
   httpdAuth=false;
@@ -264,13 +264,13 @@ size_t WebServer::recvLine(int client, char *bufLine, size_t nsize)
 void WebServer::accept_request(int client, SSL *ssl)
 {
   char bufLine[BUFSIZE];
-  HttpRequestType requestType;
+  HttpRequestMethod requestMethod;
   size_t postContentLength=0;
   bool postContentTypeOk=false;
   char url[BUFSIZE];
   size_t nbFileKeepAlive=5;
 
-  char requestParams[BUFSIZE], requestCookies[BUFSIZE];
+  char requestParams[BUFSIZE], requestCookies[BUFSIZE], requestOrigin[BUFSIZE];
   struct stat st;
   size_t bufLineLen=0;
   BIO *io = NULL,*ssl_bio = NULL;
@@ -294,12 +294,13 @@ void WebServer::accept_request(int client, SSL *ssl)
   
   do
   {
-    requestType=UNKNOWN_METHOD;
+    requestMethod=UNKNOWN_METHOD;
     postContentLength=0;
     postContentTypeOk=false;
     *url='\0';
     *requestParams='\0';
     *requestCookies='\0';
+    *requestOrigin='\0';
     crlfEmptyLineFound=false;
     keepAlive=-1;
     zipSupport=false;
@@ -331,7 +332,7 @@ void WebServer::accept_request(int client, SSL *ssl)
         }
       }
       else
-        bufLineLen=recvLine(client, bufLine, BUFSIZE);
+        bufLineLen=recvLine(client, bufLine, BUFSIZE-1);
 
       if (bufLineLen == 0 || exiting)
       {
@@ -344,6 +345,7 @@ void WebServer::accept_request(int client, SSL *ssl)
         crlfEmptyLineFound = (*bufLine=='\n') || (*bufLine=='\r' && *(bufLine+1)=='\n');        
       else
       {
+        *(bufLine+bufLineLen)='\0';
         j = 0; while (isspace((int)(bufLine[j])) && j < (unsigned)bufLineLen) j++;
 
         if ( strncmp(bufLine+j, authStr, sizeof authStr - 1 ) == 0)
@@ -374,13 +376,15 @@ void WebServer::accept_request(int client, SSL *ssl)
         if (strncasecmp(bufLine+j, "Content-Length: ",16) == 0) { j+=16; postContentLength = atoi(bufLine+j); continue; }
 
         if (strncasecmp(bufLine+j, "Cookie: ",8) == 0) { j+=8; strcpy(requestCookies, bufLine+j); continue; }
-        
+
+        if (strncasecmp(bufLine+j, "Origin: ",8) == 0) { j+=8; strcpy(requestOrigin, bufLine+j); continue; }
+     
         isQueryStr=false;
         if (strncmp(bufLine+j, "GET", 3) == 0)
-          {  requestType=GET_METHOD; isQueryStr=true; j+=4; }
+          {  requestMethod=GET_METHOD; isQueryStr=true; j+=4; }
         
         if (strncmp(bufLine+j, "POST", 4) == 0)
-          {  requestType=POST_METHOD; isQueryStr=true; j+=5; }
+          {  requestMethod=POST_METHOD; isQueryStr=true; j+=5; }
 
         if (isQueryStr)
         {
@@ -389,7 +393,7 @@ void WebServer::accept_request(int client, SSL *ssl)
           i=0; while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen) && bufLine[j]!='?') url[i++] = bufLine[j++];
           url[i]='\0';
 
-          if ((requestType == GET_METHOD) && (bufLine[j] == '?'))
+          if ((requestMethod == GET_METHOD) && (bufLine[j] == '?'))
             { i=0; j++; while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen)) requestParams[i++] = bufLine[j++];
             requestParams[i]='\0'; }
           else requestParams[0]='\0';
@@ -413,7 +417,7 @@ void WebServer::accept_request(int client, SSL *ssl)
       return ;
     }
 
-    if ( requestType == UNKNOWN_METHOD )
+    if ( requestMethod == UNKNOWN_METHOD )
     {
       std::string msg = getNotImplementedErrorMsg();
       httpSend(client, (const void*) msg.c_str(), msg.length(), io);
@@ -421,11 +425,11 @@ void WebServer::accept_request(int client, SSL *ssl)
       return ;
     }
 
-    if ( requestType == POST_METHOD )
+    if ( requestMethod == POST_METHOD )
       bufLineLen=recvLine(client, requestParams, BUFSIZE);
 
     char logBuffer[BUFSIZE];
-    snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", url+1, requestType, requestParams, requestCookies, httpVers, keepAlive, zipSupport );
+    snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", url+1, requestMethod, requestParams, requestCookies, httpVers, keepAlive, zipSupport );
     NVJ_LOG->append(NVJ_DEBUG, logBuffer);
 
     // Process the query
@@ -445,7 +449,7 @@ void WebServer::accept_request(int client, SSL *ssl)
     printf( "url: %s?%s\n", url+1, requestParams ); fflush(NULL);
 #endif
 
-    HttpRequest request(requestType, url+1, requestParams, requestCookies);
+    HttpRequest request(requestMethod, url+1, requestParams, requestCookies, requestOrigin);
     const char *mime=get_mime_type(url+1); 
     string mimeStr; if (mime != NULL) mimeStr=mime;
     HttpResponse response(mimeStr);
@@ -694,16 +698,25 @@ std::string WebServer::getHttpHeader(const char *messageType, const size_t len, 
   header+=std::string(timeBuf)+"\r\n";
 
   header+=webServerName+"\r\n";
+
+  if (strncmp(messageType, "401", 3) == 0)
+    header+=std::string("WWW-Authenticate: Basic realm=\"Restricted area: please enter Login/Password\"\r\n");
   
   if (response != NULL)
   {
+    if ( response->isCORS() )
+    {
+      header+="Access-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: ";
+      if ( response->isCORSwithCredentials() )
+        header+="true\r\n";
+      else header+="false\r\n";
+    } 
+
     std::vector<std::string>& cookies=response->getCookies();
     for (unsigned i=0; i < cookies.size(); i++)
       header+="Set-Cookie: " + cookies[i] + "\r\n";
   }
    
-  if (strncmp(messageType, "401", 3) == 0)
-    header+=std::string("WWW-Authenticate: Basic realm=\"Restricted area: please enter Login/Password\"\r\n");
   header+="Accept-Ranges: bytes\r\n";
 
   if (keepAlive)
@@ -724,6 +737,7 @@ std::string WebServer::getHttpHeader(const char *messageType, const size_t len, 
     std::stringstream lenSS; lenSS << len;
     header+="Content-Length: "+lenSS.str()+ "\r\n";
   }
+ 
   header+= "\r\n";
 
   return header;
