@@ -31,27 +31,24 @@
 #include "navajo/LogRecorder.hh"
 #include "navajo/IpAddress.hh"
 #include "navajo/WebRepository.hh"
+
 #include "navajo/thread.h"
 #include "navajo/nvj_gzip.h"
 
+class WebSocket;
 class WebServer
 {
     SSL_CTX *sslCtx;
     int s_server_session_id_context;
     static char *certpass;
-
-    typedef struct
-    {
-      int socketId;
-      IpAddress ip;
-      string *peerDN;
-    }
-    ClientSockData;
     
-    inline void freeClientSockData(ClientSockData *c)
+    inline static void freeClientSockData(ClientSockData *c)
     {
-      if (c->peerDN != NULL) delete c->peerDN;
+      if (c == NULL) return;
+      closeSocket(c);
+      if (c->peerDN != NULL) { delete c->peerDN; c->peerDN=NULL; }
       free(c);
+      c=NULL;
     };
     
     std::queue<ClientSockData *> clientsQueue;
@@ -64,10 +61,10 @@ class WebServer
     bool isUserAllowed(const string &logpassb64, string &username);
     bool isAuthorizedDN(const std::string str);
 
-    void httpSend(int s, const void *buf, size_t len, BIO *b);
+    void httpSend(ClientSockData *client, const void *buf, size_t len);
 
     size_t recvLine(int client, char *bufLine, size_t);
-    void accept_request(ClientSockData* client, SSL *ssl=NULL);
+    bool accept_request(ClientSockData* client);
     void fatalError(const char *);
     int setSocketRcvTimeout(int connectSocket, int seconds);
     static std::string getHttpHeader(const char *messageType, const size_t len=0, const bool keepAlive=true, const bool zipped=false, HttpResponse* response=NULL);
@@ -127,10 +124,22 @@ class WebServer
     std::vector<WebRepository *> webRepositories;
     static inline bool is_base64(unsigned char c)
       { return (isalnum(c) || (c == '+') || (c == '/')); };
+    static const string base64_chars;
     static std::string base64_decode(const std::string& encoded_string);
+    static std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len);
+    static void closeSocket(ClientSockData* client);
+    std::map<std::string, WebSocket *> webSocketEndPoints;
+    static std::string SHA1_encode(const string& input);
+    static const string webSocketMagicString;
+    static string generateWebSocketServerKey(string webSocketKey);
+    static string getHttpWebSocketHeader(const char *messageType, const char* webSocketClientKey, const bool webSocketDeflate);
+     void startWebSocket(WebSocket *websocket, HttpRequest* request);
+
     
   public:
     WebServer();
+    
+    static void webSocketSend(HttpRequest* request, const string &message);
 
     /**
     * Set the web server name in the http header
@@ -203,6 +212,13 @@ class WebServer
     */  
     void addRepository(WebRepository* repo) { webRepositories.push_back(repo); };
 
+    /**
+    * Add a websocket
+    * @param endpoint : websocket endpoint
+    * @param websocket : WebSocket instance
+    */  
+    void addWebSocket(const string endPoint, WebSocket* websocket) { webSocketEndPoints[endPoint]=websocket; };
+    
     /**
     * IpV4 hosts only
     */  

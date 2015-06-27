@@ -19,13 +19,22 @@
 #include <vector>
 #include <string>
 #include <sstream>
-
+#include <openssl/ssl.h>
 #include "HttpSession.hh"
 
 //****************************************************************************
 
 typedef enum { UNKNOWN_METHOD = 0, GET_METHOD = 1, POST_METHOD = 2 } HttpRequestMethod;
-
+typedef enum { GZIP, ZLIB, NONE } CompressionMode;
+typedef struct
+{
+  int socketId;
+  IpAddress ip;
+  CompressionMode compression;
+  SSL *ssl;
+  BIO *bio;
+  string *peerDN;
+} ClientSockData;
 
 class HttpRequest
 {
@@ -34,8 +43,7 @@ class HttpRequest
 
   const char *url;
   const char *origin;
-  IpAddress peerIpAddress;
-  std::string *x509peerDN;
+  ClientSockData *clientSockData;
   std::string httpAuthUsername;
   HttpRequestMethod httpMethod;
   HttpRequestCookiesMap cookies;
@@ -319,14 +327,13 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const string &username, const IpAddress &ip, string* peerDN=NULL) 
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const string &username, ClientSockData *client) 
     { 
       httpMethod = type;
       this->url = url;
       this->origin = origin;
       httpAuthUsername=username;
-      this->peerIpAddress=ip;
-      if (peerDN != NULL) x509peerDN=peerDN;
+      this->clientSockData=client;
       if (params != NULL && strlen(params))
         decodParams(params);
       if (cookies != NULL && strlen(cookies))
@@ -362,7 +369,7 @@ class HttpRequest
     */
     inline IpAddress& getPeerIpAddress()
     {
-      return peerIpAddress;
+      return clientSockData->ip;
     };
     
     /**********************************************************************/
@@ -382,13 +389,30 @@ class HttpRequest
     */   
     inline string& getX509PeerDN()
     {
-      return *x509peerDN;
+      return *(clientSockData->peerDN);
     };
-    
-    
+
+    /**********************************************************************/
+    /**
+    * get compression mode
+    * @return the compression mode requested
+    */   
+    inline CompressionMode getCompressionMode()
+    {
+      return clientSockData->compression;
+    };
+
+    /**********************************************************************/
+    /**
+    * get the http request client socket data 
+    * @return the clientSockData
+    */       
+    ClientSockData *getClientSockData()
+    {
+      return clientSockData;
+    }
 };
 
 //****************************************************************************
-
 
 #endif

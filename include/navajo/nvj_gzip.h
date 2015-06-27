@@ -18,7 +18,7 @@
 
 //********************************************************
 
-inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc )
+inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, bool rawDeflateData=false )
 {
   unsigned have;
   z_stream strm;
@@ -29,7 +29,7 @@ inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const siz
   strm.zfree = Z_NULL;
   strm.opaque = Z_NULL;
 
-  if ( deflateInit2(&strm, Z_BEST_SPEED, Z_DEFLATED, 16+MAX_WBITS, 9, Z_DEFAULT_STRATEGY) != Z_OK)
+  if ( deflateInit2(&strm, Z_BEST_SPEED, Z_DEFLATED, rawDeflateData ? -15 : 16+MAX_WBITS, 9, Z_DEFAULT_STRATEGY) != Z_OK)
       return -1;
 
   if ( (*dst=(unsigned char *)malloc(CHUNK * sizeof (unsigned char))) == NULL )
@@ -77,7 +77,7 @@ inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const siz
 
 //********************************************************
 
-inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc )
+inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, bool rawDeflateData=false )
 {
   unsigned have;
   z_stream strm;
@@ -94,7 +94,8 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
   strm.avail_in = 0;
   strm.next_in = Z_NULL;
 
-  if (inflateInit2(&strm, 16+MAX_WBITS) != Z_OK)
+
+  if (inflateInit2(&strm, rawDeflateData ? -15 : 16+MAX_WBITS) != Z_OK)
     return -1;
 
   if ( (*dst=(unsigned char *)malloc(CHUNK * sizeof (unsigned char))) == NULL )
