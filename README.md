@@ -13,6 +13,7 @@ Libnavajo makes it easy to run an HTTP server into your own application, impleme
 * Precompiler to include a web repository into your code
 * Return dynamic or static contents 
 * Advanced session management
+* Support for websockets
 * Fully oriented object...
 
 

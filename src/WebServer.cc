@@ -114,6 +114,8 @@ WebServer::WebServer()
   pthread_mutex_init(&clientsQueue_mutex, NULL);
   pthread_cond_init(&clientsQueue_cond, NULL);
 
+  pthread_mutex_init(&webSocketClientList_mutex, NULL);
+
   pthread_mutex_init(&peerDnHistory_mutex, NULL);
   pthread_mutex_init(&usersAuthHistory_mutex, NULL);
 }
@@ -471,7 +473,8 @@ bool WebServer::accept_request(ClientSockData* client)
         httpSend(client, (const void*) header.c_str(), header.length());
         HttpRequest* request=new HttpRequest(requestMethod, url+1, requestParams, requestCookies, requestOrigin, username, client);
 
-        startWebSocket(webSocket, request);
+        if (webSocket->onOpen(request))
+        startWebSocketListener(webSocket, request);
         return false;
       }
       else
@@ -555,12 +558,22 @@ bool WebServer::accept_request(ClientSockData* client)
     if ( (client->compression == NONE) && zippedFile )
     {
       // Need to uncompress
-      if ((int)(webpageLen=nvj_gunzip( &webpage, gzipWebPage, sizeZip )) < 0)
+      try
       {
-        NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip decompression failed !");
-        std::string msg = getInternalServerErrorMsg();
-        httpSend(client, (const void*) msg.c_str(), msg.length());
-        return true;
+        if ((int)(webpageLen=nvj_gunzip( &webpage, gzipWebPage, sizeZip )) < 0)
+        {
+          NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip decompression failed !");
+          std::string msg = getInternalServerErrorMsg();
+          httpSend(client, (const void*) msg.c_str(), msg.length());
+          return true;
+        }
+      }
+      catch(...)
+      {
+          NVJ_LOG->append(NVJ_ERROR, "Webserver: nvj_gunzip raised an exception");
+          std::string msg = getInternalServerErrorMsg();
+          httpSend(client, (const void*) msg.c_str(), msg.length());
+          return true;
       }
     }
 
@@ -569,19 +582,29 @@ bool WebServer::accept_request(ClientSockData* client)
     {
       const char *mimetype=response.getMimeType().c_str();
       if (mimetype != NULL && (strncmp(mimetype,"application",11) == 0 || strncmp(mimetype,"text",4) == 0))
-      {  
-        if ((int)(sizeZip=nvj_gzip( &gzipWebPage, webpage, webpageLen )) < 0)
+      {
+        try
         {
-          NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip compression failed !");
-          std::string msg = getInternalServerErrorMsg();
-          httpSend(client, (const void*) msg.c_str(), msg.length());
-          return true;
-        }
-        else
-          if ((size_t)sizeZip>webpageLen)
+          if ((int)(sizeZip=nvj_gzip( &gzipWebPage, webpage, webpageLen )) < 0)
           {
-            sizeZip=0;
-            free (gzipWebPage);
+            NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip compression failed !");
+            std::string msg = getInternalServerErrorMsg();
+            httpSend(client, (const void*) msg.c_str(), msg.length());
+            return true;
+          }
+          else
+            if ((size_t)sizeZip>webpageLen)
+            {
+              sizeZip=0;
+              free (gzipWebPage);
+            }
+          }
+          catch(...)
+          {
+              NVJ_LOG->append(NVJ_ERROR, "Webserver: nvj_gzip raised an exception");
+              std::string msg = getInternalServerErrorMsg();
+              httpSend(client, (const void*) msg.c_str(), msg.length());
+              return true;
           }
       }
     }
@@ -968,8 +991,16 @@ void WebServer::exit()
     shutdown ( server_sock[ --nbServerSock ], 2 ) ;
     close (server_sock[ nbServerSock ]);
   }
-
   pthread_mutex_unlock( &clientsQueue_mutex );
+
+  pthread_mutex_lock(&webSocketClientList_mutex);
+  for (std::list<int>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); /*nothing*/)
+  {
+    shutdown ( *it, 2 ) ;
+    close ( *it );
+    it = webSocketClientList.erase(it);
+  }
+  pthread_mutex_unlock(&webSocketClientList_mutex);
 }
 
 /***********************************************************************
@@ -1500,23 +1531,20 @@ printf("key = '%s'\n", webSocketClientKey);
 }
 
 /***********************************************************************/
-/*
-     
-void WebServer::createWebSocket(WebSocket *websocket, ClientSockData* client, HttpRequest* request, const bool webSocketDeflate)
+
+void WebServer::startWebSocketListener(WebSocket *websocket, HttpRequest* request)
 {
-create_thread( &newthread, WebServer::startPoolThread, static_cast<void *>(this) );
-
-
-
   pthread_t newthread;
-  for (unsigned i=0; i<threadsPoolSize; i++)
-    create_thread( &newthread, WebServer::startPoolThread, static_cast<void *>(this) );
-  exitedThread=0;
+  WebSocketParams *p=(WebSocketParams *)malloc( sizeof(WebSocketParams) );
+  p->webserver=this;
+  p->websocket=websocket;
+  p->request=request;
+  create_thread( &newthread, WebServer::startThreadListenWebSocket, static_cast<void *>(p) );
 }
-*/
+
 /***********************************************************************/
 
-void WebServer::startWebSocket(WebSocket *websocket, HttpRequest* request)
+void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
 {
 printf("startWebSocket\n"); fflush(NULL);
 
@@ -1529,8 +1557,13 @@ printf("startWebSocket\n"); fflush(NULL);
   unsigned char* msgContent = NULL;
   enum MsgDecodSteps { FIRSTBYTE, LENGTH, MASK, CONTENT };
 
-
   ClientSockData* client = request->getClientSockData();
+  
+  setSocketRcvTimeout(client->socketId,0); // Remove socket timeout
+  pthread_mutex_lock(&webSocketClientList_mutex);
+  webSocketClientList.push_back(client->socketId);
+  pthread_mutex_unlock(&webSocketClientList_mutex);
+  
   u_int64_t readLength=1;
   MsgDecodSteps step=FIRSTBYTE;
   memset( msgKeys, 0, 4*sizeof(unsigned char) );
@@ -1541,7 +1574,7 @@ printf("startWebSocket\n"); fflush(NULL);
   pfd.events  = POLLIN;
   pfd.revents = 0;*/
 
-  for (;!closing && !exiting;)
+  for (;!closing;)
   {
   /*  do
     {
@@ -1566,22 +1599,23 @@ printf("startWebSocket\n"); fflush(NULL);
           n=BIO_read(client->bio, bufferRecv+it, length-it);
 
           if (SSL_get_error(client->ssl,n) == SSL_ERROR_ZERO_RETURN)
-          {
-            freeClientSockData(client);
-            return;      
-          }
+            closing=true;
       }
       else
       {
-        
         n=recv(client->socketId, bufferRecv+it, length-it, 0);
-        if ( n <= 0 ) continue;
+        if ( n <= 0 )
+        {
+          printf ("n=%d errno=%d\t",n,errno);
+          if (errno==ENOTCONN || errno==EBADF) closing=true;
+          continue;
+        }
       }
       it += n;
     }
-    while (it != length && !closing && !exiting);
+    while (it != length && !closing);
     
-    if (closing || exiting) continue;
+    if (closing) continue;
     
     // Decode message header
     switch(step)
@@ -1663,10 +1697,18 @@ printf("startWebSocket\n"); fflush(NULL);
         {
           if (msgContent != NULL && (client->compression == ZLIB))
           {
-            unsigned char *msg = NULL;
-            size_t msgLen=nvj_gunzip( &msg, msgContent, msgLength, true );
-            free(msgContent);
-            msgContent=msg;
+            try
+            {
+              unsigned char *msg = NULL;
+              size_t msgLen=nvj_gunzip( &msg, msgContent, msgLength, true );
+              free(msgContent);
+              msgContent=msg;
+            }
+            catch(...)
+            {
+              NVJ_LOG->append(NVJ_ERROR, " Websocket: nvj_gzip raised an exception");
+              return;
+            }
           }
           
           websocket->onMessage(request, string((char*)msgContent));
@@ -1688,8 +1730,14 @@ printf("startWebSocket\n"); fflush(NULL);
         break;
     }
   }
+  websocket->onClose(request);
   delete request;
   freeClientSockData(client);
+  webSocketClientList.push_back(client->socketId);
+  pthread_mutex_lock(&webSocketClientList_mutex);
+  std::list<int>::iterator it = std::find(webSocketClientList.begin(), webSocketClientList.end(), client->socketId);
+  if (it != webSocketClientList.end()) webSocketClientList.erase(it);
+  pthread_mutex_unlock(&webSocketClientList_mutex);
 }
 
 /***********************************************************************/
@@ -1707,8 +1755,15 @@ void WebServer::webSocketSend(HttpRequest* request, const string &message)
   if (client->compression == ZLIB)
   {
     headerBuffer[0] |= 0x40; // Set RSV1
-    //try catch:    
-    msgLen=nvj_gzip( &msg, (unsigned char *)(message.c_str()), message.length(), true );
+    try
+    {
+      msgLen=nvj_gzip( &msg, (unsigned char *)(message.c_str()), message.length(), true );
+    }
+    catch(...)
+    {
+      NVJ_LOG->append(NVJ_ERROR, " Websocket: nvj_gzip raised an exception");
+      return;
+    }
   }
   else
   {

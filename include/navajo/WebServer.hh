@@ -45,6 +45,7 @@ class WebServer
     inline static void freeClientSockData(ClientSockData *c)
     {
       if (c == NULL) return;
+    printf("freeClientSockData (%d)!\n",c->socketId); fflush(NULL);
       closeSocket(c);
       if (c->peerDN != NULL) { delete c->peerDN; c->peerDN=NULL; }
       free(c);
@@ -133,8 +134,24 @@ class WebServer
     static const string webSocketMagicString;
     static string generateWebSocketServerKey(string webSocketKey);
     static string getHttpWebSocketHeader(const char *messageType, const char* webSocketClientKey, const bool webSocketDeflate);
-     void startWebSocket(WebSocket *websocket, HttpRequest* request);
-
+    void listenWebSocket(WebSocket *websocket, HttpRequest* request);
+    void startWebSocketListener(WebSocket *websocket, HttpRequest* request);
+    std::list<int> webSocketClientList;
+    pthread_mutex_t webSocketClientList_mutex;
+    typedef struct
+    {
+      WebServer* webserver;
+      WebSocket* websocket;
+      HttpRequest* request;
+    } WebSocketParams;
+    inline static void* startThreadListenWebSocket(void* t)
+    {
+      WebSocketParams *p=static_cast<WebSocketParams *>(t);
+      p->webserver->listenWebSocket(p->websocket, p->request);
+      free(p);
+      pthread_exit(NULL);
+      return NULL;
+    };
     
   public:
     WebServer();

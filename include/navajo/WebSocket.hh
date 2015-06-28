@@ -20,11 +20,13 @@
 class WebSocket
 {
   public:
+    virtual bool onOpen(HttpRequest* request) { return true; };
     virtual void onMessage(HttpRequest* request, const string &message) = 0;
     void sendMessage(HttpRequest* request, const string &message)
     {
       WebServer::webSocketSend(request, message);
-    }
+    };
+    virtual void onClose(HttpRequest* request) { };
 };
 
 
