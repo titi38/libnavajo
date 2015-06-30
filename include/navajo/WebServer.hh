@@ -45,7 +45,6 @@ class WebServer
     inline static void freeClientSockData(ClientSockData *c)
     {
       if (c == NULL) return;
-    printf("freeClientSockData (%d)!\n",c->socketId); fflush(NULL);
       closeSocket(c);
       if (c->peerDN != NULL) { delete c->peerDN; c->peerDN=NULL; }
       free(c);
