@@ -57,7 +57,7 @@
 #include <stdlib.h>
 #include <sstream>
 #include <iostream>
-
+#include <algorithm>
 #include <fcntl.h>
 
 #include "navajo/WebServer.hh"
@@ -65,7 +65,7 @@
 #include "navajo/AuthPAM.hh"
 #endif
 #include "navajo/thread.h"
-
+#include "navajo/htonll.h"
 #include "navajo/WebSocket.hh"
 
 #define DEFAULT_HTTP_PORT 8080
@@ -1589,7 +1589,8 @@ printf("startWebSocket\n"); fflush(NULL);
     if ( !(pfd.revents & POLLIN) )
               continue;
 */
-    int n=0, it=0;
+    int n=0;
+    size_t it=0;
     size_t length=(readLength<BUFSIZE)?readLength:readLength-BUFSIZE;
     
     do
