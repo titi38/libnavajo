@@ -29,6 +29,10 @@ void exitFunction( int dummy )
   
   int getCpuLoad(void)
   {
+    #ifndef LINUX
+    srand (time(NULL));
+    return 40 + rand() % 40;
+    #else
     char buf[1024];
     static FILE     *proc_stat_fd;
     int result = -1;
@@ -58,7 +62,7 @@ void exitFunction( int dummy )
 
     cpu_work = work; cpu_total = total;
     return result;
-    
+    #endif
   }
 
 /***********************************************************************/
@@ -83,7 +87,7 @@ class MyDynamicRepository : public DynamicRepository
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-        if (!isValidSession(request)) return false;
+        //if (!isValidSession(request)) return false;
         ostringstream ss;
         ss << getCpuLoad();
         return fromString(ss.str(), response);
