@@ -282,7 +282,7 @@ bool WebServer::accept_request(ClientSockData* client)
   char bufLine[BUFSIZE];
   HttpRequestMethod requestMethod;
   size_t postContentLength=0;
-  bool postContentTypeOk=false;
+  bool urlencodedForm=false;
   char url[BUFSIZE];
   size_t nbFileKeepAlive=5;
 
@@ -314,7 +314,7 @@ bool WebServer::accept_request(ClientSockData* client)
   {
     requestMethod=UNKNOWN_METHOD;
     postContentLength=0;
-    postContentTypeOk=false;
+    urlencodedForm=false;
     *url='\0';
     *requestParams='\0';
     *requestCookies='\0';
@@ -383,7 +383,7 @@ bool WebServer::accept_request(ClientSockData* client)
 
         if (strncasecmp(bufLine+j, "Accept-Encoding: ",17) == 0) { j+=17; if (strstr(bufLine+j,"gzip") != NULL) client->compression=GZIP; continue; }
 // Unused:
-        if (strncasecmp(bufLine+j, "Content-Type: application/x-www-form-urlencoded", 47) == 0) { postContentTypeOk=true; continue; }
+        if (strncasecmp(bufLine+j, "Content-Type: application/x-www-form-urlencoded", 47) == 0) { urlencodedForm=true; continue; }
 
         if (strncasecmp(bufLine+j, "Content-Length: ",16) == 0) { j+=16; postContentLength = atoi(bufLine+j); continue; }
 
@@ -393,7 +393,7 @@ bool WebServer::accept_request(ClientSockData* client)
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Key: ", 19) == 0) { j+=19; strcpy(webSocketClientKey, bufLine+j); continue; }
 
-        if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
+   //     if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Version: ", 23) == 0) { j+=23; webSocketVersion = atoi(bufLine+j); continue; }
 
@@ -404,6 +404,12 @@ bool WebServer::accept_request(ClientSockData* client)
         if (strncmp(bufLine+j, "POST", 4) == 0)
           {  requestMethod=POST_METHOD; isQueryStr=true; j+=5; }
 
+        if (strncmp(bufLine+j, "PUT", 6) == 0)
+          {  requestMethod=PUT_METHOD; isQueryStr=true; j+=7; }
+          
+        if (strncmp(bufLine+j, "DELETE", 6) == 0)
+          {  requestMethod=DELETE_METHOD; isQueryStr=true; j+=7; }
+
         if (isQueryStr)
         {
           while (isspace((int)(bufLine[j])) && j < bufLineLen) j++;
@@ -411,7 +417,7 @@ bool WebServer::accept_request(ClientSockData* client)
           i=0; while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen) && bufLine[j]!='?') url[i++] = bufLine[j++];
           url[i]='\0';
 
-          if ((requestMethod == GET_METHOD) && (bufLine[j] == '?'))
+          if ( !urlencodedForm && (bufLine[j] == '?') )
             { i=0; j++; while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen)) requestParams[i++] = bufLine[j++];
             requestParams[i]='\0'; }
           else requestParams[0]='\0';
@@ -441,7 +447,7 @@ bool WebServer::accept_request(ClientSockData* client)
       return true;
     }
 
-    if ( requestMethod == POST_METHOD )
+    if ( urlencodedForm )
       bufLineLen=recvLine(client->socketId, requestParams, BUFSIZE);
 
     char logBuffer[BUFSIZE];
@@ -1549,7 +1555,7 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
 printf("startWebSocket\n"); fflush(NULL);
 
   char bufferRecv[BUFSIZE];
-  bool closing=false;
+  volatile bool closing=false;
   u_int64_t msgLength=0, msgContentIt=0;
   bool msgMask=false;
 
@@ -1563,7 +1569,9 @@ printf("startWebSocket\n"); fflush(NULL);
   pthread_mutex_lock(&webSocketClientList_mutex);
   webSocketClientList.push_back(client->socketId);
   pthread_mutex_unlock(&webSocketClientList_mutex);
-  
+
+  bool fin=false;
+  unsigned char rsv=0, opcode=0;  
   u_int64_t readLength=1;
   MsgDecodSteps step=FIRSTBYTE;
   memset( msgKeys, 0, 4*sizeof(unsigned char) );
@@ -1592,7 +1600,7 @@ printf("startWebSocket\n"); fflush(NULL);
     int n=0;
     size_t it=0;
     size_t length=(readLength<BUFSIZE)?readLength:readLength-BUFSIZE;
-    
+
     do
     {
       if (client->bio != NULL && client->ssl != NULL)
@@ -1608,7 +1616,8 @@ printf("startWebSocket\n"); fflush(NULL);
         if ( n <= 0 )
         {
           printf ("n=%d errno=%d\t",n,errno);
-          if (errno==ENOTCONN || errno==EBADF) closing=true;
+          //if (errno==ENOTCONN || errno==EBADF || errno==54) 
+            closing=true;
           continue;
         }
       }
@@ -1623,9 +1632,13 @@ printf("startWebSocket\n"); fflush(NULL);
     {
     
       case FIRSTBYTE:    
-        printf ("fin: %u\n", bufferRecv[0] & 0x80 >> 7);
-        printf ("rsv: %u\n", bufferRecv[0] & 0x70 >> 4 );
-        printf ("opcode: %u\n", bufferRecv[0] & 0x1f >> 1);
+        printf("WebSocket receive !\n");
+        fin=(bufferRecv[0] & 0x80) >> 7;
+        printf ("fin: %u\n", fin );
+        rsv=(bufferRecv[0] & 0x70) >> 4;
+        printf ("rsv: %u\n", rsv );
+        opcode=bufferRecv[0] & 0xf;
+        printf ("opcode: %u\n",opcode);
         fflush(NULL);
         step=LENGTH;
         readLength=1;
@@ -1634,14 +1647,15 @@ printf("startWebSocket\n"); fflush(NULL);
       case LENGTH:
         if (!msgLength)
         {    
-          msgMask = bufferRecv[0]  & 0x80 >> 7;
+          msgMask = (bufferRecv[0]  & 0x80) >> 7;
+
           printf("mask: %d\n", msgMask); 
           if (!msgMask)
           {
             freeClientSockData(client);
             return;      
           }
-            
+          
           msgLength =  bufferRecv[0] & 0x7f;
           if (!msgLength)
           {
@@ -1711,15 +1725,21 @@ printf("startWebSocket\n"); fflush(NULL);
               return;
             }
           }
-          
+if (opcode == 1)
           websocket->onMessage(request, string((char*)msgContent));
+else
+printf("message ignored: opcode=%d\n\n", opcode);
           
           // FINISHED
           if (msgContent != NULL)
             for (u_int64_t i=0; i<msgLength; i++)
               printf("%c(%2x)", msgContent[i],msgContent[i]);
-           printf("\n"); fflush(NULL);
-
+          printf("\n"); fflush(NULL);
+           
+          if (client->compression == ZLIB)
+            free (msgContent);
+          fin=false; rsv=0;
+          opcode=0;
           msgLength=0;
           msgContentIt=0;
           msgMask=false;
@@ -1743,7 +1763,7 @@ printf("startWebSocket\n"); fflush(NULL);
 
 /***********************************************************************/
 
-void WebServer::webSocketSend(HttpRequest* request, const string &message)
+void WebServer::webSocketSend(HttpRequest* request, const u_int8_t opcode, const unsigned char* message, size_t length, bool fin)
 {
   ClientSockData* client = request->getClientSockData();
 
@@ -1751,14 +1771,17 @@ void WebServer::webSocketSend(HttpRequest* request, const string &message)
   size_t headerLen=2; // default header size
   unsigned char *msg = NULL;
   size_t msgLen=0;
+
+printf("webSocketSend : opcode=%X message:'%s' len=%d ", opcode, message, length); fflush(NULL);
   
-  headerBuffer[0]=0x81; // FIN & OPCODE:0x1
+  headerBuffer[0]= 0x80 | (opcode & 0xf) ; // FIN & OPCODE:0x1
   if (client->compression == ZLIB)
   {
+printf("compression\n"); fflush(NULL);
     headerBuffer[0] |= 0x40; // Set RSV1
     try
     {
-      msgLen=nvj_gzip( &msg, (unsigned char *)(message.c_str()), message.length(), true );
+      msgLen=nvj_gzip( &msg, message, length, true );
     }
     catch(...)
     {
@@ -1768,25 +1791,26 @@ void WebServer::webSocketSend(HttpRequest* request, const string &message)
   }
   else
   {
-    msg=(unsigned char *)(message.c_str());
-    msgLen=message.length();
+  printf("no_compression\n"); fflush(NULL);
+    msg=(unsigned char*)message;
+    msgLen=length;
   }
   
   
   if (msgLen < 126)
-    headerBuffer[1]=(unsigned char)msgLen;
+    headerBuffer[1]=length;
   else
   {
     if (msgLen < 0xFFFF)
     {
       headerBuffer[1]=126;
-      *(u_int16_t*)(headerBuffer+2)=htons((u_int16_t)msgLen);
+      *(u_int16_t*)(headerBuffer+2)=htons((u_int16_t)length);
       headerLen+=2;
     }
     else
     {
       headerBuffer[1]=127;
-      *(u_int64_t*)(headerBuffer+2)=htonll((u_int64_t)msgLen);
+      *(u_int64_t*)(headerBuffer+2)=htonll((u_int64_t)length);
       headerLen+=8;
     }
   }
@@ -1805,10 +1829,54 @@ void WebServer::webSocketSend(HttpRequest* request, const string &message)
       freeClientSockData(client);
     }
   }
+  for (int i=0; i<headerLen; i++)
+    printf("%02X ",headerBuffer[i]);
+  for (int i=0; i<msgLen; i++)
+    printf("%02X ",msg[i]);
+    
+  printf("\n");
   if (client->compression == ZLIB)
     free (msg);
 }
 
 /***********************************************************************/
+
+void WebServer::webSocketSendTextMessage(HttpRequest* request, const string &message, bool fin)
+{
+  webSocketSend(request, 0x1, (const unsigned char*)(message.c_str()), message.length(), fin);
+}
+
+/***********************************************************************/
+
+void WebServer::webSocketSendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin)
+{
+  webSocketSend(request, 0x2, message, length, fin);
+}
+
+/***********************************************************************/
+
+void WebServer::webSocketSendPingMessage(HttpRequest* request, const unsigned char* message, size_t length)
+{
+  webSocketSend(request, 0x9, message, length, true);
+}
+
+void WebServer::webSocketSendPingMessage(HttpRequest* request, const string &message)
+{
+  webSocketSend(request, 0x9, (const unsigned char*)message.c_str(), message.length(), true);
+}
+
+/***********************************************************************/
+
+void WebServer::webSocketSendPongMessage(HttpRequest* request, const unsigned char* message, size_t length)
+{
+  webSocketSend(request, 0xa, message, length, false);
+}
+
+/***********************************************************************/
+
+void WebServer::webSocketSendClose(HttpRequest* request, const string &message)
+{
+  webSocketSend(request, 0x8, (const unsigned char*)message.c_str(), message.length(), true);
+}
 
 

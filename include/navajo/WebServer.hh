@@ -154,8 +154,13 @@ class WebServer
     
   public:
     WebServer();
-    
-    static void webSocketSend(HttpRequest* request, const string &message);
+    static void webSocketSend(HttpRequest* request, const u_int8_t opcode, const unsigned char* message, size_t length, bool fin);
+    static void webSocketSendTextMessage(HttpRequest* request, const string &message, bool fin=true);
+    static void webSocketSendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin=true);
+    static void webSocketSendPingMessage(HttpRequest* request, const unsigned char* message, size_t length);
+    static void webSocketSendPingMessage(HttpRequest* request, const string &message);
+    static void webSocketSendPongMessage(HttpRequest* request, const unsigned char* message, size_t length);
+    static void webSocketSendClose(HttpRequest* request, const string &message="");
 
     /**
     * Set the web server name in the http header

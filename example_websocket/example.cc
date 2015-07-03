@@ -35,8 +35,8 @@ class MyWebSocket : public WebSocket
   void onMessage(HttpRequest* request, const string &message) 
   {
     printf ("Message: '%s' received from host '%s'\n", message.c_str(), request->getPeerIpAddress().str().c_str());
-    sendMessage(request, "The message has been received !");
-    close(request->getClientSockData()->socketId);
+    sendTextMessage(request, message); //"The message has been received !");
+  //  close(request->getClientSockData()->socketId);
   };
 } myWebSocket;
 
@@ -74,7 +74,7 @@ int main()
   PrecompiledRepository thePrecompRepo("") ;
   webServer->addRepository(&thePrecompRepo);
 
-  webServer->addWebSocket("echo", &myWebSocket);
+  webServer->addWebSocket("test", &myWebSocket);
 
   webServer->startService();
 

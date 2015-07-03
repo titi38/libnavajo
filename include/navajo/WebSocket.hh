@@ -22,11 +22,29 @@ class WebSocket
   public:
     virtual bool onOpen(HttpRequest* request) { return true; };
     virtual void onMessage(HttpRequest* request, const string &message) = 0;
-    void sendMessage(HttpRequest* request, const string &message)
-    {
-      WebServer::webSocketSend(request, message);
-    };
     virtual void onClose(HttpRequest* request) { };
+
+    inline static void sendTextMessage(HttpRequest* request, const string &message, bool fin=true)
+    {
+      WebServer::webSocketSendTextMessage(request, message, fin);
+    };
+    inline static void sendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin=true)
+    {
+      WebServer::webSocketSendBinaryMessage(request, message, length, fin);
+    };
+    inline static void sendClose(HttpRequest* request, const string reasonMsg="")
+    {
+      WebServer::webSocketSendClose(request, reasonMsg);
+    };
+    inline static void sendPing(HttpRequest* request, const unsigned char* message, size_t length)
+    {
+      WebServer::webSocketSendPingMessage(request, message, length);
+    };
+    inline static void sendPing(HttpRequest* request, const string &message)
+    {
+      WebServer::webSocketSendPingMessage(request, message);
+    };
+
 };
 
 
