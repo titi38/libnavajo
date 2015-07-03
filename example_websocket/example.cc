@@ -32,12 +32,14 @@ class MyWebSocket : public WebSocket
     return true;
   }
 
-  void onMessage(HttpRequest* request, const string &message) 
+  void onTextMessage(HttpRequest* request, const string &message, const bool fin)
   {
     printf ("Message: '%s' received from host '%s'\n", message.c_str(), request->getPeerIpAddress().str().c_str());
     sendTextMessage(request, message); //"The message has been received !");
   //  close(request->getClientSockData()->socketId);
   };
+  void onBinaryMessage(HttpRequest* request, const unsigned char* message, size_t len, const bool fin)
+  { };
 } myWebSocket;
 
 

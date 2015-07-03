@@ -1725,11 +1725,26 @@ printf("startWebSocket\n"); fflush(NULL);
               return;
             }
           }
-if (opcode == 1)
-          websocket->onMessage(request, string((char*)msgContent));
-else
-printf("message ignored: opcode=%d\n\n", opcode);
-          
+
+          switch(opcode)
+          {
+            case 0x1:   
+                websocket->onTextMessage(request, string((char*)msgContent), fin);
+                break;
+            case 0x2:
+                websocket->onBinaryMessage(request, msgContent, msgLength, fin);
+                break;
+            case 0x8:
+                closing=true;
+                break;
+            case 0x9:
+                webSocketSendPongMessage(request, msgContent, msgLength);
+                break;
+            default:
+                printf("message ignored: opcode=%d\n\n", opcode);
+                break;
+          }
+
           // FINISHED
           if (msgContent != NULL)
             for (u_int64_t i=0; i<msgLength; i++)

@@ -21,7 +21,8 @@ class WebSocket
 {
   public:
     virtual bool onOpen(HttpRequest* request) { return true; };
-    virtual void onMessage(HttpRequest* request, const string &message) = 0;
+    virtual void onTextMessage(HttpRequest* request, const string &message, const bool fin) = 0;
+    virtual void onBinaryMessage(HttpRequest* request, const unsigned char* message, size_t len, const bool fin) = 0;
     virtual void onClose(HttpRequest* request) { };
 
     inline static void sendTextMessage(HttpRequest* request, const string &message, bool fin=true)
