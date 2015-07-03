@@ -79,7 +79,12 @@ class WebServer
     static std::string getNotImplementedErrorMsg();
 
     void initPoolThreads();
-    static void *startPoolThread(void *);
+    inline static void *startPoolThread(void *t)
+    {
+      static_cast<WebServer *>(t)->poolThreadProcessing();
+      pthread_exit(NULL);
+      return NULL;
+    };
     void poolThreadProcessing();
 
     bool httpdAuth;

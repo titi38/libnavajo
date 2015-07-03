@@ -105,7 +105,7 @@ WebServer::WebServer()
   disableIpV4=false;
   disableIpV6=false;
   tcpPort=DEFAULT_HTTP_PORT;
-  threadsPoolSize=2;
+  threadsPoolSize=200;
   
   sslEnabled=false;
   authPeerSsl=false;
@@ -969,7 +969,7 @@ u_short WebServer::init()
 #endif
     }
     if ( bind( server_sock[ nbServerSock ], rp->ai_addr, rp->ai_addrlen) == 0 )
-      if ( listen(server_sock [ nbServerSock ], 5) >= 0 )
+      if ( listen(server_sock [ nbServerSock ], 128) >= 0 )
       {
         nbServerSock ++;                  /* Success */
         continue;
@@ -1126,28 +1126,20 @@ bool WebServer::isAuthorizedDN(const std::string str)
   return res;
 }
 
-/***********************************************************************
-* startPoolThread: 
-************************************************************************/
-
-void *WebServer::startPoolThread(void *t)
-{
-  static_cast<WebServer *>(t)->poolThreadProcessing();
-  pthread_exit(NULL);
-  return NULL;
-}  
+/**********************************************************************/
   
 void WebServer::poolThreadProcessing()
 {
-  pthread_mutex_lock( &clientsQueue_mutex );
-
   BIO *sbio;
   SSL *ssl=NULL;
   X509 *peer=NULL;
   bool authSSL=false;
 
+
   while( !clientsQueue.empty() || !exiting )
   {
+    pthread_mutex_lock( &clientsQueue_mutex );
+
     while( clientsQueue.empty() && !exiting)
       pthread_cond_wait( &clientsQueue_cond, &clientsQueue_mutex );
 
@@ -1199,7 +1191,6 @@ void WebServer::poolThreadProcessing()
       else
         authSSL=true;
     }
-
     if (accept_request(client))
       freeClientSockData(client);
   }
@@ -1216,7 +1207,10 @@ void WebServer::initPoolThreads()
 {
   pthread_t newthread;
   for (unsigned i=0; i<threadsPoolSize; i++)
+  {
     create_thread( &newthread, WebServer::startPoolThread, static_cast<void *>(this) );
+    usleep(500);
+  }
   exitedThread=0;
 }
 
@@ -1334,15 +1328,15 @@ void WebServer::threadProcessing()
         client->ssl=NULL;
         client->bio=NULL;
         client->peerDN=NULL;
-      pthread_mutex_lock( &clientsQueue_mutex );
+        pthread_mutex_lock( &clientsQueue_mutex );
         clientsQueue.push(client);
-      pthread_mutex_unlock( &clientsQueue_mutex );
+        pthread_mutex_unlock( &clientsQueue_mutex );
+        pthread_cond_signal (& clientsQueue_cond);
+
       }
 
-      pthread_cond_broadcast (& clientsQueue_cond);
     }
   }
-
 
   while (exitedThread != threadsPoolSize)
   {
@@ -1577,28 +1571,10 @@ printf("startWebSocket\n"); fflush(NULL);
   u_int64_t readLength=1;
   MsgDecodSteps step=FIRSTBYTE;
   memset( msgKeys, 0, 4*sizeof(unsigned char) );
-  
-  /*struct pollfd pfd;
-  int status;
-  pfd.fd = client->socketId;
-  pfd.events  = POLLIN;
-  pfd.revents = 0;*/
 
   for (;!closing;)
   {
-  /*  do
-    {
-    #ifdef __darwin__
-      status = poll( &pfd, 1, 500 );
-    #else
-      status = poll( &pfd, 1, -1 );
-    #endif
-    }
-    while ( ( status < 0 ) && ( errno == EINTR ) && !closing );
 
-    if ( !(pfd.revents & POLLIN) )
-              continue;
-*/
     int n=0;
     size_t it=0;
     size_t length=(readLength<BUFSIZE)?readLength:readLength-BUFSIZE;
