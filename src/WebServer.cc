@@ -1509,8 +1509,6 @@ std::string WebServer::getHttpWebSocketHeader(const char *messageType, const cha
   time_t rawtime;
   struct tm timeinfo;
 
-printf("key = '%s'\n", webSocketClientKey); 
-
   std::string header="HTTP/1.1 "+std::string(messageType)+std::string("\r\n");
   header+="Upgrade: websocket\r\n";
   header+="Connection: Upgrade\r\n";
@@ -1548,8 +1546,6 @@ void WebServer::startWebSocketListener(WebSocket *websocket, HttpRequest* reques
 
 void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
 {
-printf("startWebSocket\n"); fflush(NULL);
-
   char bufferRecv[BUFSIZE];
   volatile bool closing=false;
   u_int64_t msgLength=0, msgContentIt=0;
@@ -1593,8 +1589,7 @@ printf("startWebSocket\n"); fflush(NULL);
         n=recv(client->socketId, bufferRecv+it, length-it, 0);
         if ( n <= 0 )
         {
-          printf ("n=%d errno=%d\t",n,errno);
-          //if (errno==ENOTCONN || errno==EBADF || errno==54) 
+          if ( errno==ENOTCONN || errno==EBADF || errno==ECONNRESET ) 
             closing=true;
           continue;
         }
@@ -1610,14 +1605,11 @@ printf("startWebSocket\n"); fflush(NULL);
     {
     
       case FIRSTBYTE:    
-        printf("WebSocket receive !\n");
+        
         fin=(bufferRecv[0] & 0x80) >> 7;
-        printf ("fin: %u\n", fin );
         rsv=(bufferRecv[0] & 0x70) >> 4;
-        printf ("rsv: %u\n", rsv );
         opcode=bufferRecv[0] & 0xf;
-        printf ("opcode: %u\n",opcode);
-        fflush(NULL);
+
         step=LENGTH;
         readLength=1;
         break;
@@ -1626,8 +1618,6 @@ printf("startWebSocket\n"); fflush(NULL);
         if (!msgLength)
         {    
           msgMask = (bufferRecv[0]  & 0x80) >> 7;
-
-          printf("mask: %d\n", msgMask); 
           if (!msgMask)
           {
             freeClientSockData(client);
@@ -1637,7 +1627,7 @@ printf("startWebSocket\n"); fflush(NULL);
           msgLength =  bufferRecv[0] & 0x7f;
           if (!msgLength)
           {
-            NVJ_LOG->append(NVJ_WARNING, " Websocket: Message length is null. Closing socket.");
+            NVJ_LOG->append(NVJ_WARNING, "Websocket: Message length is null. Closing socket.");
             freeClientSockData(client);
             return;
           }
@@ -1661,19 +1651,20 @@ printf("startWebSocket\n"); fflush(NULL);
           NVJ_LOG->append(NVJ_WARNING, logBuffer);
           msgContent=NULL;
         }
-        printf ("Message Length: %llu\n",static_cast<unsigned long long>(msgLength));
         msgContentIt=0;
         if (msgMask) { step=MASK; readLength=4; } else { step=CONTENT; readLength=msgLength; }
         break;
 
       case MASK:
         memcpy(msgKeys, bufferRecv, 4*sizeof(unsigned char));
-        printf("mask: %02X %02X %02X %02X\n", msgKeys[0], msgKeys[1], msgKeys[2], msgKeys[3]);
         readLength=msgLength;
         step=CONTENT;
         break;
         
       case CONTENT:
+        char buf[300]; snprintf(buf, 300, "WebSocket: new message received (len=%llu fin=%d rsv=%d opcode=%d mask=%d)", static_cast<unsigned long long>(msgLength), fin, rsv, opcode, msgMask);
+        NVJ_LOG->append(NVJ_DEBUG,buf);
+
         if (msgContent != NULL)
         {
           for (size_t i=0; i<length; i++)
@@ -1707,28 +1698,29 @@ printf("startWebSocket\n"); fflush(NULL);
           switch(opcode)
           {
             case 0x1:   
-                websocket->onTextMessage(request, string((char*)msgContent), fin);
-                break;
+              websocket->onTextMessage(request, string((char*)msgContent), fin);
+              break;
             case 0x2:
-                websocket->onBinaryMessage(request, msgContent, msgLength, fin);
-                break;
+              websocket->onBinaryMessage(request, msgContent, msgLength, fin);
+              break;
             case 0x8:
-                closing=true;
-                break;
+              closing=true;
+              break;
             case 0x9:
-                webSocketSendPongMessage(request, msgContent, msgLength);
-                break;
+              webSocketSendPongMessage(request, msgContent, msgLength);
+              break;
             default:
-                printf("message ignored: opcode=%d\n\n", opcode);
-                break;
+              char buf[300]; snprintf(buf, 300, "WebSocket: message received with unknown opcode (%d) has been ignored", opcode);
+              NVJ_LOG->append(NVJ_INFO,buf);
+              break;
           }
 
           // FINISHED
-          if (msgContent != NULL)
+/*          if (msgContent != NULL)
             for (u_int64_t i=0; i<msgLength; i++)
               printf("%c(%2x)", msgContent[i],msgContent[i]);
-          printf("\n"); fflush(NULL);
-           
+            printf("\n"); fflush(NULL);
+*/           
           if (client->compression == ZLIB)
             free (msgContent);
           fin=false; rsv=0;
@@ -1764,13 +1756,10 @@ void WebServer::webSocketSend(HttpRequest* request, const u_int8_t opcode, const
   size_t headerLen=2; // default header size
   unsigned char *msg = NULL;
   size_t msgLen=0;
-
-printf("webSocketSend : opcode=%X message:'%s' len=%d ", opcode, message, length); fflush(NULL);
   
   headerBuffer[0]= 0x80 | (opcode & 0xf) ; // FIN & OPCODE:0x1
   if (client->compression == ZLIB)
   {
-printf("compression\n"); fflush(NULL);
     headerBuffer[0] |= 0x40; // Set RSV1
     try
     {
@@ -1784,7 +1773,6 @@ printf("compression\n"); fflush(NULL);
   }
   else
   {
-  printf("no_compression\n"); fflush(NULL);
     msg=(unsigned char*)message;
     msgLen=length;
   }
@@ -1822,12 +1810,12 @@ printf("compression\n"); fflush(NULL);
       freeClientSockData(client);
     }
   }
-  for (int i=0; i<headerLen; i++)
+/*  for (int i=0; i<headerLen; i++)
     printf("%02X ",headerBuffer[i]);
   for (int i=0; i<msgLen; i++)
     printf("%02X ",msg[i]);
-    
-  printf("\n");
+  printf("\n");*/
+  
   if (client->compression == ZLIB)
     free (msg);
 }
