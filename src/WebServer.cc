@@ -105,7 +105,7 @@ WebServer::WebServer()
   disableIpV4=false;
   disableIpV6=false;
   tcpPort=DEFAULT_HTTP_PORT;
-  threadsPoolSize=20;
+  threadsPoolSize=2;
   
   sslEnabled=false;
   authPeerSsl=false;
@@ -293,6 +293,9 @@ bool WebServer::accept_request(ClientSockData* client)
   struct stat st;
   size_t bufLineLen=0;
   BIO *ssl_bio = NULL;
+
+printf("accept_request(%d)\n", client->socketId);
+
 
   if (sslEnabled)
   {
@@ -1319,25 +1322,24 @@ void WebServer::threadProcessing()
 
       //
 
-      pthread_mutex_lock( &clientsQueue_mutex );
-
       updatePeerIpHistory(webClientAddr);
       if (client_sock == -1)
         NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : An error occurred when attempting to access the socket (accept == -1)");
       else
       {
-        setSocketRcvTimeout(client_sock, 5);
+        setSocketRcvTimeout(client_sock, 1);
         ClientSockData* client=(ClientSockData*)malloc(sizeof(ClientSockData));
         client->socketId=client_sock;
         client->ip=webClientAddr;
         client->ssl=NULL;
         client->bio=NULL;
         client->peerDN=NULL;
+      pthread_mutex_lock( &clientsQueue_mutex );
         clientsQueue.push(client);
+      pthread_mutex_unlock( &clientsQueue_mutex );
       }
 
       pthread_cond_broadcast (& clientsQueue_cond);
-      pthread_mutex_unlock( &clientsQueue_mutex );   
     }
   }
 
