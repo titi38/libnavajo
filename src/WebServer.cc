@@ -393,7 +393,7 @@ bool WebServer::accept_request(ClientSockData* client)
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Key: ", 19) == 0) { j+=19; strcpy(webSocketClientKey, bufLine+j); continue; }
 
-   //     if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
+        if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Version: ", 23) == 0) { j+=23; webSocketVersion = atoi(bufLine+j); continue; }
 
@@ -1813,19 +1813,19 @@ printf("compression\n"); fflush(NULL);
   
   
   if (msgLen < 126)
-    headerBuffer[1]=length;
+    headerBuffer[1]=msgLen;
   else
   {
     if (msgLen < 0xFFFF)
     {
       headerBuffer[1]=126;
-      *(u_int16_t*)(headerBuffer+2)=htons((u_int16_t)length);
+      *(u_int16_t*)(headerBuffer+2)=htons((u_int16_t)msgLen);
       headerLen+=2;
     }
     else
     {
       headerBuffer[1]=127;
-      *(u_int64_t*)(headerBuffer+2)=htonll((u_int64_t)length);
+      *(u_int64_t*)(headerBuffer+2)=htonll((u_int64_t)msgLen);
       headerLen+=8;
     }
   }

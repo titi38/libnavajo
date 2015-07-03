@@ -20,9 +20,33 @@
 class WebSocket
 {
   public:
+    /**
+    * Callback on new websocket client connection
+    * @param request: the http request object
+    */
     virtual bool onOpen(HttpRequest* request) { return true; };
+
+    /**
+    * Callback on new text message
+    * @param request: the http request object
+    * @param message: the message
+    * @param fin: is the current message finished ?
+    */ 
     virtual void onTextMessage(HttpRequest* request, const string &message, const bool fin) = 0;
+
+    /**
+    * Callback on new binary message
+    * @param request: the http request object
+    * @param message: the binary message
+    * @param len: the message length
+    * @param fin: is the current message finished ?
+    */ 
     virtual void onBinaryMessage(HttpRequest* request, const unsigned char* message, size_t len, const bool fin) = 0;
+    
+    /**
+    * Callback on client close notification
+    * @param request: the http request object
+    */ 
     virtual void onClose(HttpRequest* request) { };
 
     inline static void sendTextMessage(HttpRequest* request, const string &message, bool fin=true)
