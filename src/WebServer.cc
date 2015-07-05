@@ -105,7 +105,7 @@ WebServer::WebServer()
   disableIpV4=false;
   disableIpV6=false;
   tcpPort=DEFAULT_HTTP_PORT;
-  threadsPoolSize=200;
+  threadsPoolSize=128;
   
   sslEnabled=false;
   authPeerSsl=false;
@@ -293,9 +293,6 @@ bool WebServer::accept_request(ClientSockData* client)
   struct stat st;
   size_t bufLineLen=0;
   BIO *ssl_bio = NULL;
-
-printf("accept_request(%d)\n", client->socketId);
-
 
   if (sslEnabled)
   {

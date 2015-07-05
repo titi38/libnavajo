@@ -120,9 +120,9 @@ class HttpRequest
       size_t posEq=0;
       if ((posEq = theCookie.find('=')) != std::string::npos)
       {
-        size_t firstC=0; while (!iswgraph(theCookie[firstC]) && firstC < theCookie.length()-1) { firstC++; };
-        size_t lenC=0; while (iswgraph(theCookie[posEq+1+lenC]) && (posEq+1+lenC<theCookie.length()-1)) { lenC++; };
-        cookies[theCookie.substr(firstC,posEq)]=theCookie.substr(posEq+1, lenC);        
+        size_t firstC=0; while (!iswgraph(theCookie[firstC]) && firstC < posEq) { firstC++; };
+
+        if (posEq-firstC > 0 && theCookie.length()-posEq > 0) cookies[theCookie.substr(firstC,posEq-firstC)]=theCookie.substr(posEq+1, theCookie.length()-posEq);
       }
     }
   };
@@ -244,8 +244,10 @@ class HttpRequest
     inline void getSession()
     {
       sessionId = getCookie("SID");
+      
       if (sessionId.length() && HttpSession::find(sessionId))
         return;
+
       initSessionId();
     }
     

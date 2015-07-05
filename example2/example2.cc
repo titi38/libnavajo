@@ -74,7 +74,7 @@ class MyDynamicRepository : public DynamicRepository
       protected:
         bool isValidSession(HttpRequest* request)
         {
-          void *myAttribute = request->getSessionAttribute("username");
+          void *myAttribute = request->getSessionAttribute("username");          
           return myAttribute != NULL;
         }
         bool checkCredentials(const string& login, const string& password)
@@ -87,7 +87,7 @@ class MyDynamicRepository : public DynamicRepository
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-        //if (!isValidSession(request)) return false;
+        if (!isValidSession(request)) return false;
         ostringstream ss;
         ss << getCpuLoad();
         return fromString(ss.str(), response);

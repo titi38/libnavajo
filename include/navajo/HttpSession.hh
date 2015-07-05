@@ -219,6 +219,26 @@ class HttpSession
       pthread_mutex_unlock( &sessions_mutex );
       return res;
     }
+    
+    /**********************************************************************/
+    
+    static void printAll()
+    {
+      pthread_mutex_lock( &sessions_mutex );
+      HttpSessionsContainerMap::iterator it = sessions.begin();
+      for (;it != sessions.end(); ++it )
+      {
+        std::map <std::string, void*>* attributesMap=it->second;
+        printf("Session SID : '%s' \n", it->first.c_str());
+        std::map <std::string, void*>::iterator iter = attributesMap->begin();
+        for(; iter!=attributesMap->end(); ++iter)
+          if (iter->second != NULL) printf("\t'%s'\n", iter->first.c_str());
+      }
+            pthread_mutex_unlock( &sessions_mutex );    
+    }
+    
+    /**********************************************************************/    
+
 };
 
 //****************************************************************************
