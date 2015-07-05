@@ -20,7 +20,7 @@
 #include <string>
 #include <list>
 #include <set>
-#include "navajo/LogOutput.hh"
+#include "libnavajo/LogOutput.hh"
 
 #define NVJ_LOG LogRecorder::getInstance()
 

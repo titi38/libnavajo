@@ -28,12 +28,12 @@
 #include <map>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "navajo/LogRecorder.hh"
-#include "navajo/IpAddress.hh"
-#include "navajo/WebRepository.hh"
+#include "libnavajo/LogRecorder.hh"
+#include "libnavajo/IpAddress.hh"
+#include "libnavajo/WebRepository.hh"
 
-#include "navajo/thread.h"
-#include "navajo/nvj_gzip.h"
+#include "libnavajo/thread.h"
+#include "libnavajo/nvj_gzip.h"
 
 class WebSocket;
 class WebServer

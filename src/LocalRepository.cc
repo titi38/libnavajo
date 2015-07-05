@@ -18,8 +18,8 @@
 #include <fstream>
 #include <streambuf>
 #include <sstream>
-#include "navajo/LogRecorder.hh"
-#include "navajo/LocalRepository.hh"
+#include "libnavajo/LogRecorder.hh"
+#include "libnavajo/LocalRepository.hh"
 
 
 /**********************************************************************/

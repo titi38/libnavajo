@@ -137,7 +137,7 @@ int main (int argc, char *argv[])
 
 	ConversionEntry* conversionTable= (ConversionEntry*) malloc( filenamesVec.size() * sizeof(ConversionEntry));
 
-	fprintf (stdout, "#include \"navajo/PrecompiledRepository.hh\"\n\n");
+	fprintf (stdout, "#include \"libnavajo/PrecompiledRepository.hh\"\n\n");
 	fprintf (stdout, "namespace webRepository\n{\n");
 
 	for (size_t i = 0; i < filenamesVec.size(); i++)

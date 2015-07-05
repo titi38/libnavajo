@@ -13,9 +13,9 @@
 
 #include <signal.h> 
 #include <string.h> 
-#include "navajo/libnavajo.hh"
-#include "navajo/LogStdOutput.hh"
-#include "navajo/WebSocket.hh"
+#include "libnavajo/libnavajo.hh"
+#include "libnavajo/LogStdOutput.hh"
+#include "libnavajo/WebSocket.hh"
 
 WebServer *webServer = NULL;
 

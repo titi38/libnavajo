@@ -60,13 +60,13 @@
 #include <algorithm>
 #include <fcntl.h>
 
-#include "navajo/WebServer.hh"
+#include "libnavajo/WebServer.hh"
 #if defined(LINUX) || defined(__darwin__)
-#include "navajo/AuthPAM.hh"
+#include "libnavajo/AuthPAM.hh"
 #endif
-#include "navajo/thread.h"
-#include "navajo/htonll.h"
-#include "navajo/WebSocket.hh"
+#include "libnavajo/thread.h"
+#include "libnavajo/htonll.h"
+#include "libnavajo/WebSocket.hh"
 
 #define DEFAULT_HTTP_PORT 8080
 #define LOGHIST_EXPIRATION_DELAY 600
@@ -1704,7 +1704,11 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
               closing=true;
               break;
             case 0x9:
-              webSocketSendPongMessage(request, msgContent, msgLength);
+              if (websocket->onPingMessage(request, msgContent, msgLength))
+                webSocketSendPongMessage(request, msgContent, msgLength);
+              break;
+            case 0xa:
+              websocket->onPongMessage(request, msgContent, msgLength);
               break;
             default:
               char buf[300]; snprintf(buf, 300, "WebSocket: message received with unknown opcode (%d) has been ignored", opcode);

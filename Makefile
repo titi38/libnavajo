@@ -1,8 +1,8 @@
 #############################
 # LIBNAVAJO                 #
-# created by T.DESCOMBES     #
-#                    2015    #
-##############################
+# created by T.DESCOMBES    #
+#                    2015   #
+#############################
 
 LIBNAVAJO_MVERSION= "1"
 LIBNAVAJO_VERSION=  "\"1.0.0\""
@@ -32,8 +32,7 @@ LIB_SHARED_NAME  = libnavajo.so.$(LIBNAVAJO_MVERSION)
 LIB_SHARED_ALIAS  = libnavajo.so
 LIB_STATIC_NAME  = libnavajo.a
 
-EXAMPLE_NAME     = example/example
-EXAMPLE2_NAME	 = example2/example2
+EXAMPLE_DIR     = examples
 
 PREFIX       = /usr/local/libnavajo
 LIB_DIR      = lib
@@ -90,14 +89,14 @@ PRECOMPILER_OBJS = src/navajoPrecompiler.o
 %.o: %.cc
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
 
-all:: 	$(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_NAME) $(EXAMPLE2_NAME)
+all:: 	$(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_DIR)
 
 clean::
 	@echo Remove files...
 	@rm -f $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_NAME) $(EXAMPLE2_NAME)
 	@find . \( -name "*.bak" -o -name "*.class" -o -name "*.o" -o -name "core*" -o -name "*~" \) -exec rm -f '{}' \;
 	@for i in $(LIBNAVAJO_OBJS); do  rm -f $$i ; done
-	$(MAKE) -C example -f Makefile $@
+	$(MAKE) -C examples -f Makefile $@
 
 docs::
 	@mkdir -p docs
@@ -119,11 +118,8 @@ $(PRECOMPILER_NAME): $(PRECOMPILER_OBJS)
 	@[[ -d bin ]] || mkdir -p bin
 	${LD} ${LDFLAGS} -o $@ $(PRECOMPILER_OBJS)
 
-$(EXAMPLE_NAME)::
-	$(MAKE) -C example -f Makefile
-
-$(EXAMPLE2_NAME)::
-	$(MAKE) -C example2 -f Makefile
+$(EXAMPLE_DIR)::
+	$(MAKE) -C examples -f Makefile
 
 install: $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
 	-@if [ ! -d $(PREFIX)/$(LIB_DIR) ]; then mkdir -p $(PREFIX)/$(LIB_DIR); fi
@@ -131,7 +127,7 @@ install: $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
 	-@if [ ! -d $(PREFIX)/$(BIN_DIR) ]; then mkdir -p $(PREFIX)/$(BIN_DIR); fi
 	-@if [ ! -d $(PREFIX)/$(MAN_DIR) ]; then mkdir -p $(PREFIX)/$(MAN_DIR); fi
 	cp -r $(BIN_DIR) $(PREFIX); chmod 755 $(PREFIX)/$(BIN_DIR)/* 
-	cp -r $(INC_DIR) $(PREFIX); find $(PREFIX)/$(INC_DIR)/navajo -type f -exec chmod 644 '{}' \; 
+	cp -r $(INC_DIR) $(PREFIX); find $(PREFIX)/$(INC_DIR)/libnavajo -type f -exec chmod 644 '{}' \; 
 	chmod 755 $(PREFIX)/$(INC_DIR)/navajo
 	cp -r $(LIB_DIR) $(PREFIX); chmod 755 $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_NAME) $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_ALIAS); 
 	chmod 644 $(PREFIX)/$(LIB_DIR)/$(LIB_STATIC_NAME); 
@@ -141,7 +137,7 @@ install: $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
 #	chmod 644 $(man3dir)/libnavajo.3
 
 uninstall:
-	@rm -rf $(PREFIX)/$(INC_DIR)/navajo \
+	@rm -rf $(PREFIX)/$(INC_DIR)/libnavajo \
 	@rm -f $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_NAME) $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_ALIAS) $(PREFIX)/$(LIB_DIR)/$(LIB_STATIC_NAME); \
 #	cd $(man3dir); rm -f libnavajo.3
 

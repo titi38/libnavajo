@@ -5,7 +5,7 @@
 ##############################
 
 OUTPUTFILENAME = PrecompiledRepository.cc
-NAVAJO_PRECOMPILER_EXEC = ../bin/navajoPrecompiler
+NAVAJO_PRECOMPILER_EXEC = ../../bin/navajoPrecompiler
 
 UNAME := $(shell uname)
 LBITS := $(shell getconf LONG_BIT)
@@ -30,22 +30,22 @@ CXX 	=  g++
 
 ifeq ($(OS),MACOSX)
 LIBSSL_DIR = /usr/local/Cellar/openssl/1.0.1j
-LIBS       = -lnavajo -L../$(LIB_DIR) -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto $(LIBPAM)
+LIBS       = -lnavajo -L../../$(LIB_DIR) -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto $(LIBPAM)
 DEFS            =   -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT
 CXXFLAGS        =  -O3  -Wdeprecated-declarations
 else
 ifeq ($(LBITS),64)
   LIB_DIR=lib64
 endif
-LIBS       = -lnavajo -L../$(LIB_DIR) -lz -lssl -lcrypto -pthread $(LIBPAM)
+LIBS       = -lnavajo -L../../$(LIB_DIR) -lz -lssl -lcrypto -pthread $(LIBPAM)
 DEFS            =  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT
 CXXFLAGS        =  -O4  -Wdeprecated-declarations
 endif
 
 
 CPPFLAGS	= -I. \
-       -I$(LIBSSL_DIR)/include \
-		   -I../include
+                  -I$(LIBSSL_DIR)/include \
+		  -I../../include
 
 LD		=  g++
 

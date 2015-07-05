@@ -12,7 +12,7 @@
 //********************************************************
 
 #include <stdio.h>
-#include "navajo/LogStdOutput.hh"
+#include "libnavajo/LogStdOutput.hh"
 
 
 

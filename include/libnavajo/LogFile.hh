@@ -1,8 +1,8 @@
 //********************************************************
 /**
- * @file  LogSyslog.hh
+ * @file  LogFile.hh
  *
- * @brief write log messages to syslog
+ * @brief Write log messages to a file
  *
  * @author T.Descombes (thierry.descombes@gmail.com)
  *
@@ -11,33 +11,33 @@
  */
 //********************************************************
 
-#ifndef LOGSYSLOG_HH_
-#define LOGSYSLOG_HH_
+#ifndef LOGFILE_HH_
+#define LOGFILE_HH_
 
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <string>
 
-#include "navajo/LogOutput.hh"
+#include "libnavajo/LogOutput.hh"
 
 using namespace std;
 
   /**
-  * LogSyslog - LogOutput 
+  * LogFile - LogOutput 
   */
-  class LogSyslog : public LogOutput
+  class LogFile : public LogOutput
   {
     public:
-      LogSyslog(const char *id="Navajo");
-      ~LogSyslog();
+      LogFile(const char *filename);
+      ~LogFile();
   
       void append(const NvjLogSeverity& l, const std::string& m, const std::string& details="");
       void initialize();
   
     private:
-      char ident[30];
-
+      char filename[30];
+      ofstream *file;
   
   };
   

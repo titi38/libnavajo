@@ -11,8 +11,8 @@
  */
 //********************************************************
 
-#include "navajo/LogRecorder.hh"
-#include "navajo/AuthPAM.hh"
+#include "libnavajo/LogRecorder.hh"
+#include "libnavajo/AuthPAM.hh"
 
 
 //------------------------------------------------------------------------------

@@ -14,7 +14,7 @@
 
 
 #include <time.h>
-#include "navajo/LogRecorder.hh"
+#include "libnavajo/LogRecorder.hh"
 
 
   /**

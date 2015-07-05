@@ -14,7 +14,7 @@
 #ifndef LOGSTDOUTPUT_HH_
 #define LOGSTDOUTPUT_HH_
 
-#include "navajo/LogOutput.hh"
+#include "libnavajo/LogOutput.hh"
 
 
 

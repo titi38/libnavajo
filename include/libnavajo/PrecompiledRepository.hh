@@ -18,7 +18,7 @@
 #include <map>
 #include "thread.h"
 
-#include "navajo/WebRepository.hh"
+#include "libnavajo/WebRepository.hh"
 
 
 class PrecompiledRepository : public WebRepository

@@ -11,7 +11,7 @@
  */
 //********************************************************
 
-#include "navajo/LogSyslog.hh"
+#include "libnavajo/LogSyslog.hh"
 
 #include <syslog.h>
 #include <string.h>

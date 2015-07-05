@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "navajo/LogFile.hh"
+#include "libnavajo/LogFile.hh"
 
   /***********************************************************************/
   /**

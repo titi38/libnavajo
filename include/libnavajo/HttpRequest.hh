@@ -14,7 +14,7 @@
 #ifndef HTTPREQUEST_HH_
 #define HTTPREQUEST_HH_
 
-#include "navajo/IpAddress.hh"
+#include "libnavajo/IpAddress.hh"
 #include <map>
 #include <vector>
 #include <string>
