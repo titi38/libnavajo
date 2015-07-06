@@ -24,7 +24,13 @@ class WebSocket
     * Callback on new websocket client connection
     * @param request: the http request object
     */
-    virtual bool onOpen(HttpRequest* request) { return true; };
+    virtual bool onOpening(HttpRequest* request) { return true; };
+
+    /**
+    * Callback before closing websocket client connection
+    * @param request: the http request object
+    */
+    virtual void onClosing(HttpRequest* request) { };
 
     /**
     * Callback on new text message
@@ -49,7 +55,7 @@ class WebSocket
     * @param message: the message
     * @param len: the message length
     */     
-    virtual void onPongMessage(HttpRequest* request, const unsigned char* message, size_t len) 
+    virtual void onPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t len) 
     { /* should check application data received is the same than in the ping message */ };
 
     /**
@@ -57,16 +63,18 @@ class WebSocket
     * @param request: the http request object
     * @param message: the message
     * @param len: the message length
-    * @return true for sending an automatic pong reply message
+    * @return true to send an automatic pong reply message
     */     
-    virtual bool onPingMessage(HttpRequest* request, const unsigned char* message, size_t len) 
+    virtual bool onPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t len) 
     { return true; };
     
     /**
     * Callback on client close notification
     * @param request: the http request object
+    * @return true to send an automatic close reply message
     */ 
-    virtual void onClose(HttpRequest* request) { };
+    virtual bool onCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t len)
+    { return true; };
 
     /**
     * Send Text Message on the websocket
@@ -95,10 +103,21 @@ class WebSocket
     * Send Close Message Notification on the websocket
     * @param request: the http request object
     * @param message: the closure reason message
+    * @param length: the message length
     */ 
-    inline static void sendClose(HttpRequest* request, const string reasonMsg="")
+    inline static void sendCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
     {
-      WebServer::webSocketSendClose(request, reasonMsg);
+      WebServer::webSocketSendCloseCtrlFrame(request, message, length);
+    };
+
+    /**
+    * Send Close Message Notification on the websocket
+    * @param request: the http request object
+    * @param message: the closure reason message
+    */ 
+    inline static void sendCloseCtrlFrame(HttpRequest* request, const string& reasonMsg="")
+    {
+      WebServer::webSocketSendCloseCtrlFrame(request, reasonMsg);
     };
     
     /**
@@ -107,19 +126,41 @@ class WebSocket
     * @param message: the content
     * @param length: the message length
     */     
-    inline static void sendPing(HttpRequest* request, const unsigned char* message, size_t length)
+    inline static void sendPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
     {
-      WebServer::webSocketSendPingMessage(request, message, length);
+      WebServer::webSocketSendPingCtrlFrame(request, message, length);
     };
 
     /**
     * Send Ping Message Notification on the websocket
     * @param request: the http request object
     * @param message: the content
-    */    
-    inline static void sendPing(HttpRequest* request, const string &message)
+    */     
+    inline static void sendPingCtrlFrame(HttpRequest* request, const string &message)
     {
-      WebServer::webSocketSendPingMessage(request, message);
+      WebServer::webSocketSendPingCtrlFrame(request, message);
+    };
+
+    
+    /**
+    * Send Pong Message Notification on the websocket
+    * @param request: the http request object
+    * @param message: the content
+    * @param length: the message length
+    */     
+    inline static void sendPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
+    {
+      WebServer::webSocketSendPongCtrlFrame(request, message, length);
+    };
+
+    /**
+    * Send Pong Message Notification on the websocket
+    * @param request: the http request object
+    * @param message: the content
+    */     
+    inline static void sendPongCtrlFrame(HttpRequest* request, const string &message)
+    {
+      WebServer::webSocketSendPongCtrlFrame(request, message);
     };
 
 };

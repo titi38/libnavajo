@@ -448,7 +448,23 @@ bool WebServer::accept_request(ClientSockData* client)
     }
 
     if ( urlencodedForm )
-      bufLineLen=recvLine(client->socketId, requestParams, BUFSIZE);
+    {
+      if (sslEnabled)
+      {
+        int r=BIO_gets(client->bio, requestParams, BUFSIZE);
+
+        switch(SSL_get_error(client->ssl,r))
+        {
+          case SSL_ERROR_NONE:
+            bufLineLen=r;
+            break;
+          case SSL_ERROR_ZERO_RETURN:
+            return true;      
+        }
+      }
+      else
+        bufLineLen=recvLine(client->socketId, requestParams, BUFSIZE);
+    }
 
     char logBuffer[BUFSIZE];
     snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", url+1, requestMethod, requestParams, requestCookies, httpVers, keepAlive, client->compression );
@@ -479,7 +495,7 @@ bool WebServer::accept_request(ClientSockData* client)
         httpSend(client, (const void*) header.c_str(), header.length());
         HttpRequest* request=new HttpRequest(requestMethod, url+1, requestParams, requestCookies, requestOrigin, username, client);
 
-        if (webSocket->onOpen(request))
+        if (webSocket->onOpening(request))
         startWebSocketListener(webSocket, request);
         return false;
       }
@@ -1701,14 +1717,18 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
               websocket->onBinaryMessage(request, msgContent, msgLength, fin);
               break;
             case 0x8:
-              closing=true;
+              if (websocket->onCloseCtrlFrame(request, msgContent, msgLength))
+              {
+                webSocketSendCloseCtrlFrame(request, msgContent, msgLength);
+                closing=true;
+              }
               break;
             case 0x9:
-              if (websocket->onPingMessage(request, msgContent, msgLength))
-                webSocketSendPongMessage(request, msgContent, msgLength);
+              if (websocket->onPingCtrlFrame(request, msgContent, msgLength))
+                webSocketSendPongCtrlFrame(request, msgContent, msgLength);
               break;
             case 0xa:
-              websocket->onPongMessage(request, msgContent, msgLength);
+              websocket->onPongCtrlFrame(request, msgContent, msgLength);
               break;
             default:
               char buf[300]; snprintf(buf, 300, "WebSocket: message received with unknown opcode (%d) has been ignored", opcode);
@@ -1737,7 +1757,8 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
         break;
     }
   }
-  websocket->onClose(request);
+
+  websocket->onClosing(request);
   delete request;
   freeClientSockData(client);
   webSocketClientList.push_back(client->socketId);
@@ -1811,11 +1832,7 @@ void WebServer::webSocketSend(HttpRequest* request, const u_int8_t opcode, const
       freeClientSockData(client);
     }
   }
-/*  for (int i=0; i<headerLen; i++)
-    printf("%02X ",headerBuffer[i]);
-  for (int i=0; i<msgLen; i++)
-    printf("%02X ",msg[i]);
-  printf("\n");*/
+
   
   if (client->compression == ZLIB)
     free (msg);
@@ -1837,28 +1854,39 @@ void WebServer::webSocketSendBinaryMessage(HttpRequest* request, const unsigned 
 
 /***********************************************************************/
 
-void WebServer::webSocketSendPingMessage(HttpRequest* request, const unsigned char* message, size_t length)
+void WebServer::webSocketSendPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
 {
   webSocketSend(request, 0x9, message, length, true);
 }
 
-void WebServer::webSocketSendPingMessage(HttpRequest* request, const string &message)
+void WebServer::webSocketSendPingCtrlFrame(HttpRequest* request, const string &message)
 {
   webSocketSend(request, 0x9, (const unsigned char*)message.c_str(), message.length(), true);
 }
 
 /***********************************************************************/
 
-void WebServer::webSocketSendPongMessage(HttpRequest* request, const unsigned char* message, size_t length)
+void WebServer::webSocketSendPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
 {
   webSocketSend(request, 0xa, message, length, false);
 }
 
+void WebServer::webSocketSendPongCtrlFrame(HttpRequest* request, const string &message)
+{
+  webSocketSend(request, 0xa, (const unsigned char*)message.c_str(), message.length(), false);
+}
+
 /***********************************************************************/
 
-void WebServer::webSocketSendClose(HttpRequest* request, const string &message)
+void WebServer::webSocketSendCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
+{
+  webSocketSend(request, 0x8, message, length, true);
+}
+
+void WebServer::webSocketSendCloseCtrlFrame(HttpRequest* request, const string &message)
 {
   webSocketSend(request, 0x8, (const unsigned char*)message.c_str(), message.length(), true);
 }
+
 
 

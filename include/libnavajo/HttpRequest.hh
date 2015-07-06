@@ -336,6 +336,7 @@ class HttpRequest
       this->origin = origin;
       httpAuthUsername=username;
       this->clientSockData=client;
+      
       if (params != NULL && strlen(params))
         decodParams(params);
       if (cookies != NULL && strlen(cookies))

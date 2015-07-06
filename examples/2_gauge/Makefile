@@ -51,10 +51,10 @@ LD		=  g++
 
 LDFLAGS        =  -Wall -Wno-unused -O3   
 
-EXAMPLE_NAME     = example2
+EXAMPLE_NAME     = example
 
 EXAMPLE_OBJS = \
-		  example2.o
+		  example.o
 
 
 #######################

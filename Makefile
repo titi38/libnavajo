@@ -89,7 +89,8 @@ PRECOMPILER_OBJS = src/navajoPrecompiler.o
 %.o: %.cc
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
 
-all:: 	$(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_DIR)
+all:: 	$(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
+       #$(EXAMPLE_DIR)
 
 clean::
 	@echo Remove files...
@@ -106,7 +107,7 @@ $(LIB_SHARED_NAME): $(LIBNAVAJO_OBJS)
 	@rm -f $(LIB_DIR)/$@;
 	@[[ -d $(LIB_DIR) ]] || mkdir -p $(LIB_DIR)
 	$(LD) $(LDFLAGS) -o $(LIB_DIR)/$@ -shared $(LIBNAVAJO_OBJS) $(LIBS) ; \
-  cd $(LIB_DIR); ln -sf $@ $(LIB_SHARED_ALIAS)
+        cd $(LIB_DIR); ln -sf $@ $(LIB_SHARED_ALIAS)
 
 $(LIB_STATIC_NAME): $(LIBNAVAJO_OBJS) 	 
 	@rm -f $(LIB_DIR)/$@;
@@ -140,7 +141,4 @@ uninstall:
 	@rm -rf $(PREFIX)/$(INC_DIR)/libnavajo \
 	@rm -f $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_NAME) $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_ALIAS) $(PREFIX)/$(LIB_DIR)/$(LIB_STATIC_NAME); \
 #	cd $(man3dir); rm -f libnavajo.3
-
-
-
 
