@@ -79,7 +79,7 @@ int main()
   webServer->listenTo(8080);
 //  webServer->setThreadsPoolSize(1);
   //uncomment to switch to https
-  webServer->setUseSSL(true, "mycert.pem");
+  //webServer->setUseSSL(true, "mycert.pem");
 
   //uncomment to active X509 auth
   //webServer->setAuthPeerSSL(true, "cachain.pem");
@@ -99,7 +99,7 @@ int main()
   webServer->addRepository(&thePrecompRepo);
 
   LocalRepository myLocalRepo;
-  myLocalRepo.addDirectory("/docs", "../docs/html"); // if doxygen documentation is generated in "docs" folder, we will browse it at http://localhost:8080/docs/index.html
+  myLocalRepo.addDirectory("/docs", "../../docs/html"); // if doxygen documentation is generated in "docs" folder, we will browse it at http://localhost:8080/docs/index.html
   // myLocalRepo.addDirectory(WEB_LOCATION, DIRECTORY);
   webServer->addRepository(&myLocalRepo);
 

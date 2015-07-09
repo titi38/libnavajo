@@ -14,6 +14,7 @@
 
 #include <stdlib.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <fstream>
 #include <streambuf>
@@ -29,24 +30,35 @@ bool LocalRepository::loadFilename_dir (const string& alias, const string& path,
     struct dirent *entry;
     int ret = 1;
     DIR *dir;
+    struct stat s;
     string fullPath=path+subpath;
-
 
     dir = opendir (fullPath.c_str());
     if (dir == NULL) return false;
     while ((entry = readdir (dir)) != NULL ) 
     {
-	    if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) continue;
+      if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..") || !strlen(entry->d_name)) continue;
 
-	    if ((entry->d_type == DT_REG || entry->d_type == DT_LNK) && strlen(entry->d_name) )
-	    {
-	      string filename=alias+subpath+"/"+entry->d_name;
-	      while (filename.size() && filename[0]=='/') filename.erase(0, 1);
-	      filenamesSet.insert(filename);
+      std::string filepath=fullPath+'/'+entry->d_name;
+
+      if (stat(filepath.c_str(), &s) == -1) 
+      {
+	NVJ_LOG->append(NVJ_ERROR,string("LocalRepository - stat error : ")+string(strerror(errno)));
+        continue;
       }
-	    if (entry->d_type == DT_DIR)
-	      loadFilename_dir(alias, path, subpath+"/"+entry->d_name);
+
+      int type=s.st_mode & S_IFMT;
+      if (type == S_IFREG || type == S_IFLNK)
+      {
+	string filename=alias+subpath+"/"+entry->d_name;
+	while (filename.size() && filename[0]=='/') filename.erase(0, 1);
+	filenamesSet.insert(filename);
+      }
+
+      if (type == S_IFDIR)
+        loadFilename_dir(alias, path, subpath+"/"+entry->d_name);
     }
+
     return true;
 }
 

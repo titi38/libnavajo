@@ -71,7 +71,7 @@ PrecompiledRepository.o:
 	@echo Generate Cpp files from HTML repository
 	@rm -f $(OUTPUTFILENAME)
 	@find . \( -name "*~" -o -name "*.old" -o -name "*.bak" \) -exec rm -f '{}' \;
-	@$(NAVAJO_PRECOMPILER_EXEC) exampleRepository >> $(OUTPUTFILENAME) ; cd ..
+	$(NAVAJO_PRECOMPILER_EXEC) exampleRepository >> $(OUTPUTFILENAME) ; cd ..
 	$(CXX) -c PrecompiledRepository.cc -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS)
 	
 $(EXAMPLE_NAME): $(EXAMPLE_OBJS) $(LIB_STATIC_NAME)
