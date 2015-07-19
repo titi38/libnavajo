@@ -47,7 +47,7 @@ class AuthPAM
 
   public:
 	static int start ();
-	static int authentificate (const char *username, const char *password, const char *service);
+	static int authentificate (const char *username, const char *password, const char *service="/etc/pam.d/login");
 	static void stop();
 
 };

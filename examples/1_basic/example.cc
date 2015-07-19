@@ -13,6 +13,7 @@
 
 #include <signal.h> 
 #include <string.h> 
+#include "libnavajo/AuthPAM.hh"
 #include "libnavajo/libnavajo.hh"
 #include "libnavajo/LogStdOutput.hh"
 

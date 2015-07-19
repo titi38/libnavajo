@@ -13,6 +13,7 @@
 
 #include <signal.h> 
 #include <string.h> 
+#include "libnavajo/AuthPAM.hh"
 #include "libnavajo/libnavajo.hh"
 #include "libnavajo/LogStdOutput.hh"
 
@@ -79,9 +80,35 @@ class MyDynamicRepository : public DynamicRepository
         }
         bool checkCredentials(const string& login, const string& password)
         {
-          return login == "libnavajo" && password == "libnavajo";
+          return (login == "libnavajo" && password == "libnavajo")
+              || AuthPAM::authentificate(login.c_str(), password.c_str(), "/etc/pam.d/login");
+        }
+        MyDynamicPage()
+        {
+          AuthPAM::start();
+        }
+        ~MyDynamicPage()
+        {
+          AuthPAM::stop();
         }
     };
+    
+    class Auth: public MyDynamicPage
+    {
+      bool getPage(HttpRequest* request, HttpResponse *response)
+      {
+        string login, password;
+        if (request->getParameter("login", login) && request->getParameter("pass", password)
+            && checkCredentials(login, password))
+        {
+          char *username = (char*)malloc((login.length()+1)*sizeof(char));
+          strcpy(username, login.c_str());
+          request->setSessionAttribute ( "username", (void*)username );
+          return fromString("authOK", response);
+        }
+        return fromString("authBAD", response);
+      } 
+    } auth;
     
     class CpuValue: public MyDynamicPage
     {
@@ -100,19 +127,10 @@ class MyDynamicRepository : public DynamicRepository
       {
         string param;
 
-        if (request->getParameter("pageId", param) && param == "LOGIN")
+        if (request->getParameter("pageId", param) && param == "LOGIN" && isValidSession(request))
         {
-
-          string login, password;
-          if (request->getParameter("inputLogin", login) && request->getParameter("inputPassword", password)
-              && checkCredentials(login, password))
-          {
-            char *username = (char*)malloc((login.length()+1)*sizeof(char));
-            strcpy(username, login.c_str());
-            request->setSessionAttribute ( "username", (void*)username );
-            response->forwardTo("gauge.html"); 
-            return true;
-          }
+          response->forwardTo("gauge.html"); 
+          return true;
         } 
 
         if (request->hasParameter("disconnect")) // Button disconnect
@@ -133,6 +151,7 @@ class MyDynamicRepository : public DynamicRepository
     {
       add("cpuvalue.txt",&cpuValue);
       add("index.html",&controller);
+      add("auth.txt",&auth);
     }
 };
 
