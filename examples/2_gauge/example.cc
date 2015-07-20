@@ -78,19 +78,6 @@ class MyDynamicRepository : public DynamicRepository
           void *myAttribute = request->getSessionAttribute("username");          
           return myAttribute != NULL;
         }
-        bool checkCredentials(const string& login, const string& password)
-        {
-          return (login == "libnavajo" && password == "libnavajo")
-              || AuthPAM::authentificate(login.c_str(), password.c_str(), "/etc/pam.d/login");
-        }
-        MyDynamicPage()
-        {
-          AuthPAM::start();
-        }
-        ~MyDynamicPage()
-        {
-          AuthPAM::stop();
-        }
     };
     
     class Auth: public MyDynamicPage
@@ -98,8 +85,10 @@ class MyDynamicRepository : public DynamicRepository
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
         string login, password;
+        // User libnavajo/libnavajo is allowed and all PAM logins !
         if (request->getParameter("login", login) && request->getParameter("pass", password)
-            && checkCredentials(login, password))
+            && ( (login == "libnavajo" && password == "libnavajo")
+              || AuthPAM::authentificate(login.c_str(), password.c_str(), "/etc/pam.d/login")) )
         {
           char *username = (char*)malloc((login.length()+1)*sizeof(char));
           strcpy(username, login.c_str());
@@ -164,7 +153,7 @@ int main()
   signal( SIGINT, exitFunction );
   
   NVJ_LOG->addLogOutput(new LogStdOutput);
-
+  AuthPAM::start(); 
   webServer = new WebServer;
   //webServer->setUseSSL(true, "../mycert.pem");
   LocalRepository myLocalRepo;
@@ -178,6 +167,7 @@ int main()
 
   webServer->wait();
   
+  AuthPAM::stop();
   LogRecorder::freeInstance();
   return 0;
 }
