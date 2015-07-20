@@ -35,7 +35,7 @@
         data: "login="+$("#login-username").val()+"&pass="+$("#login-password").val(),
         success: function(html){    
           if(html=='authOK')
-            window.location="index.html";
+             $("#loginform").submit();
           else 
             errorMessage("Bad username or password.");
         },

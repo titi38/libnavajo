@@ -103,7 +103,8 @@ class MyDynamicRepository : public DynamicRepository
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-        if (!isValidSession(request)) return false;
+        if (!isValidSession(request))
+          return fromString("ERR", response);;
         ostringstream ss;
         ss << getCpuLoad();
         return fromString(ss.str(), response);
