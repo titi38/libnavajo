@@ -89,8 +89,7 @@ PRECOMPILER_OBJS = src/navajoPrecompiler.o
 %.o: %.cc
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
 
-all:: 	$(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
-       #$(EXAMPLE_DIR)
+all:: 	$(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME) $(EXAMPLE_DIR) docs
 
 clean::
 	@echo Remove files...

@@ -14,6 +14,7 @@
 #ifndef WEBSOCKET_HH_
 #define WEBSOCKET_HH_
 
+#include <algorithm>
 #include <list>
 #include "libnavajo/HttpRequest.hh"
 #include "libnavajo/WebServer.hh"
