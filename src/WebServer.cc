@@ -393,7 +393,7 @@ bool WebServer::accept_request(ClientSockData* client)
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Key: ", 19) == 0) { j+=19; strcpy(webSocketClientKey, bufLine+j); continue; }
 
-        if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
+  //      if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Version: ", 23) == 0) { j+=23; webSocketVersion = atoi(bufLine+j); continue; }
 
@@ -496,7 +496,7 @@ bool WebServer::accept_request(ClientSockData* client)
         HttpRequest* request=new HttpRequest(requestMethod, url+1, requestParams, requestCookies, requestOrigin, username, client);
 
         if (webSocket->onOpening(request))
-        startWebSocketListener(webSocket, request);
+          startWebSocketListener(webSocket, request);
         return false;
       }
       else
@@ -1016,7 +1016,7 @@ void WebServer::exit()
   pthread_mutex_unlock( &clientsQueue_mutex );
 
   pthread_mutex_lock(&webSocketClientList_mutex);
-  for (std::list<int>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); /*nothing*/)
+  for (std::list<int>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end();)
   {
     shutdown ( *it, 2 ) ;
     close ( *it );
@@ -1575,6 +1575,8 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
   webSocketClientList.push_back(client->socketId);
   pthread_mutex_unlock(&webSocketClientList_mutex);
 
+  websocket->addNewClient(request);
+
   bool fin=false;
   unsigned char rsv=0, opcode=0;  
   u_int64_t readLength=1;
@@ -1586,7 +1588,13 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
 
     int n=0;
     size_t it=0;
-    size_t length=(readLength<BUFSIZE)?readLength:readLength-BUFSIZE;
+    size_t length=readLength;
+    
+    if (length > BUFSIZE)
+    {
+      length=BUFSIZE;
+      readLength-=BUFSIZE;
+    }
 
     do
     {
@@ -1607,7 +1615,8 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
           continue;
         }
       }
-      it += n;
+      
+      it += n;      
     }
     while (it != length && !closing);
     
@@ -1617,8 +1626,7 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
     switch(step)
     {
     
-      case FIRSTBYTE:    
-        
+      case FIRSTBYTE:     
         fin=(bufferRecv[0] & 0x80) >> 7;
         rsv=(bufferRecv[0] & 0x70) >> 4;
         opcode=bufferRecv[0] & 0xf;
@@ -1627,7 +1635,7 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
         readLength=1;
         break;
           
-      case LENGTH:
+      case LENGTH:    
         if (!msgLength)
         {    
           msgMask = (bufferRecv[0]  & 0x80) >> 7;
@@ -1675,9 +1683,9 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
         break;
         
       case CONTENT:
+    
         char buf[300]; snprintf(buf, 300, "WebSocket: new message received (len=%llu fin=%d rsv=%d opcode=%d mask=%d)", static_cast<unsigned long long>(msgLength), fin, rsv, opcode, msgMask);
         NVJ_LOG->append(NVJ_DEBUG,buf);
-
         if (msgContent != NULL)
         {
           for (size_t i=0; i<length; i++)
@@ -1691,8 +1699,8 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
         }
 
         if (msgContentIt == msgLength)
-        {
-          if (msgContent != NULL && (client->compression == ZLIB))
+        {      
+          if (msgContent != NULL && (client->compression == ZLIB) && (rsv & 4) )
           {
             try
             {
@@ -1700,49 +1708,52 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
               size_t msgLen=nvj_gunzip( &msg, msgContent, msgLength, true );
               free(msgContent);
               msgContent=msg;
+              msgLength=msgLen;
+              
+              msgContent[msgLength]='\0';
             }
-            catch(...)
+            catch (std::exception& e)
             {
-              NVJ_LOG->append(NVJ_ERROR, " Websocket: nvj_gzip raised an exception");
-              return;
+              NVJ_LOG->append(NVJ_ERROR, string(" Websocket: nvj_gzip raised an exception: ") +  e.what());
+              msgLength = 0;
             }
           }
-
-          switch(opcode)
-          {
-            case 0x1:   
-              websocket->onTextMessage(request, string((char*)msgContent), fin);
-              break;
-            case 0x2:
-              websocket->onBinaryMessage(request, msgContent, msgLength, fin);
-              break;
-            case 0x8:
-              if (websocket->onCloseCtrlFrame(request, msgContent, msgLength))
-              {
-                webSocketSendCloseCtrlFrame(request, msgContent, msgLength);
-                closing=true;
-              }
-              break;
-            case 0x9:
-              if (websocket->onPingCtrlFrame(request, msgContent, msgLength))
-                webSocketSendPongCtrlFrame(request, msgContent, msgLength);
-              break;
-            case 0xa:
-              websocket->onPongCtrlFrame(request, msgContent, msgLength);
-              break;
-            default:
-              char buf[300]; snprintf(buf, 300, "WebSocket: message received with unknown opcode (%d) has been ignored", opcode);
-              NVJ_LOG->append(NVJ_INFO,buf);
-              break;
-          }
+          if (msgLength)
+            switch(opcode)
+            {
+              case 0x1:
+                websocket->onTextMessage(request, string((char*)msgContent, msgLength), fin);
+                break;
+              case 0x2:
+                websocket->onBinaryMessage(request, msgContent, msgLength, fin);
+                break;
+              case 0x8:
+                if (websocket->onCloseCtrlFrame(request, msgContent, msgLength))
+                {
+                  webSocketSendCloseCtrlFrame(request, msgContent, msgLength);
+                  closing=true;
+                }
+                break;
+              case 0x9:
+                if (websocket->onPingCtrlFrame(request, msgContent, msgLength))
+                  webSocketSendPongCtrlFrame(request, msgContent, msgLength);
+                break;
+              case 0xa:
+                websocket->onPongCtrlFrame(request, msgContent, msgLength);
+                break;
+              default:
+                char buf[300]; snprintf(buf, 300, "WebSocket: message received with unknown opcode (%d) has been ignored", opcode);
+                NVJ_LOG->append(NVJ_INFO,buf);
+                break;
+            }
 
           // FINISHED
-/*          if (msgContent != NULL)
+  /*        if (msgContent != NULL)
             for (u_int64_t i=0; i<msgLength; i++)
               printf("%c(%2x)", msgContent[i],msgContent[i]);
-            printf("\n"); fflush(NULL);
-*/           
-          if (client->compression == ZLIB)
+            printf("\n"); fflush(NULL);*/
+           
+          if ((client->compression == ZLIB) && (rsv & 4) && msgLength)
             free (msgContent);
           fin=false; rsv=0;
           opcode=0;
@@ -1759,6 +1770,9 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
   }
 
   websocket->onClosing(request);
+
+  websocket->removeClient(request);
+
   delete request;
   freeClientSockData(client);
   webSocketClientList.push_back(client->socketId);

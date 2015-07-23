@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+ 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Chat - webSockets libNavajo</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+     
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    
+    <script type="text/javascript">
+    var conn;
+        
+    function infoMessage(message)
+    {
+     $("#statusMsg").attr('class', '');
+     $("#statusMsg").html(message);
+    }
+    
+    function clearMessage()
+    {
+      infoMessage("");
+    }
+    
+    function errorMessage(message)
+    {
+      $("#statusMsg").attr('class', 'alert alert-danger');
+      $("#statusMsg").html("<span class='glyphicon glyphicon-exclamation-sign' aria-hidden='true'></span> <span class='sr-only'>Error:</span>"+message);
+    }
+    
+    function userLoggedIn()
+    {
+     $("#msgToSend").show();
+     $("#passwordArea").hide();
+     $("#btn-login").hide();
+     $("#btn-disconnect").show();
+     $("#login-username").prop("disabled", true);
+     $("#userMessage").html($("#login-username").val());
+     clearMessage();
+     clearUserMessage()
+    }
+
+    function userDisconnect()
+    {    
+     $("#msgToSend").hide();
+     $("#passwordArea").show();
+     $("#btn-login").show();
+     $("#btn-disconnect").hide();
+     $("#login-username").prop("disabled", false);
+     infoMessage("You have been disconnected");
+     disconnectUserMessage(); 
+    }
+  
+    function disconnectUserMessage()
+    {
+      $("#chat-area").html("<center><h1>websockets Chat</h1><br/>&gt; NOT CONNECTED &lt;</center> ");
+    } 
+
+    function clearUserMessage()
+    {
+      $("#chat-area").html("");
+    } 
+
+    function appendUserMessage(username, message)
+    {
+      $("#chat-area").append("<span class='badge'>"+username+"</span> "+message+"<BR/>");
+    }
+    
+    function login()
+    {
+      $.ajax(
+      {
+        type: "POST",
+        url: "auth.txt",
+        data: "login="+$("#login-username").val()+"&pass="+$("#login-password").val(),
+        success: function(html){    
+          if(html=='authOK')
+            connectWS();
+          else 
+            errorMessage("Bad username or password.");
+        },
+        beforeSend:function()
+        {
+          infoMessage("Please Wait...");
+        }
+      });
+    }
+
+    function disconnect()
+    {
+      $.ajax({
+        url : 'disconnect.txt',
+        success : function(value) { 
+        }
+      });
+      closeWS();
+      userDisconnect();      
+    };
+    
+    function connectWS()
+    {
+      if (window["WebSocket"]) {
+          conn = new WebSocket("ws://" + location.host + "/wschat");
+          conn.onopen = function()
+          {
+            userLoggedIn();
+          }
+          conn.onclose = function(evt)
+          {
+       //     alert("onclose");
+            errorMessage("Connection closed by server");
+            disconnect();
+          }
+          conn.onmessage = function(evt)
+          {
+            var res = (evt.data).split(/:(.+)?/);;
+            username=res[0];
+            message=res[1];
+            appendUserMessage(username, message);
+        //    alert("onmessage");
+          }
+      }
+      else
+        errorMessage("WebSockets are not supported by your browser");
+    }
+    
+    function closeWS()
+    {
+      if (conn) conn.close();
+    }
+    
+    function sendMsg()
+    {
+      message = $("#userMessageInput").val();
+      username = $("#login-username").val();
+      if (!conn || !message)
+        return ;
+      conn.send(username+":"+message);
+      //appendUserMessage(username, message);
+      $("#userMessageInput").val('');
+    }    
+
+    $().ready(function() {
+ 						document.getElementById('login-username').addEventListener('keypress', function(e) {
+
+							if(e.keyCode == 13) {
+								login();
+							}
+						});
+
+ 						document.getElementById('login-password').addEventListener('keypress', function(e) {
+
+							if(e.keyCode == 13) {
+								login();
+							}
+						});
+		});
+    </script>
+
+
+  </head>
+
+  <body>
+    <div class="container" style="padding-top: 10px;">
+
+      <div class="panel panel-info"> <!-- global -->
+
+        <div class="panel-heading text-right">
+          <div class="form-inline">
+            <form id="loginform" class="form-inline" role="form"> <div id="statusMsg" style="display: inline !important; margin-right:25px;" role="alert"></div>     
+              <div class="input-group">
+                <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+                <input id="login-username" type="text" class="form-control" name="username" value="" placeholder="username">                                        
+              </div>                  
+              <div class="input-group" id="passwordArea">
+                <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
+                <input id="login-password" type="password" class="form-control" name="password" placeholder="password">
+              </div>
+              <div  style="margin-left: 5px; margin-right:10px;" class="form-group controls">
+                <button type="button" id="btn-login" class="btn btn-success" onclick="login()" >Login </button>
+                <button type="button" id="btn-disconnect" class="btn btn-success" style="display:none;" onclick="disconnect()">Disconnect </button>
+              </div>
+            </form>     
+          </div>
+        </div>
+
+        <div class="panel-body" id="chat-area" style="height: 500px; overflow-y: scroll;"></div>
+
+        <div class="panel-footer text-left" style="display:none;" id="msgToSend">         
+          <form class="form-inline" onsubmit="return false;">
+            <div class="form-group">
+              <div class="input-group">
+                <div class="input-group-addon" id="userMessage">guest</div>
+                <input type="text" class="form-control" id="userMessageInput" size=80 placeholder="Message">
+              </div>
+            </div>
+            <button id="btn-sendMsg" class="btn btn-primary" onclick="sendMsg()">Send Message</button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+    <script type="text/javascript">
+      disconnectUserMessage();
+    </script>
+  </body>
+</html>

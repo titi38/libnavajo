@@ -30,7 +30,7 @@ inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const siz
   strm.opaque = Z_NULL;
 
   if ( deflateInit2(&strm, Z_BEST_SPEED, Z_DEFLATED, rawDeflateData ? -15 : 16+MAX_WBITS, 9, Z_DEFAULT_STRATEGY) != Z_OK)
-      return -1;
+    throw std::runtime_error(std::string("gzip : inflateInit2 error") );
 
   if ( (*dst=(unsigned char *)malloc(CHUNK * sizeof (unsigned char))) == NULL )
     throw std::runtime_error(std::string("gzip : malloc error (1)") );
@@ -49,7 +49,7 @@ inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const siz
      if (deflate(&strm, Z_FINISH ) == Z_STREAM_ERROR)  /* state not clobbered */
     {
       free (*dst);
-      return -1;
+      throw std::runtime_error(std::string("gzip : deflate error") );
     }
 
     i++;
@@ -85,7 +85,7 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
   int ret;
 
   if (src == NULL)
-    throw std::runtime_error(std::string("gzip : src == NULL !") );
+    throw std::runtime_error(std::string("gunzip : src == NULL !") );
 
   /* allocate inflate state */
   strm.zalloc = Z_NULL;
@@ -96,10 +96,10 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
 
 
   if (inflateInit2(&strm, rawDeflateData ? -15 : 16+MAX_WBITS) != Z_OK)
-    return -1;
+    throw std::runtime_error(std::string("gunzip : inflateInit2 error") );
 
   if ( (*dst=(unsigned char *)malloc(CHUNK * sizeof (unsigned char))) == NULL )
-    throw std::runtime_error(std::string("gzip : malloc error (2)") );
+    throw std::runtime_error(std::string("gunzip : malloc error (2)") );
 
   strm.avail_in = sizeSrc;
   strm.next_in = (Bytef*)src;
@@ -118,14 +118,14 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
     {
       case Z_STREAM_ERROR:
         free (*dst);
-        return -1;
+        throw std::runtime_error(std::string("gunzip : inflate Z_STREAM_ERROR") );
       case Z_NEED_DICT:
       case Z_DATA_ERROR:
 // ICI
       case Z_MEM_ERROR:
         (void)inflateEnd(&strm);
         free (*dst);
-        return -1;
+        throw std::runtime_error(std::string("gunzip : inflate error") );
     }
   
     i++;

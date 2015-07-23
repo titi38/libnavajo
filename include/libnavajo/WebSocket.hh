@@ -14,12 +14,21 @@
 #ifndef WEBSOCKET_HH_
 #define WEBSOCKET_HH_
 
+#include <list>
 #include "libnavajo/HttpRequest.hh"
 #include "libnavajo/WebServer.hh"
 
 class WebSocket
 {
+    list<HttpRequest*> wsclients;
+    pthread_mutex_t wsclients_mutex;
+    
   public:
+    WebSocket()
+    {
+      pthread_mutex_init(&wsclients_mutex, NULL);
+    }
+    
     /**
     * Callback on new websocket client connection
     * @param request: the http request object
@@ -86,6 +95,15 @@ class WebSocket
     {
       WebServer::webSocketSendTextMessage(request, message, fin);
     };
+
+    inline void sendBroadcastTextMessage(const string &message, bool fin=true)
+    {
+      pthread_mutex_lock(&wsclients_mutex);
+      for (std::list<HttpRequest*>::iterator it = wsclients.begin(); it != wsclients.end(); it++)
+        WebServer::webSocketSendTextMessage(*it, message, fin);
+      pthread_mutex_unlock(&wsclients_mutex);
+    };
+
 
     /**
     * Send Binary Message on the websocket
@@ -163,6 +181,30 @@ class WebSocket
       WebServer::webSocketSendPongCtrlFrame(request, message);
     };
 
+    inline void addNewClient(HttpRequest* request)
+    {
+      pthread_mutex_lock(&wsclients_mutex);
+      wsclients.push_back(request);
+      pthread_mutex_unlock(&wsclients_mutex);
+    };
+
+    inline void removeClient(HttpRequest* request)
+    {
+      pthread_mutex_lock(&wsclients_mutex);
+      std::list<HttpRequest*>::iterator it = std::find(wsclients.begin(), wsclients.end(), request);
+      if (it != wsclients.end()) wsclients.erase(it);
+      pthread_mutex_unlock(&wsclients_mutex);
+    };
+    
+    inline bool isClient(HttpRequest* request)
+    {
+      bool res;
+      pthread_mutex_lock(&wsclients_mutex);
+      std::list<HttpRequest*>::iterator it = std::find(wsclients.begin(), wsclients.end(), request);
+      res = it != wsclients.end();
+      pthread_mutex_unlock(&wsclients_mutex);
+      return res;
+    };
 };
 
 
