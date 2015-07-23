@@ -62,7 +62,7 @@ class MyDynamicRepository : public DynamicRepository
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
         request->removeSession();
-        return fromString("OK", response);
+        return noContent(response);
       } 
     } disconnect;
     

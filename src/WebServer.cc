@@ -1641,16 +1641,18 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
           msgMask = (bufferRecv[0]  & 0x80) >> 7;
           if (!msgMask)
           {
-            freeClientSockData(client);
-            return;      
+            closing=true;
+            continue;      
           }
           
           msgLength =  bufferRecv[0] & 0x7f;
           if (!msgLength)
           {
             NVJ_LOG->append(NVJ_WARNING, "Websocket: Message length is null. Closing socket.");
-            freeClientSockData(client);
-            return;
+            msgLength=0;
+            msgContent=NULL;
+            step=CONTENT;
+            continue;
           }
           if (msgLength == 126) { readLength=2; break; }
           if (msgLength == 127) { readLength=8; break; }
@@ -1718,34 +1720,36 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
               msgLength = 0;
             }
           }
-          if (msgLength)
-            switch(opcode)
-            {
-              case 0x1:
+
+          switch(opcode)
+          {
+            case 0x1:
+              if (msgLength)
                 websocket->onTextMessage(request, string((char*)msgContent, msgLength), fin);
-                break;
-              case 0x2:
-                websocket->onBinaryMessage(request, msgContent, msgLength, fin);
-                break;
-              case 0x8:
-                if (websocket->onCloseCtrlFrame(request, msgContent, msgLength))
-                {
-                  webSocketSendCloseCtrlFrame(request, msgContent, msgLength);
-                  closing=true;
-                }
-                break;
-              case 0x9:
-                if (websocket->onPingCtrlFrame(request, msgContent, msgLength))
-                  webSocketSendPongCtrlFrame(request, msgContent, msgLength);
-                break;
-              case 0xa:
-                websocket->onPongCtrlFrame(request, msgContent, msgLength);
-                break;
-              default:
-                char buf[300]; snprintf(buf, 300, "WebSocket: message received with unknown opcode (%d) has been ignored", opcode);
-                NVJ_LOG->append(NVJ_INFO,buf);
-                break;
-            }
+              else websocket->onTextMessage(request, "", fin);
+              break;
+            case 0x2:
+              websocket->onBinaryMessage(request, msgContent, msgLength, fin);
+              break;
+            case 0x8:
+              if (websocket->onCloseCtrlFrame(request, msgContent, msgLength))
+              {
+                webSocketSendCloseCtrlFrame(request, msgContent, msgLength);
+                closing=true;
+              }
+              break;
+            case 0x9:
+              if (websocket->onPingCtrlFrame(request, msgContent, msgLength))
+                webSocketSendPongCtrlFrame(request, msgContent, msgLength);
+              break;
+            case 0xa:
+              websocket->onPongCtrlFrame(request, msgContent, msgLength);
+              break;
+            default:
+              char buf[300]; snprintf(buf, 300, "WebSocket: message received with unknown opcode (%d) has been ignored", opcode);
+              NVJ_LOG->append(NVJ_INFO,buf);
+              break;
+          }
 
           // FINISHED
   /*        if (msgContent != NULL)
@@ -1841,7 +1845,7 @@ void WebServer::webSocketSend(HttpRequest* request, const u_int8_t opcode, const
   }
   else
   {
-    if ( (send(client->socketId, headerBuffer, headerLen, 0) < 0) || (send(client->socketId, msg, msgLen, 0) < 0) )
+    if ( (send(client->socketId, headerBuffer, headerLen, 0) < 0) || ( msgLen && (send(client->socketId, msg, msgLen, 0) < 0) ) )
     {
       freeClientSockData(client);
     }

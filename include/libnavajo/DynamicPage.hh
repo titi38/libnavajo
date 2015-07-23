@@ -44,7 +44,14 @@ class DynamicPage
     
     /**********************************************************************/
 
+    inline bool noContent( HttpResponse *response )
+    {
+      response->setContent (NULL, 0);
+      return true;
+    }
 
+    /**********************************************************************/
+    
     inline bool fromString( const string& resultat, HttpResponse *response )
     {
       size_t webpageLen;
