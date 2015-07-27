@@ -283,7 +283,7 @@ bool WebServer::accept_request(ClientSockData* client)
   HttpRequestMethod requestMethod;
   size_t postContentLength=0;
   bool urlencodedForm=false;
-  char url[BUFSIZE];
+  char urlBuffer[BUFSIZE];
   size_t nbFileKeepAlive=5;
 
   char requestParams[BUFSIZE], requestCookies[BUFSIZE], requestOrigin[BUFSIZE], webSocketClientKey[BUFSIZE];
@@ -315,7 +315,8 @@ bool WebServer::accept_request(ClientSockData* client)
     requestMethod=UNKNOWN_METHOD;
     postContentLength=0;
     urlencodedForm=false;
-    *url='\0';
+    *urlBuffer='\0';
+    char *url=urlBuffer;
     *requestParams='\0';
     *requestCookies='\0';
     *requestOrigin='\0';
@@ -393,7 +394,8 @@ bool WebServer::accept_request(ClientSockData* client)
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Key: ", 19) == 0) { j+=19; strcpy(webSocketClientKey, bufLine+j); continue; }
 
-  //      if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
+// Not working:
+//      if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Version: ", 23) == 0) { j+=23; webSocketVersion = atoi(bufLine+j); continue; }
 
@@ -414,8 +416,8 @@ bool WebServer::accept_request(ClientSockData* client)
         {
           while (isspace((int)(bufLine[j])) && j < bufLineLen) j++;
 
-          i=0; while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen) && bufLine[j]!='?') url[i++] = bufLine[j++];
-          url[i]='\0';
+          i=0; while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen) && bufLine[j]!='?') urlBuffer[i++] = bufLine[j++];
+          urlBuffer[i]='\0';
 
           if ( !urlencodedForm && (bufLine[j] == '?') )
             { i=0; j++; while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen)) requestParams[i++] = bufLine[j++];
@@ -466,18 +468,19 @@ bool WebServer::accept_request(ClientSockData* client)
         bufLineLen=recvLine(client->socketId, requestParams, BUFSIZE);
     }
 
+    if ( (url[strlen(url) - 1] == '/') && (strlen(url)+12 < BUFSIZE) )
+        strcpy (url + strlen(url) - 1, "/index.html");
+        
+    do { url++; } while (strlen(url) && url[0]=='/');
+    
     char logBuffer[BUFSIZE];
-    snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", url+1, requestMethod, requestParams, requestCookies, httpVers, keepAlive, client->compression );
+    snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", url, requestMethod, requestParams, requestCookies, httpVers, keepAlive, client->compression );
     NVJ_LOG->append(NVJ_DEBUG, logBuffer);
 
     // Process the query
     if (keepAlive==-1) 
       keepAlive = ( strncmp (httpVers,"1.1", 3) >= 0 );
-
-    if ( (url[strlen(url) - 1] == '/') && (strlen(url)+12 < BUFSIZE) )
-        strcpy (url + strlen(url) - 1, "/index.html");
-
-
+      
     /* *************************
     /  * processing WebSockets *
     /  *************************/
@@ -486,14 +489,15 @@ bool WebServer::accept_request(ClientSockData* client)
     {
       //search endpoint
       std::map<std::string,WebSocket*>::iterator it;
-      it = webSocketEndPoints.find(url+1);
+
+      it = webSocketEndPoints.find(url);
       if (it != webSocketEndPoints.end()) // FOUND
       {
         WebSocket* webSocket=it->second;
         std::string header = getHttpWebSocketHeader("101 Switching Protocols", webSocketClientKey, client->compression == ZLIB);
 
         httpSend(client, (const void*) header.c_str(), header.length());
-        HttpRequest* request=new HttpRequest(requestMethod, url+1, requestParams, requestCookies, requestOrigin, username, client);
+        HttpRequest* request=new HttpRequest(requestMethod, url, requestParams, requestCookies, requestOrigin, username, client);
 
         if (webSocket->onOpening(request))
           startWebSocketListener(webSocket, request);
@@ -501,7 +505,7 @@ bool WebServer::accept_request(ClientSockData* client)
       }
       else
       {
-        char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: Websocket not found %s",  url+1);
+        char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: Websocket not found %s",  url);
         NVJ_LOG->append(NVJ_WARNING,bufLinestr);
 
         std::string msg = getNotFoundErrorMsg();
@@ -520,12 +524,12 @@ bool WebServer::accept_request(ClientSockData* client)
     bool zippedFile=false;
 
 #ifdef DEBUG_TRACES
-    printf( "url: %s?%s\n", url+1, requestParams ); fflush(NULL);
+    printf( "url: %s?%s\n", url, requestParams ); fflush(NULL);
 #endif
 
-    HttpRequest request(requestMethod, url+1, requestParams, requestCookies, requestOrigin, username, client);
+    HttpRequest request(requestMethod, url, requestParams, requestCookies, requestOrigin, username, client);
 
-    const char *mime=get_mime_type(url+1); 
+    const char *mime=get_mime_type(url); 
     string mimeStr; if (mime != NULL) mimeStr=mime;
     HttpResponse response(mimeStr);
 
@@ -537,8 +541,8 @@ bool WebServer::accept_request(ClientSockData* client)
       fileFound = (*repo)->getFile(&request, &response);
       if (fileFound && response.getForwardedUrl() != "")
       {
-        strncpy( url+1, response.getForwardedUrl().c_str(), BUFSIZE - 1);
-        *(url + BUFSIZE - 1)='\0';
+        strncpy( url, response.getForwardedUrl().c_str(), BUFSIZE - 1);
+        *(urlBuffer + BUFSIZE - 1)='\0';
         response.forwardTo("");
         repo=webRepositories.begin(); fileFound=false;
       }
@@ -548,7 +552,7 @@ bool WebServer::accept_request(ClientSockData* client)
     
     if (!fileFound)
     {
-      char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page not found %s",  url+1);
+      char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page not found %s",  url);
       NVJ_LOG->append(NVJ_WARNING,bufLinestr);
 
       std::string msg = getNotFoundErrorMsg();
@@ -574,7 +578,7 @@ bool WebServer::accept_request(ClientSockData* client)
       }
     }
     
-    char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page found %s",  url+1);
+    char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page found %s",  url);
     NVJ_LOG->append(NVJ_DEBUG,bufLinestr);
 
     if ( (client->compression == NONE) && zippedFile )
@@ -1685,8 +1689,8 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
         break;
         
       case CONTENT:
-    
-        char buf[300]; snprintf(buf, 300, "WebSocket: new message received (len=%llu fin=%d rsv=%d opcode=%d mask=%d)", static_cast<unsigned long long>(msgLength), fin, rsv, opcode, msgMask);
+        char buf[300]; snprintf(buf, 300, "WebSocket: new message received (len=%llu fin=%d rsv=%d opcode=%d mask=%d)",
+                                              static_cast<unsigned long long>(msgLength), fin, rsv, opcode, msgMask);
         NVJ_LOG->append(NVJ_DEBUG,buf);
         if (msgContent != NULL)
         {

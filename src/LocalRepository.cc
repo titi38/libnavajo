@@ -146,7 +146,6 @@ bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
     NVJ_LOG->append(NVJ_ERROR, logBuffer);
     return false;
   }
-  
 
   // obtain file size.
   fseek (pFile , 0 , SEEK_END);

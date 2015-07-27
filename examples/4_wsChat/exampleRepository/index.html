@@ -103,15 +103,22 @@
     
     function connectWS()
     {
-      if (window["WebSocket"]) {
-          conn = new WebSocket("ws://" + location.host + "/wschat");
+      if (window["WebSocket"]) 
+      {
+          var path = new String (location.pathname);
+          var idx = path.lastIndexOf('/');
+          if (idx > 0)
+            path = path.substr(0,idx);
+          else
+            path = '/';
+          alert(path);
+          conn = new WebSocket('ws://' + location.host + path + '/wschat');
           conn.onopen = function()
           {
             userLoggedIn();
           }
           conn.onclose = function(evt)
           {
-       //     alert("onclose");
             errorMessage("Connection closed by server");
             disconnect();
           }
@@ -122,6 +129,11 @@
             message=res[1];
             appendUserMessage(username, message);
         //    alert("onmessage");
+          }
+          conn.onerror = function(evt)
+          {
+            errorMessage("something bad happens...");
+            disconnect();
           }
       }
       else

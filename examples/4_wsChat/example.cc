@@ -82,7 +82,6 @@ class MyWebSocket : public WebSocket
 {
   bool onOpening(HttpRequest* request)
   {
-    
     printf ("New Websocket (host '%s' - socketId=%d)\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId);
     return isValidSession(request);
   }

@@ -42,7 +42,7 @@ class DynamicRepository : public WebRepository
     inline virtual bool getFile(HttpRequest* request, HttpResponse *response)
     {
       string url = request->getUrl();
-
+      while (url.size() && url[0]=='/') url.erase(0, 1);
       pthread_mutex_lock( &_mutex );
       IndexMap::const_iterator i = indexMap.find (url);
       if (i == indexMap.end())
