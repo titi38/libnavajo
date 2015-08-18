@@ -70,12 +70,12 @@
       $("#chat-area").append("<span class='badge'>"+username+"</span> "+message+"<BR/>");
     }
     
-    function login()
+    function connect()
     {
       $.ajax(
       {
         type: "POST",
-        url: "auth.txt",
+        url: "connect.txt",
         data: "login="+$("#login-username").val()+"&pass="+$("#login-password").val(),
         success: function(html){    
           if(html=='authOK')
@@ -111,7 +111,7 @@
             path = path.substr(0,idx);
           else
             path = '/';
-          alert(path);
+
           conn = new WebSocket('ws://' + location.host + path + '/wschat');
           conn.onopen = function()
           {
@@ -128,7 +128,6 @@
             username=res[0];
             message=res[1];
             appendUserMessage(username, message);
-        //    alert("onmessage");
           }
           conn.onerror = function(evt)
           {
@@ -160,14 +159,14 @@
  						document.getElementById('login-username').addEventListener('keypress', function(e) {
 
 							if(e.keyCode == 13) {
-								login();
+								connect();
 							}
 						});
 
  						document.getElementById('login-password').addEventListener('keypress', function(e) {
 
 							if(e.keyCode == 13) {
-								login();
+								connect();
 							}
 						});
 		});
@@ -193,7 +192,7 @@
                 <input id="login-password" type="password" class="form-control" name="password" placeholder="password">
               </div>
               <div  style="margin-left: 5px; margin-right:10px;" class="form-group controls">
-                <button type="button" id="btn-login" class="btn btn-success" onclick="login()" >Login </button>
+                <button type="button" id="btn-login" class="btn btn-success" onclick="connect()" >Login </button>
                 <button type="button" id="btn-disconnect" class="btn btn-success" style="display:none;" onclick="disconnect()">Disconnect </button>
               </div>
             </form>     

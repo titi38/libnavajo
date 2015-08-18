@@ -30,15 +30,34 @@ void exitFunction( int dummy )
 
 bool isValidSession(HttpRequest* request)
 {
-  void *myAttribute = request->getSessionAttribute("username");          
-  return myAttribute != NULL;
+  void *username = request->getSessionAttribute("username");
+  bool *connect = (bool*) request->getSessionAttribute("wschat");
+
+  return username != NULL && connect != NULL && !(*connect);
+}
+
+/***********************************************************************/
+
+void setSessionIsConnected(HttpRequest* request, const bool b)
+{
+  bool *connect = (bool*) request->getSessionAttribute("wschat");
+  if (connect != NULL) *connect=b;
+}
+
+/***********************************************************************/
+
+bool checkMessage(HttpRequest* request, const string msg)
+{
+  char *username = (char *)request->getSessionAttribute("username");
+  return msg.length() > strlen(username)
+      && ( strncmp(msg.c_str(), username, strlen(username)) == 0 );
 }
 
 /***********************************************************************/
 
 class MyDynamicRepository : public DynamicRepository
 {
-    class Auth: public DynamicPage
+    class Connect: public DynamicPage
     {        
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
@@ -51,11 +70,15 @@ class MyDynamicRepository : public DynamicRepository
           char *username = (char*)malloc((login.length()+1)*sizeof(char));
           strcpy(username, login.c_str());
           request->setSessionAttribute ( "username", (void*)username );
+          bool *connect = (bool*)malloc(sizeof(bool));
+          *connect=false;
+          request->setSessionAttribute ( "wschat", (void*)connect );
+          
           return fromString("authOK", response);
         }
         return fromString("authBAD", response);
       } 
-    } auth;
+    } connect;
 
    class Disconnect: public DynamicPage
     {        
@@ -69,12 +92,10 @@ class MyDynamicRepository : public DynamicRepository
   public:
     MyDynamicRepository() : DynamicRepository()
     {
-      add("auth.txt",&auth);
+      add("connect.txt",&connect);
       add("disconnect.txt",&disconnect);
     }
 } myDynRepo;
-
-
 
 /***********************************************************************/
 
@@ -83,19 +104,26 @@ class MyWebSocket : public WebSocket
   bool onOpening(HttpRequest* request)
   {
     printf ("New Websocket (host '%s' - socketId=%d)\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId);
-    return isValidSession(request);
+    if ( ! isValidSession(request) )
+      return false;
+    setSessionIsConnected(request, true);
+    return true;
   }
 
   void onClosing(HttpRequest* request)
   {
     printf ("Closing Websocket (host '%s' - socketId=%d)\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId);
+    setSessionIsConnected(request, false);
   }
 
   void onTextMessage(HttpRequest* request, const string &message, const bool fin)
   {
     printf ("Message: '%s' received from host '%s'\n", message.c_str(), request->getPeerIpAddress().str().c_str());
-    sendBroadcastTextMessage(message);
-
+    //check username
+    if (checkMessage(request, message))
+      sendBroadcastTextMessage(message);
+    else
+      sendCloseCtrlFrame(request, "Not allowed message format");
   };
   void onBinaryMessage(HttpRequest* request, const unsigned char* message, size_t len, const bool fin)
   { };
@@ -131,12 +159,11 @@ int main()
   //uncomment to use Pam authentification
   //webServer->usePamAuth("/etc/pam.d/login");
 
-
   // Fill the web repository with local files, statically compiled files or dynamic files
   PrecompiledRepository thePrecompRepo("") ;
   webServer->addRepository(&thePrecompRepo);
   webServer->addRepository(&myDynRepo);
-
+  
   webServer->addWebSocket("wschat", &myWebSocket);
 
   webServer->startService();

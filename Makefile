@@ -5,7 +5,7 @@
 #############################
 
 LIBNAVAJO_MVERSION= "1"
-LIBNAVAJO_VERSION=  "\"1.0.0\""
+LIBNAVAJO_VERSION=  "\"1.1.0\""
 LIBNAVAJO_BUILD_DATE=`/bin/date +%s`
 
 
@@ -128,7 +128,7 @@ install: $(LIB_SHARED_NAME) $(LIB_STATIC_NAME) $(PRECOMPILER_NAME)
 	-@if [ ! -d $(PREFIX)/$(MAN_DIR) ]; then mkdir -p $(PREFIX)/$(MAN_DIR); fi
 	cp -r $(BIN_DIR) $(PREFIX); chmod 755 $(PREFIX)/$(BIN_DIR)/* 
 	cp -r $(INC_DIR) $(PREFIX); find $(PREFIX)/$(INC_DIR)/libnavajo -type f -exec chmod 644 '{}' \; 
-	chmod 755 $(PREFIX)/$(INC_DIR)/navajo
+	chmod 755 $(PREFIX)/$(INC_DIR)/libnavajo
 	cp -r $(LIB_DIR) $(PREFIX); chmod 755 $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_NAME) $(PREFIX)/$(LIB_DIR)/$(LIB_SHARED_ALIAS); 
 	chmod 644 $(PREFIX)/$(LIB_DIR)/$(LIB_STATIC_NAME); 
 	-@(cd $(PREFIX)/$(LIB_DIR); $(RANLIB) $(LIB_STATIC_NAME) || true) >/dev/null 2>&1

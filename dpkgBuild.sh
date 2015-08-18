@@ -1,4 +1,5 @@
 #!/bin/sh
+make clean; make
 export DPKG_BUILD_ROOT=debianBuild
 rm -rf $DPKG_BUILD_ROOT
 mkdir -p $DPKG_BUILD_ROOT

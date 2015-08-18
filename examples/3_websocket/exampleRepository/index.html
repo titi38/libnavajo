@@ -1,36 +1,45 @@
 <!DOCTYPE HTML>
 <html>
-   <head>	
-      <script type="text/javascript">
-         function WebSocketTest()
-         {
-            if ("WebSocket" in window)
-            {
-               alert("WebSocket is supported by your browser!");
-               var ws = new WebSocket("ws://" + location.host + "/test");
-               ws.onopen = function()
-               {
-                  ws.send("The client message");
-                  alert("Message sent...");
-               };
-               ws.onmessage = function (evt) 
-               { 
-                  var received_msg = evt.data;
-                  alert("Message received:" + evt.data);
-               };
-               ws.onclose = function()
-               { 
-                  alert("Connection closed..."); 
-               };		
-            }
-            else
-               alert("WebSockets are not supported by your browser!");
-         }
-      </script>
-   </head>
-   <body>
-      <div id="websockets">
-         <a href="javascript:WebSocketTest()">Start WebSocket Connection</a>
-      </div>
-   </body>
+  <head>	
+    <script type="text/javascript">
+    
+    function WebSocketTest()
+    {
+      if ("WebSocket" in window)
+      {
+        alert("WebSocket is supported by your browser");
+        var path = new String (location.pathname);
+        var idx = path.lastIndexOf('/');
+        if (idx > 0)
+         path = path.substr(0,idx);
+        else
+         path = '/';
+
+        var ws = new WebSocket('ws://' + location.host + path + '/test');          
+        ws.onopen = function()
+        {
+          ws.send("The client message");
+          alert("Message sent...");
+        };
+        ws.onmessage = function (evt) 
+        { 
+          var received_msg = evt.data;
+          alert("Message received... :" + evt.data);
+        };
+        ws.onclose = function()
+        { 
+          alert("Connection closed..."); 
+        };		
+      }
+      else
+        alert("WebSockets are not supported by your browser!");
+    }
+      
+    </script>
+  </head>
+  <body>
+    <div id="websockets">
+      <a href="javascript:WebSocketTest()">Test WebSocket Connection</a>
+    </div>
+  </body>
 </html>

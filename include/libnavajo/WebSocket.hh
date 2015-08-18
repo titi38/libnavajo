@@ -48,7 +48,9 @@ class WebSocket
     * @param message: the message
     * @param fin: is the current message finished ?
     */ 
-    virtual void onTextMessage(HttpRequest* request, const string &message, const bool fin) = 0;
+    virtual void onTextMessage(HttpRequest* request, const string &message, const bool fin)
+    { };
+
 
     /**
     * Callback on new binary message
@@ -57,8 +59,9 @@ class WebSocket
     * @param len: the message length
     * @param fin: is the current message finished ?
     */ 
-    virtual void onBinaryMessage(HttpRequest* request, const unsigned char* message, size_t len, const bool fin) = 0;
-
+    virtual void onBinaryMessage(HttpRequest* request, const unsigned char* message, size_t len, const bool fin)
+    { };
+    
     /**
     * Callback on new pong message (should came after a ping message)
     * @param request: the http request object
@@ -104,7 +107,6 @@ class WebSocket
         WebServer::webSocketSendTextMessage(*it, message, fin);
       pthread_mutex_unlock(&wsclients_mutex);
     };
-
 
     /**
     * Send Binary Message on the websocket
