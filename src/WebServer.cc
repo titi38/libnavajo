@@ -290,7 +290,6 @@ bool WebServer::accept_request(ClientSockData* client)
   bool websocket=false;
   int webSocketVersion=-1;
   string username;
-  struct stat st;
   size_t bufLineLen=0;
   BIO *ssl_bio = NULL;
 

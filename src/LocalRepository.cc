@@ -28,7 +28,6 @@
 bool LocalRepository::loadFilename_dir (const string& alias, const string& path, const string& subpath="")
 {
     struct dirent *entry;
-    int ret = 1;
     DIR *dir;
     struct stat s;
     string fullPath=path+subpath;

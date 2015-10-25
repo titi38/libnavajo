@@ -73,7 +73,6 @@ std::vector< std::string > filenamesVec;
 bool loadFilename_dir (const std::string& path, const std::string& subpath="")
 {
     struct dirent *entry;
-    int ret = 1;
     DIR *dir;
     struct stat s;
 

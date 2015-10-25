@@ -382,7 +382,6 @@ class IpNetwork
         }
         else
         {
-	        bool isNum=false;
 	        size_t s=0, e=0, j=0;
 	
 	        while (( maskStr[s] == ' ' || maskStr[s] == '\t' ) && s < maskStr.length())

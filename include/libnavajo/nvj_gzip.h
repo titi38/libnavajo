@@ -20,7 +20,6 @@
 
 inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, bool rawDeflateData=false )
 {
-  unsigned have;
   z_stream strm;
   size_t sizeDst=CHUNK;
 
@@ -79,7 +78,6 @@ inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const siz
 
 inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, bool rawDeflateData=false )
 {
-  unsigned have;
   z_stream strm;
   size_t sizeDst=CHUNK;
   int ret;

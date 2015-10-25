@@ -36,10 +36,6 @@ int AuthPAM::start ()
   }
 #endif
 
-  /*
-   * Event loop
-   */
-  bool isStarted=true;
 
   return 0;
 }
