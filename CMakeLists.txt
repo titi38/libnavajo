@@ -65,7 +65,9 @@ file(GLOB sources_lib ${PROJECT_SOURCE_DIR}/src/AuthPAM.cc
   ${PROJECT_SOURCE_DIR}/src/LogStdOutput.cc
 ${PROJECT_SOURCE_DIR}/src/WebServer.cc)
 
-file(GLOB headers_lib ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh )
+file(GLOB headers_lib ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh
+	  	      ${PROJECT_SOURCE_DIR}/include/libnavajo/thread.h
+		      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvj_gzip.h)
 
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 
@@ -86,6 +88,11 @@ target_link_libraries(navajo ${OPENSSL_LIBRARIES})
 target_link_libraries(navajo dl pam)
 target_link_libraries(navajo ${ZLIB_LIBRARIES})
 
+
+
+
+  
+
 ############### install the library ###################
 #install(TARGETS navajo DESTINATION lib)
 
@@ -103,11 +110,12 @@ target_link_libraries(navajoPrecompiler ${OPENSSL_LIBRARIES})
 target_link_libraries(navajoPrecompiler dl pam)
 target_link_libraries(navajoPrecompiler ${ZLIB_LIBRARIES})
 
+install(TARGETS navajoPrecompiler DESTINATION bin/libnavajo COMPONENT headers)
+
 
 ############### document file generation ###################
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen.conf ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 add_custom_target(doc
 ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
