@@ -123,16 +123,3 @@ COMMENT "Generating API documentation with Doxygen" VERBATIM
 )
 endif(DOXYGEN_FOUND)
 
-############### copy of the licence and readme ###################
-set(EXAMPLEED_SCRIPTS
-  README.md
-  LICENSE
-  )
-
-foreach(_script ${EXAMPLEED_SCRIPTS})
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/${_script}
-    ${PROJECT_BINARY_DIR}/${_script}
-    COPYONLY
-    )
-endforeach()
