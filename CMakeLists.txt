@@ -89,16 +89,11 @@ target_link_libraries(navajo dl pam)
 target_link_libraries(navajo ${ZLIB_LIBRARIES})
 
 
-
-
-  
-
 ############### install the library ###################
 #install(TARGETS navajo DESTINATION lib)
 
 install(FILES ${headers_lib} DESTINATION include/libnavajo COMPONENT headers)
-install(TARGETS navajo LIBRARY DESTINATION lib/libnavajo COMPONENT libraries)
-
+install(TARGETS navajo LIBRARY DESTINATION lib COMPONENT libraries)
 
 
 ############### navajoPrecompiler binnary generation ###################
@@ -110,7 +105,7 @@ target_link_libraries(navajoPrecompiler ${OPENSSL_LIBRARIES})
 target_link_libraries(navajoPrecompiler dl pam)
 target_link_libraries(navajoPrecompiler ${ZLIB_LIBRARIES})
 
-install(TARGETS navajoPrecompiler DESTINATION bin/libnavajo COMPONENT headers)
+install(TARGETS navajoPrecompiler DESTINATION bin COMPONENT headers)
 
 
 ############### document file generation ###################
