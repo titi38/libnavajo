@@ -47,20 +47,26 @@ mark_as_advanced (libnavajo_INCLUDE_DIR libnavajo_LIBRARY)
 
 
 
-MACRO (MACRO_ADD_INTERFACES _output_list)
+MACRO (MACRO_ADD_INTERFACES _precompil_repo)
 
-  FOREACH(_in_FILE ${ARGN})
+  FOREACH(_in_repo ${ARGN})
+
+	
+    SET(_precompile_name "PrecompiledRepository_${_in_repo}.cc" )
+
+    file(GLOB htmlfiles ${_in_repo}/* )
 
     ADD_CUSTOM_COMMAND(
-      OUTPUT ${_in_FILE}
-      COMMAND rm -f ${_in_FILE}
-      COMMAND ${libnavajo_BIN} html >> ${_in_FILE}
+      OUTPUT ${_precompile_name}
+      COMMAND rm -f ${_precompile_name}
+      COMMAND ${libnavajo_BIN} ${_in_repo} >> ${_precompile_name}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      MAIN_DEPENDENCY ${htmlfiles}
     )
 
-    SET(${_output_list} ${${_output_list}} ${_in_FILE})
+    SET(${_precompil_repo} ${${_precompil_repo}} ${_precompile_name})
 
-  ENDFOREACH(_in_FILE ${ARGN})
+  ENDFOREACH(_in_repo ${ARGN})
 
 
 

@@ -21,6 +21,8 @@ Libnavajo makes it easy to run an HTTP server into your own application, impleme
 
     git clone https://github.com/titi38/libnavajo.git
 
+    cmake .
+
     make
 
     sudo make install
