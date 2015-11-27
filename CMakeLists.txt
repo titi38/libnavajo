@@ -78,9 +78,10 @@ set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 
 ###############      build the library     #####################
 add_library(navajo SHARED ${sources_lib} ${headers_lib} )
+add_library(navajoStatic STATIC ${sources_lib} ${headers_lib} )
 
 set_target_properties (navajo PROPERTIES VERSION ${LIBNAVAJO_VERSION} SOVERSION ${LIBNAVAJO_MVERSION})
-
+set_target_properties(navajoStatic PROPERTIES OUTPUT_NAME navajo)
 
 include_directories (${PROJECT_SOURCE_DIR}/include)
 
@@ -95,6 +96,7 @@ target_link_libraries(navajo ${ZLIB_LIBRARIES})
 install(FILES ${headers_lib} DESTINATION include/libnavajo COMPONENT headers)
 install(TARGETS navajo LIBRARY DESTINATION lib COMPONENT libraries)
 
+install(TARGETS navajoStatic ARCHIVE DESTINATION lib LIBRARY DESTINATION lib COMPONENT libraries)
 
 ############### navajoPrecompiler binnary generation ###################
 file( GLOB  navajoPrecompiler_source ${PROJECT_SOURCE_DIR}/src/navajoPrecompiler.cc )

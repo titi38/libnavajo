@@ -1,5 +1,5 @@
 
-# rpmbuild -bb --clean --target x86_64 rpm/libnavajo.el6.spec
+# rpmbuild -bb --clean --target x86_64 rpmbuild/libnavajo.el7.spec
 
 %define major 1
 %define updatemajor 0
@@ -8,14 +8,14 @@
 %define develname libnavajo-devel
 
 Summary:	Webserver and custom web interfaces integration for C++ applications
-Name:		navajo
-Version:	1.0.0
+Name:		libnavajo
+Version:	1.1.0
 Release:	1
 License:	LGPLv3
 Group:		System/Libraries
 URL:		  http://www.libnavajo.org
 BuildRequires:	zlib-devel openssl-devel pam-devel
-BuildRequires:	libtool  openssl zlib pam
+BuildRequires:	libtool  openssl zlib pam automake cmake
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 Source: libnavajo-%{version}.tar.bz2
 
@@ -23,7 +23,7 @@ Source: libnavajo-%{version}.tar.bz2
 libnavajo is an implementation of a complete HTTP(S) server, complete, fast
 and lightweight.
 
-%package -n	%{libname}
+#%package -n	%{libname}
 Summary:	Shared library part of libnavajo
 Group:		System/Libraries
 
@@ -63,12 +63,17 @@ precompiled in code)
 %setup -q -n %{libname}
 
 %build
+cmake -DCMAKE_INSTALL_PREFIX:PATH=$RPM_BUILD_ROOT/usr
 make clean
 make
+doxygen
 
 %install
 rm -rf %{buildroot}
-make install PREFIX=$RPM_BUILD_ROOT/usr
+make install
+%ifarch x86_64 amd64 ia32e
+mv $RPM_BUILD_ROOT/usr/lib $RPM_BUILD_ROOT/usr/lib64
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -77,7 +82,7 @@ rm -rf %{buildroot}
 %defattr(-,root,root)
 %doc LICENSE
 %{_bindir}/navajoPrecompiler
-#%{_mandir}/man3/libnavajo.3*
+%{_mandir}/man3/*
 
 
 %files -n %{libname}
@@ -93,6 +98,6 @@ rm -rf %{buildroot}
 %{_bindir}/navajoPrecompiler
 
 %changelog
-* Thu Apr 16 2015 Thierry Descombes <thierry.descombes@gmail.com> 1.0.0-el6
+* Thu Apr 16 2015 Thierry Descombes <thierry.descombes@gmail.com> 1.1.0-el7
 - first packaged release 1.0.0
 

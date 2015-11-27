@@ -1663,10 +1663,17 @@ void WebServer::listenWebSocket(WebSocket *websocket, HttpRequest* request)
         else
         { 
           if (msgLength == 126)
-            msgLength=ntohs(*(u_int16_t*)bufferRecv);
-
+          {
+            u_int16_t *tmp=(u_int16_t*)bufferRecv;
+            msgLength=ntohs(*tmp);
+            //msgLength=ntohs(*(u_int16_t*)bufferRecv);
+          }
           if (msgLength == 127)
-            msgLength=ntohll(*(u_int64_t*)bufferRecv);
+          {
+            u_int64_t *tmp=(u_int64_t*)bufferRecv;
+            msgLength=ntohll(*tmp);
+            //msgLength=ntohll(*(u_int64_t*)bufferRecv);
+          }
         }
         
         if ( (msgLength > 0x7FFF)
