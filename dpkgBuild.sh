@@ -1,9 +1,15 @@
 #!/bin/sh
-make clean; make
 export DPKG_BUILD_ROOT=debianBuild
 rm -rf $DPKG_BUILD_ROOT
 mkdir -p $DPKG_BUILD_ROOT
-make install PREFIX=$DPKG_BUILD_ROOT/usr
+
+rm -rf CMakeCache.txt  CMakeFiles  cmake_install.cmake
+cmake -DCMAKE_INSTALL_PREFIX:PATH=$DPKG_BUILD_ROOT/usr
+make clean
+make
+doxygen
+make install
+#make install PREFIX=$DPKG_BUILD_ROOT/usr
 
 mv -f $DPKG_BUILD_ROOT/usr/lib64 $DPKG_BUILD_ROOT/usr/lib
 
