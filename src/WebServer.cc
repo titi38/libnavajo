@@ -72,6 +72,7 @@
 #define LOGHIST_EXPIRATION_DELAY 600
 #define BUFSIZE 32768
 
+
 const char WebServer::authStr[]="Authorization: Basic ";
 const int WebServer::verify_depth=512;
 char *WebServer::certpass=NULL;
@@ -930,7 +931,7 @@ u_short WebServer::init()
   struct addrinfo  hints;
   struct addrinfo *result, *rp;
 
-  threadWebServer=0;
+  //threadWebServer=0;
   nbServerSock=0;
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
@@ -1289,20 +1290,19 @@ void WebServer::threadProcessing()
 
   for (;!exiting;)
   {
+
     do
     {
-    #ifdef __darwin__
       status = poll( pfd, nbServerSock, 500 );
-    #else
-      status = poll( pfd, nbServerSock, -1 );
-    #endif
     }
     while ( ( status < 0 ) && ( errno == EINTR ) && !exiting );
 
     for ( idx = 0; idx < nbServerSock && !exiting; idx++ )
     {
+
       if ( !(pfd[idx].revents & POLLIN) )
               continue;
+
       client_sock = accept(pfd[idx].fd,
                        (struct sockaddr*)&clientAddress, &clientAddressLength);
 

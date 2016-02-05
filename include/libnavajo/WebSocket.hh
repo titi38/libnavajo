@@ -105,6 +105,7 @@ class WebSocket
       pthread_mutex_lock(&wsclients_mutex);
       for (std::list<HttpRequest*>::iterator it = wsclients.begin(); it != wsclients.end(); it++)
         WebServer::webSocketSendTextMessage(*it, message, fin);
+
       pthread_mutex_unlock(&wsclients_mutex);
     };
 

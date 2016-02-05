@@ -38,6 +38,7 @@
 class WebSocket;
 class WebServer
 {
+    pthread_t threadWebServer;
     SSL_CTX *sslCtx;
     int s_server_session_id_context;
     static char *certpass;
@@ -105,7 +106,6 @@ class WebServer
     static int verify_callback(int preverify_ok, X509_STORE_CTX *ctx);
     static const int verify_depth;
 
-    pthread_t threadWebServer;
     static void* startThread(void* );
     void threadProcessing();
     void exit();
