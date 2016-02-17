@@ -63,7 +63,11 @@ file(GLOB sources_lib ${PROJECT_SOURCE_DIR}/src/AuthPAM.cc
   ${PROJECT_SOURCE_DIR}/src/LogFile.cc
   ${PROJECT_SOURCE_DIR}/src/LogSyslog.cc
   ${PROJECT_SOURCE_DIR}/src/LogStdOutput.cc
-${PROJECT_SOURCE_DIR}/src/WebServer.cc)
+  ${PROJECT_SOURCE_DIR}/src/WebServer.cc
+  ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Parser.cpp
+  ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Field.cpp
+  ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Exception.cpp
+  )
 
 file(GLOB headers_lib ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh
 	  	      ${PROJECT_SOURCE_DIR}/include/libnavajo/thread.h
@@ -77,13 +81,14 @@ set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 
 
 ###############      build the library     #####################
+
 add_library(navajo SHARED ${sources_lib} ${headers_lib} )
 add_library(navajoStatic STATIC ${sources_lib} ${headers_lib} )
 
 set_target_properties (navajo PROPERTIES VERSION ${LIBNAVAJO_VERSION} SOVERSION ${LIBNAVAJO_MVERSION})
 set_target_properties(navajoStatic PROPERTIES OUTPUT_NAME navajo)
 
-include_directories (${PROJECT_SOURCE_DIR}/include)
+include_directories (${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1)
 
 target_link_libraries(navajo ${OPENSSL_LIBRARIES})
 target_link_libraries(navajo dl pam)
@@ -98,7 +103,7 @@ install(TARGETS navajo LIBRARY DESTINATION lib COMPONENT libraries)
 
 install(TARGETS navajoStatic ARCHIVE DESTINATION lib LIBRARY DESTINATION lib COMPONENT libraries)
 
-############### navajoPrecompiler binnary generation ###################
+############### navajoPrecompiler binary generation ###################
 file( GLOB  navajoPrecompiler_source ${PROJECT_SOURCE_DIR}/src/navajoPrecompiler.cc )
 
 add_executable(navajoPrecompiler ${navajoPrecompiler_source})

@@ -139,6 +139,7 @@ int main()
   
   NVJ_LOG->addLogOutput(new LogStdOutput);
   //NVJ_LOG->addLogOutput(new LogFile("/var/log/navajo.log"));
+  NVJ_LOG->setDebugMode();
   AuthPAM::start(); 
   webServer = new WebServer;
 
