@@ -571,8 +571,16 @@ bool WebServer::accept_request(ClientSockData* client)
         }
         else
           if ( mutipartContentParser != NULL && bufLineLen)
-            mutipartContentParser->AcceptSomeData(buffer, bufLineLen);
-
+            try
+            {
+              mutipartContentParser->AcceptSomeData(buffer, bufLineLen);
+            }
+            catch (MPFD::Exception e) 
+            {
+              NVJ_LOG->append(NVJ_DEBUG, "WebServer::accept_request -  MPFD::Exception: "+ e.GetError() );
+              break;
+            }
+            
         datalen+=bufLineLen;
       };
     }
