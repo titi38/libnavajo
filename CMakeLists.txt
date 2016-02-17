@@ -71,7 +71,10 @@ file(GLOB sources_lib ${PROJECT_SOURCE_DIR}/src/AuthPAM.cc
 
 file(GLOB headers_lib ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh
 	  	      ${PROJECT_SOURCE_DIR}/include/libnavajo/thread.h
-		      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvj_gzip.h)
+		      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvj_gzip.h
+		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Field.h 
+		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Exception.h 
+		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Parser.h)
 
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 

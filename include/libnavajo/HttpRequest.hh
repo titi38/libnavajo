@@ -14,13 +14,17 @@
 #ifndef HTTPREQUEST_HH_
 #define HTTPREQUEST_HH_
 
-#include "libnavajo/IpAddress.hh"
 #include <map>
 #include <vector>
 #include <string>
 #include <sstream>
 #include <openssl/ssl.h>
+
+#include "libnavajo/IpAddress.hh"
 #include "HttpSession.hh"
+
+// MPFDParser
+#include "Parser.h"
 
 //****************************************************************************
 
@@ -49,6 +53,7 @@ class HttpRequest
   HttpRequestCookiesMap cookies;
   HttpRequestParametersMap parameters;
   std::string sessionId;
+  MPFD::Parser *mutipartContentParser;
 
   /**********************************************************************/
   /**
@@ -329,13 +334,14 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const string &username, ClientSockData *client) 
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const string &username, ClientSockData *client, MPFD::Parser *parser=NULL) 
     { 
-      httpMethod = type;
+      this->httpMethod = type;
       this->url = url;
       this->origin = origin;
-      httpAuthUsername=username;
+      this->httpAuthUsername=username;
       this->clientSockData=client;
+      this->mutipartContentParser=parser;
       
       if (params != NULL && strlen(params))
         decodParams(params);
@@ -343,6 +349,20 @@ class HttpRequest
         decodCookies(cookies);        
       getSession();
     };
+
+    /**********************************************************************/
+    /**
+    * is there a multipart content in the request ?    
+    * @return true or false
+    */    
+    inline bool isMultipartContent() const { return mutipartContentParser != NULL; };
+    
+    /**********************************************************************/
+    /**
+    * get the MPFD parser   
+    * @return a pointer to the MPFDparser instance
+    */    
+    inline MPFD::Parser *getMPFDparser() { return mutipartContentParser; };
     
     /**********************************************************************/
     /**

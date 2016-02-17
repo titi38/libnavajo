@@ -205,7 +205,6 @@ bool WebServer::isUserAllowed(const string &pwdb64, string& login)
   // It's a new user !
   bool authOK=false;
   string loginPwd=base64_decode(pwdb64.c_str());
-  printf ("%s => %s", loginPwd.c_str(), pwdb64.c_str());
   size_t loginPwdSep=loginPwd.find(':');
   if (loginPwdSep==string::npos)
   {
@@ -545,10 +544,11 @@ bool WebServer::accept_request(ClientSockData* client)
       while ( datalen < postContentLength )
       {
         char buffer[BUFSIZE];
+        size_t requestedLength = ( postContentLength-datalen > BUFSIZE) ? BUFSIZE : postContentLength-datalen;
 
         if (sslEnabled)
         {
-          bufLineLen=BIO_gets(client->bio, buffer, BUFSIZE);
+          bufLineLen=BIO_gets(client->bio, buffer, requestedLength);
 
           if (SSL_get_error(client->ssl,bufLineLen) == SSL_ERROR_ZERO_RETURN)
           {
@@ -557,7 +557,7 @@ bool WebServer::accept_request(ClientSockData* client)
           }
         }
         else
-          bufLineLen=recvLine(client->socketId, buffer, BUFSIZE);
+          bufLineLen=recvLine(client->socketId, buffer, requestedLength);
         
         if ( urlencodedForm )
         {
@@ -570,9 +570,9 @@ bool WebServer::accept_request(ClientSockData* client)
           *(requestParams + datalen + bufLineLen)='\0';  
         }
         else
-          if ( mutipartContentParser != NULL )
+          if ( mutipartContentParser != NULL && bufLineLen)
             mutipartContentParser->AcceptSomeData(buffer, bufLineLen);
-            
+
         datalen+=bufLineLen;
       };
     }
@@ -593,7 +593,7 @@ bool WebServer::accept_request(ClientSockData* client)
         std::string header = getHttpWebSocketHeader("101 Switching Protocols", webSocketClientKey, client->compression == ZLIB);
 
         httpSend(client, (const void*) header.c_str(), header.length());
-        HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client);
+        HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mutipartContentParser);
 
         if (webSocket->onOpening(request))
           startWebSocketListener(webSocket, request);      
@@ -632,7 +632,7 @@ bool WebServer::accept_request(ClientSockData* client)
     printf( "url: %s?%s\n", urlBuffer, requestParams ); fflush(NULL);
 #endif
 
-    HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client);
+    HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mutipartContentParser);
 
     const char *mime=get_mime_type(urlBuffer); 
     string mimeStr; if (mime != NULL) mimeStr=mime;
