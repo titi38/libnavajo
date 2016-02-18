@@ -6,6 +6,8 @@
 #include "Field.h"
 #include "Parser.h"
 
+pthread_mutex_t fileCreation_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 MPFD::Field::Field() {
     type = 0;
     FieldContent = NULL;
@@ -62,7 +64,9 @@ void MPFD::Field::AcceptSomeData(char *data, long length) {
     } else if (type == FileType) {
         if (WhereToStoreUploadedFiles == Parser::StoreUploadedFilesInFilesystem) {
             if (TempDir.length() > 0) {
+            
                 if (!file.is_open()) {
+pthread_mutex_lock( &fileCreation_mutex );
                     int i = 1;
                     std::ifstream testfile;
                     std::string tempfile;
@@ -82,6 +86,7 @@ void MPFD::Field::AcceptSomeData(char *data, long length) {
                     } while (testfile.is_open());
 
                     file.open(tempfile.c_str(), std::ios::out | std::ios::binary | std::ios_base::trunc);
+pthread_mutex_unlock( &fileCreation_mutex );
                 }
 
                 if (file.is_open()) {

@@ -116,6 +116,9 @@ class WebServer
     size_t threadsPoolSize;
     string device;
     
+    string mutipartTempDirForFileUpload;
+    long mutipartMaxCollectedDataLength;
+    
     bool sslEnabled;
     std::string sslCertFile, sslCaFile, sslCertPwd;
     std::vector<std::string> authLoginPwdList;
@@ -233,6 +236,24 @@ class WebServer
     * @param user : an allowed pam user login
     */ 
     inline void addAuthPamUser(const char* user) { authPamUsersList.push_back(string(user)); };
+    
+    /**
+    * Set the path to store uploaded files on disk. Used to set the MPFD function.
+    * @param pathdir: path to a writtable directory
+    */   
+    inline void setMutipartTempDirForFileUpload(const string& pathdir) { mutipartTempDirForFileUpload = pathdir; };
+
+    /**
+    * Set the size of internal MPFD buffer.
+    * The buffer is used to store temporary information while parsing field
+    * names and other data that identified by any boundaries. In theory some
+    * bad man can give you lots of unboundered and eat all your memory. To 
+    * except this situation you should tell Parser maximum buffer size. 
+    * Note that file content is transferred directly to disk (of selected)
+    * without any buffering.
+    * @param max: the internal buffer size
+    */
+    inline void setMutipartMaxCollectedDataLength(const long& max) { mutipartMaxCollectedDataLength = max; };    
     
     /**
     * Add a web repository (containing web pages)

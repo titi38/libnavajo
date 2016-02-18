@@ -115,6 +115,9 @@ WebServer::WebServer()
   authPeerSsl=false;
   authPam=false;
 
+  mutipartTempDirForFileUpload = "/tmp";
+  mutipartMaxCollectedDataLength = 20*1024;   
+
   pthread_mutex_init(&clientsQueue_mutex, NULL);
   pthread_cond_init(&clientsQueue_cond, NULL);
 
@@ -284,7 +287,7 @@ bool WebServer::accept_request(ClientSockData* client)
 {
   char bufLine[BUFSIZE];
   HttpRequestMethod requestMethod;
-  size_t postContentLength=0;
+  size_t requestContentLength=0;
   bool urlencodedForm=false;
   char *urlBuffer=NULL;
   char *mutipartContent=NULL;
@@ -319,7 +322,7 @@ bool WebServer::accept_request(ClientSockData* client)
   {
     // Initialisation /////////
     requestMethod=UNKNOWN_METHOD;
-    postContentLength=0;
+    requestContentLength=0;
     username="";
     keepAlive=-1;
     isQueryStr=false;
@@ -415,7 +418,7 @@ bool WebServer::accept_request(ClientSockData* client)
             continue; 
           }
   
-        if (strncasecmp(bufLine+j, "Content-Length: ",16) == 0) { j+=16; postContentLength = atoi(bufLine+j); continue; }
+        if (strncasecmp(bufLine+j, "Content-Length: ",16) == 0) { j+=16; requestContentLength = atoi(bufLine+j); continue; }
 
         if (strncasecmp(bufLine+j, "Cookie: ",8) == 0) 
         { 
@@ -524,27 +527,35 @@ bool WebServer::accept_request(ClientSockData* client)
     if (keepAlive==-1) 
       keepAlive = ( strncmp (httpVers,"1.1", 3) >= 0 );
       
-    // PB requestParams : postContentLength > BUFSIZE ??
+    // PB requestParams : requestContentLength > BUFSIZE ??
 
     if (mutipartContent != NULL) // strlen (mutipartContent) == 0
     {
-      // Initialize MPFDParser
-      mutipartContentParser = new MPFD::Parser();
-      mutipartContentParser->SetUploadedFilesStorage(MPFD::Parser::StoreUploadedFilesInFilesystem);
-      mutipartContentParser->SetTempDirForFileUpload("/tmp");
-      mutipartContentParser->SetMaxCollectedDataLength(20*1024);
-      mutipartContentParser->SetContentType( mutipartContent );
+      try
+      {
+        // Initialize MPFDParser
+        mutipartContentParser = new MPFD::Parser();
+        mutipartContentParser->SetUploadedFilesStorage(MPFD::Parser::StoreUploadedFilesInFilesystem);
+        mutipartContentParser->SetTempDirForFileUpload( mutipartTempDirForFileUpload );
+        mutipartContentParser->SetMaxCollectedDataLength( mutipartMaxCollectedDataLength );
+        mutipartContentParser->SetContentType( mutipartContent );
+      }
+      catch (MPFD::Exception e) 
+      {
+        NVJ_LOG->append(NVJ_DEBUG, "WebServer::accept_request -  MPFD::Exception: "+ e.GetError() );
+        delete mutipartContentParser;
+        mutipartContentParser = NULL;
+      }
     }
-    
     // Read request content
-    if ( postContentLength && ( urlencodedForm || (mutipartContentParser != NULL) ) )
+    if ( requestContentLength && ( urlencodedForm || (mutipartContentParser != NULL) ) )
     {
       size_t datalen = 0;
 
-      while ( datalen < postContentLength )
+      while ( datalen < requestContentLength )
       {
         char buffer[BUFSIZE];
-        size_t requestedLength = ( postContentLength-datalen > BUFSIZE) ? BUFSIZE : postContentLength-datalen;
+        size_t requestedLength = ( requestContentLength-datalen > BUFSIZE) ? BUFSIZE : requestContentLength-datalen;
 
         if (sslEnabled)
         {

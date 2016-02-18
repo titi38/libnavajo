@@ -55,7 +55,7 @@ namespace MPFD {
         std::string Boundary;
         std::string ProcessingFieldName;
         bool _HeadersOfTheFieldAreProcessed;
-        long ContentLength;
+ //       long ContentLength;
         char *DataCollector;
         long DataCollectorLength, MaxDataCollectorLength;
         bool FindStartingBoundaryAndTruncData();
