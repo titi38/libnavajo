@@ -42,16 +42,17 @@ bool LocalRepository::loadFilename_dir (const string& alias, const string& path,
 
       if (stat(filepath.c_str(), &s) == -1) 
       {
-	NVJ_LOG->append(NVJ_ERROR,string("LocalRepository - stat error : ")+string(strerror(errno)));
+        NVJ_LOG->append(NVJ_ERROR,string("LocalRepository - stat error : ")+string(strerror(errno)));
         continue;
       }
 
       int type=s.st_mode & S_IFMT;
       if (type == S_IFREG || type == S_IFLNK)
       {
-	string filename=alias+subpath+"/"+entry->d_name;
-	while (filename.size() && filename[0]=='/') filename.erase(0, 1);
-	filenamesSet.insert(filename);
+        string filename=alias+subpath+"/"+entry->d_name;
+        while (filename.size() && filename[0]=='/')
+          filename.erase(0, 1);
+        filenamesSet.insert(filename);
       }
 
       if (type == S_IFDIR)

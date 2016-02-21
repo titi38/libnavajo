@@ -8,14 +8,15 @@ Libnavajo makes it easy to run an HTTP server into your own application, impleme
 **Specifications** :
 
 * Implementation is HTTP 1.1 compliant with SSL, X509 and HTTP authentification, compression Zlib...
-* Fully configurable pthreads pool
+* Very fast with its fully configurable pthreads pool
 * Support for IPv4 and IPv6
 * Precompiler to include a web repository into your code
-* Return dynamic or static contents 
-* Advanced session management
-* Support for html5 websockets
-* Fully oriented object...
-
+* Generate dynamic and static contents 
+* Cookies and advanced session management
+* HTML5 Websockets support
+* Multipart's Content support
+* Fully oriented object
+* Many examples included
 
 **Download and install** :
 

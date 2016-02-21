@@ -34,6 +34,7 @@ namespace MPFD {
 
         void SetMaxCollectedDataLength(long max);
         void SetTempDirForFileUpload(std::string dir);
+        inline std::string GetTempDirForFileUpload() { return TempDirForFileUpload; };
         void SetUploadedFilesStorage(int where);
 
         std::map<std::string, Field *> GetFieldsMap();
