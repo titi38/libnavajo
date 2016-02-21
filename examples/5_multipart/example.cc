@@ -44,17 +44,18 @@ class MyDynamicRepository : public DynamicRepository
         for (it=fields.begin();it!=fields.end();it++) 
         {
           if (fields[it->first]->GetType()==MPFD::Field::TextType)
-            std::cout<<"Got text field: ["<<it->first<<"], value: ["<< fields[it->first]->GetTextTypeContent() <<"]\n";
+            NVJ_LOG->append(NVJ_INFO, "Got text field: [" + it->first + "], value: [" + fields[it->first]->GetTextTypeContent() + "]");
           else
           {
-            std::cout<<"Got file field: ["<<it->first<<"] Filename:["<<fields[it->first]->GetFileName()<<"] TempFilename:["<<fields[it->first]->GetTempFileName() <<"]\n";
+            NVJ_LOG->append(NVJ_INFO, "Got file field: [" + it->first + "] Filename:[" + fields[it->first]->GetFileName() + "] TempFilename:["  + fields[it->first]->GetTempFileName() + "]");
 
             // Copy files to upload directory
             std::ifstream  src( fields[it->first]->GetTempFileName(), std::ios::binary);
             std::ofstream  dst( string(UPLOAD_DIR)+'/'+fields[it->first]->GetFileName(),   std::ios::binary);
             if (!src || !dst)
               NVJ_LOG->append(NVJ_ERROR, "Copy error: check read/write permissions");
-            dst << src.rdbuf();
+            else
+              dst << src.rdbuf();
             src.close();
             dst.close();
           }
