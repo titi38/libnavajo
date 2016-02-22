@@ -46,8 +46,10 @@ LocalRepository::LocalRepository(const string& alias, const string& dirPath)
 
 void LocalRepository::reload()
 {
+  pthread_mutex_lock( &_mutex);
   filenamesSet.clear();
   loadFilename_dir(aliasName, fullPathToLocalDir);
+  pthread_mutex_unlock( &_mutex);
 }
 
 /**********************************************************************/
