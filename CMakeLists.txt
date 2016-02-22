@@ -12,7 +12,7 @@ project(libnavajo)
 
 ###############            version variables           #####################
 set(LIBNAVAJO_MVERSION "1")
-set(LIBNAVAJO_VERSION "1.1.0")
+set(LIBNAVAJO_VERSION "1.2.0")
 set(LIBNAVAJO_BUILD_DAT `/bin/date +%s`)
 
 

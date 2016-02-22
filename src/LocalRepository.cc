@@ -25,7 +25,34 @@
 
 /**********************************************************************/
 
-bool LocalRepository::loadFilename_dir (const string& alias, const string& path, const string& subpath="")
+LocalRepository::LocalRepository(const string& alias, const string& dirPath)
+{
+  char resolved_path[4096];
+
+  pthread_mutex_init(&_mutex, NULL); 
+
+  aliasName=alias;
+  while (aliasName.size() && aliasName[0]=='/') aliasName.erase(0, 1);
+  while (aliasName.size() && aliasName[aliasName.size()-1]=='/') aliasName.erase(aliasName.size() - 1);
+
+  if (realpath(dirPath.c_str(), resolved_path) != NULL)
+  {
+    fullPathToLocalDir=resolved_path;
+    loadFilename_dir(aliasName, fullPathToLocalDir);
+  }
+}
+
+/**********************************************************************/
+
+void LocalRepository::reload()
+{
+  filenamesSet.clear();
+  loadFilename_dir(aliasName, fullPathToLocalDir);
+}
+
+/**********************************************************************/
+
+bool LocalRepository::loadFilename_dir (const string& alias, const string& path, const string& subpath)
 {
     struct dirent *entry;
     DIR *dir;
@@ -64,34 +91,6 @@ bool LocalRepository::loadFilename_dir (const string& alias, const string& path,
 
 /**********************************************************************/
 
-void LocalRepository::addDirectory( const string& alias, const string& dirPath)
-{
-  char resolved_path[4096];
-
-  string newalias=alias;
-  while (newalias.size() && newalias[0]=='/') newalias.erase(0, 1);
-  while (newalias.size() && newalias[newalias.size()-1]=='/') newalias.erase(newalias.size() - 1);
-  
-  if (realpath(dirPath.c_str(), resolved_path) == NULL)
-    return ;
-
-  if (!loadFilename_dir(newalias, resolved_path))
-	  return ;
-
-  aliasesSet.insert( pair<string, string>(newalias, resolved_path) );
-
-}
-
-/**********************************************************************/
-
-void LocalRepository::clearAliases()
-{
-  filenamesSet.clear();
-  aliasesSet.clear();
-}
-
-/**********************************************************************/
-
 bool LocalRepository::fileExist(const string& url)
 {
   return filenamesSet.find(url) != filenamesSet.end();
@@ -109,34 +108,22 @@ void LocalRepository::printFilenames()
 
 bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
 {
-  bool found=false;
-  const string *alias=NULL, *path=NULL;
   string url = request->getUrl();
   size_t webpageLen;
   unsigned char *webpage;
   pthread_mutex_lock( &_mutex );
 
-  if (!fileExist(url)) { pthread_mutex_unlock( &_mutex); return false; };
-
-  for (std::set< pair<string,string> >::iterator it = aliasesSet.begin(); it != aliasesSet.end() && !found; it++)
-  {
-    alias=&(it->first);
-    if (!(url.compare(0, alias->size(), *alias)))
-    {
-      path=&(it->second);
-      found= true;
-    }
-  }
+  if ( url.compare(0, aliasName.size(), aliasName) || !fileExist(url) )
+    { pthread_mutex_unlock( &_mutex); return false; };
     
   pthread_mutex_unlock( &_mutex);
-  if (!found) return false;
 
   string resultat, filename=url;
 
-  if (alias->size())
-    filename.replace(0, alias->size(), *path);
+  if (aliasName.size())
+    filename.replace(0, aliasName.size(), fullPathToLocalDir);
   else
-    filename=*path+'/'+filename;
+    filename=fullPathToLocalDir+'/'+filename;
 
   FILE *pFile = fopen ( filename.c_str() , "rb" );
   if (pFile==NULL)

@@ -157,8 +157,7 @@ int main()
   AuthPAM::start(); 
   webServer = new WebServer;
   //webServer->setUseSSL(true, "../mycert.pem");
-  LocalRepository myLocalRepo;
-  myLocalRepo.addDirectory("", "./html"); 
+  LocalRepository myLocalRepo("", "./html");
   webServer->addRepository(&myLocalRepo);
 
   MyDynamicRepository myRepo;

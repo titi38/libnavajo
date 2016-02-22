@@ -345,6 +345,7 @@ class HttpRequest
       
       if (params != NULL && strlen(params))
         decodParams(params);
+      
       if (cookies != NULL && strlen(cookies))
         decodCookies(cookies);        
       getSession();

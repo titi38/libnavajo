@@ -99,9 +99,7 @@ int main()
   PrecompiledRepository thePrecompRepo("") ;
   webServer->addRepository(&thePrecompRepo);
 
-  LocalRepository myLocalRepo;
-  myLocalRepo.addDirectory("/docs", "../../docs/html"); // if doxygen documentation is generated in "docs" folder, we will browse it at http://localhost:8080/docs/index.html
-  // myLocalRepo.addDirectory(WEB_LOCATION, DIRECTORY);
+  LocalRepository myLocalRepo("/docs", "../../docs/html"); // if doxygen documentation is generated in "docs" folder, we will browse it at http://localhost:8080/docs/index.html
   webServer->addRepository(&myLocalRepo);
 
   MyDynamicPage page1;
