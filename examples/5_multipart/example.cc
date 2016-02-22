@@ -52,8 +52,9 @@ class MyDynamicRepository : public DynamicRepository
             NVJ_LOG->append(NVJ_INFO, "Got file field: [" + it->first + "] Filename:[" + fields[it->first]->GetFileName() + "] TempFilename:["  + fields[it->first]->GetTempFileName() + "]\n");
 
             // Copy files to upload directory
-            std::ifstream  src( fields[it->first]->GetTempFileName(), std::ios::binary);
-            std::ofstream  dst( string(UPLOAD_DIR)+'/'+fields[it->first]->GetFileName(), std::ios::binary);
+            std::ifstream  src( fields[it->first]->GetTempFileName().c_str(), std::ios::binary);
+            string dstFilename= string(UPLOAD_DIR)+'/'+fields[it->first]->GetFileName();
+            std::ofstream  dst( dstFilename.c_str(), std::ios::binary);
             if (!src || !dst)
               NVJ_LOG->append(NVJ_ERROR, "Copy error: check read/write permissions");
             else

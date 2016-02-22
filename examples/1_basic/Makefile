@@ -34,9 +34,6 @@ LIBS       = -lnavajo -L../../$(LIB_DIR) -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto
 DEFS            =   -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT
 CXXFLAGS        =  -O3  -Wdeprecated-declarations
 else
-ifeq ($(LBITS),64)
-  LIB_DIR=lib64
-endif
 LIBS       = -lnavajo -L../../$(LIB_DIR) -lz -lssl -lcrypto -pthread $(LIBPAM)
 DEFS            =  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT
 CXXFLAGS        =  -O4  -Wdeprecated-declarations
