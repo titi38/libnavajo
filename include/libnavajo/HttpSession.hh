@@ -21,9 +21,26 @@
 
 #include <stdlib.h>
 
+class SessionAttributeObject
+{
+  public:
+    virtual ~SessionAttributeObject();
+};
+
 class HttpSession
 {
-  typedef std::map <std::string, std::map <std::string, void*>* > HttpSessionsContainerMap;
+  typedef struct {
+    enum{BASIC, OBJECT} type;
+    union
+    {
+      void *ptr;
+      SessionAttributeObject *obj;
+    };
+  } SessionAttribute;
+
+
+  typedef std::map <std::string, std::map <std::string, SessionAttribute>* > HttpSessionsContainerMap;
+
   static HttpSessionsContainerMap sessions;
   static pthread_mutex_t sessions_mutex; 
   static time_t lastExpirationSearchTime;
@@ -56,7 +73,7 @@ class HttpSession
       while (find(id));
 
       pthread_mutex_lock( &sessions_mutex );
-      sessions[id]=new std::map <std::string, void*>();
+      sessions[id]=new std::map <std::string, SessionAttribute>();
       pthread_mutex_unlock( &sessions_mutex );
       time_t *expiration=(time_t *)malloc(sizeof(time_t));
       *expiration=time(NULL)+sessionLifeTime;
@@ -88,10 +105,10 @@ class HttpSession
       HttpSessionsContainerMap::iterator it = sessions.begin();
       for (;it != sessions.end(); )
       {
-        std::map <std::string, void*>* attributesMap=it->second;
-        std::map <std::string, void*>::iterator it2 = attributesMap->find("session_expiration");
+        std::map <std::string, SessionAttribute>* attributesMap=it->second;
+        std::map <std::string, SessionAttribute>::iterator it2 = attributesMap->find("session_expiration");
         time_t *expiration=NULL;
-        if (it2 != attributesMap->end()) expiration=(time_t*) it2->second;
+        if (it2 != attributesMap->end()) expiration=(time_t*) it2->second.ptr;
 
         if (expiration!=NULL && *expiration > time(NULL))
         {
@@ -114,7 +131,7 @@ class HttpSession
       HttpSessionsContainerMap::iterator it = sessions.begin();
       for (;it != sessions.end(); )
       {
-        std::map <std::string, void*>* attributesMap=it->second;
+        std::map <std::string, SessionAttribute>* attributesMap=it->second;
         removeAllAttribute(attributesMap);
         delete attributesMap;
         sessions.erase(it++);
@@ -146,43 +163,86 @@ class HttpSession
       sessions.erase(it);
       pthread_mutex_unlock( &sessions_mutex );
     }
-    
+
     /**********************************************************************/
-    
+
+    static void setObjectAttribute ( const std::string &sid, const std::string &name, SessionAttributeObject *sessionAttributeObject )
+    {
+      pthread_mutex_lock( &sessions_mutex );
+      HttpSessionsContainerMap::const_iterator it = sessions.find(sid);
+
+      if (it == sessions.end()) { pthread_mutex_unlock( &sessions_mutex ); return; };
+
+      SessionAttribute attribute;
+      attribute.type=SessionAttribute::OBJECT;
+      attribute.obj=sessionAttributeObject;
+      it->second->insert(std::pair<std::string, SessionAttribute>(name, attribute ));
+      pthread_mutex_unlock( &sessions_mutex );
+    }
+
+    /**********************************************************************/
+
     static void setAttribute ( const std::string &sid, const std::string &name, void* value )
     {
       pthread_mutex_lock( &sessions_mutex );
       HttpSessionsContainerMap::const_iterator it = sessions.find(sid);
 
       if (it == sessions.end()) { pthread_mutex_unlock( &sessions_mutex ); return; };
-      
-      it->second->insert(std::pair<std::string, void*>(name, value));
+
+      SessionAttribute attribute;
+      attribute.type=SessionAttribute::BASIC;
+      attribute.ptr=value;
+      it->second->insert(std::pair<std::string, SessionAttribute>(name, attribute ));
       pthread_mutex_unlock( &sessions_mutex );
     }
 
-    /**********************************************************************/ 
+    /**********************************************************************/
+
+    static SessionAttributeObject *getObjectAttribute( const std::string &sid, const std::string &name )
+    {
+      pthread_mutex_lock( &sessions_mutex );
+      HttpSessionsContainerMap::iterator it = sessions.find(sid);
+      if (it == sessions.end()) { pthread_mutex_unlock( &sessions_mutex ); return NULL; }
+
+      std::map <std::string, SessionAttribute>* sessionMap=it->second;
+      std::map <std::string, SessionAttribute>::iterator it2 = sessionMap->find(name);
+      pthread_mutex_unlock( &sessions_mutex );
+
+      if ( it2 != sessionMap->end() && (it2->second.type == SessionAttribute::OBJECT) )
+        return it2->second.obj;
+      return NULL;
+    }
+
+    /**********************************************************************/
 
     static void *getAttribute( const std::string &sid, const std::string &name )
     {
       pthread_mutex_lock( &sessions_mutex );
       HttpSessionsContainerMap::iterator it = sessions.find(sid);
       if (it == sessions.end()) { pthread_mutex_unlock( &sessions_mutex ); return NULL; }
-      
-      std::map <std::string, void*>* sessionMap=it->second;
-      std::map <std::string, void*>::iterator it2 = sessionMap->find(name);
+
+      std::map <std::string, SessionAttribute>* sessionMap=it->second;
+      std::map <std::string, SessionAttribute>::iterator it2 = sessionMap->find(name);
       pthread_mutex_unlock( &sessions_mutex );
 
-      if ( it2 != sessionMap->end() ) return it2->second;
+      if ( it2 != sessionMap->end() && (it2->second.type == SessionAttribute::BASIC))
+        return it2->second.ptr;
       return NULL;
     }
-    
+
     /**********************************************************************/
     
-    static void removeAllAttribute( std::map <std::string, void*>* attributesMap)
+    static void removeAllAttribute( std::map <std::string, SessionAttribute>* attributesMap)
     {
-      std::map <std::string, void*>::iterator iter = attributesMap->begin();
+      std::map <std::string, SessionAttribute>::iterator iter = attributesMap->begin();
       for(; iter!=attributesMap->end(); ++iter)
-        if (iter->second != NULL) free (iter->second);
+        if (iter->second.ptr != NULL)
+        {
+          if (iter->second.type==SessionAttribute::OBJECT)
+            delete iter->second.obj;
+          else
+            free (iter->second.ptr);
+        }
     }
 
     /**********************************************************************/
@@ -192,11 +252,17 @@ class HttpSession
       pthread_mutex_lock( &sessions_mutex );
       HttpSessionsContainerMap::iterator it = sessions.find(sid);
       if (it == sessions.end()) { pthread_mutex_unlock( &sessions_mutex ); return; }
-      std::map <std::string, void*>* attributesMap=it->second;
-      std::map <std::string, void*>::iterator it2 = attributesMap->find(name);
+      std::map <std::string, SessionAttribute>* attributesMap=it->second;
+      std::map <std::string, SessionAttribute>::iterator it2 = attributesMap->find(name);
       if ( it2 != attributesMap->end() ) 
       { 
-        if (it2->second != NULL) free (it2->second);
+        if (it2->second.ptr != NULL)
+        {
+          if (it2->second.type==SessionAttribute::OBJECT)
+            delete it2->second.obj;
+          else
+            free (it2->second.ptr);
+        }
         attributesMap->erase(it2);
       }
       pthread_mutex_unlock( &sessions_mutex ); 
@@ -211,8 +277,8 @@ class HttpSession
       HttpSessionsContainerMap::iterator it = sessions.find(sid);
       if (it != sessions.end()) 
       {
-        std::map <std::string, void*>* attributesMap=it->second;
-        std::map <std::string, void*>::iterator iter = attributesMap->begin();
+        std::map <std::string, SessionAttribute>* attributesMap=it->second;
+        std::map <std::string, SessionAttribute>::iterator iter = attributesMap->begin();
         for(; iter!=attributesMap->end(); ++iter)
           res.push_back(iter->first);
       }
@@ -228,11 +294,11 @@ class HttpSession
       HttpSessionsContainerMap::iterator it = sessions.begin();
       for (;it != sessions.end(); ++it )
       {
-        std::map <std::string, void*>* attributesMap=it->second;
+        std::map <std::string, SessionAttribute>* attributesMap=it->second;
         printf("Session SID : '%s' \n", it->first.c_str());
-        std::map <std::string, void*>::iterator iter = attributesMap->begin();
+        std::map <std::string, SessionAttribute>::iterator iter = attributesMap->begin();
         for(; iter!=attributesMap->end(); ++iter)
-          if (iter->second != NULL) printf("\t'%s'\n", iter->first.c_str());
+          if ( iter->second.ptr != NULL ) printf("\t'%s'\n", iter->first.c_str());
       }
             pthread_mutex_unlock( &sessions_mutex );    
     }
