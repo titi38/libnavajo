@@ -283,6 +283,17 @@ class HttpRequest
       if (sessionId == "") createSession();
       HttpSession::setAttribute(sessionId, name, value);
     }
+
+    /**
+    * add an object attribute to the session
+    * @param name: the attribute name
+    * @param value: the object instance
+    */
+    void setSessionObjectAttribute ( const std::string &name, SessionAttributeObject* value )
+    {
+      if (sessionId == "") createSession();
+      HttpSession::setObjectAttribute(sessionId, name, value);
+    }
     
     /**
     * get an attribute of the server session
@@ -293,6 +304,17 @@ class HttpRequest
     {
       if (sessionId == "") return NULL;
       return HttpSession::getAttribute(sessionId, name);
+    }
+
+    /**
+    * get an object attribute of the server session
+    * @param name: the attribute name
+    * @return the object instance or NULL if not found
+    */
+    SessionAttributeObject* getSessionObjectAttribute( const std::string &name )
+    {
+      if (sessionId == "") return NULL;
+      return HttpSession::getObjectAttribute(sessionId, name);
     }
     
     /**

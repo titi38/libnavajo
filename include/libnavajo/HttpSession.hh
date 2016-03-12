@@ -24,7 +24,7 @@
 class SessionAttributeObject
 {
   public:
-    virtual ~SessionAttributeObject();
+    virtual ~SessionAttributeObject() {};
 };
 
 class HttpSession
