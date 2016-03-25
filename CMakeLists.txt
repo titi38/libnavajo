@@ -32,13 +32,23 @@ endif()
 #######   Check the compiler and set the compile and link flags  #######
 set(CMAKE_BUILD_TYPE Debug)
 
+
+###############          findPAM directory       #####################
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake.modules/")
+
 ###############          openssl include/lib dir        #####################
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL REQUIRED) 
 include_directories (${OPENSSL_INCLUDE_DIR})
 
 ###############          zlib include/lib dir        #####################
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
+
+###############          pam include/lib dir        #####################
+
+find_package(PAM REQUIRED)
+include_directories(${PAM_INCLUDE_DIRS})
 
 ###############      library extension  #####################
 IF(${UNIX})
