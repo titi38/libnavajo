@@ -778,27 +778,33 @@ bool WebServer::accept_request(ClientSockData* client)
 }
 
 /***********************************************************************
-* httpSend
+* httpSend - send data from the socket
+* @param client - the ClientSockData to use
+* @param buf - the data
+* @param len - the data length
+* \return false if it's failed
 ***********************************************************************/
 
-void WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
+bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
 {
-  if (sslEnabled)
+  if ( /*sslEnabled */
+      client->bio != NULL )
   {
     while (BIO_write(client->bio, buf, len) <= 0)
     {
       if(! BIO_should_retry(client->bio))
       {
-          NVJ_LOG->append(NVJ_WARNING, "WebServer: BIO_write failed !");
-          return ;
+//          NVJ_LOG->append(NVJ_WARNING, "WebServer: BIO_write failed !");
+          return false;
       }
       // retry
     }
 
     BIO_flush(client->bio);
+    return true;
   }
   else
-    sendCompat (client->socketId, buf, len, 0);
+    return sendCompat (client->socketId, buf, len, 0) == len;
 }
 
 /***********************************************************************

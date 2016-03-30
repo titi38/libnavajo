@@ -42,7 +42,9 @@
 
 #define setsockoptCompat setsockopt
 #define sendCompat send
-
+#ifdef LINUX
+  #define SO_NOSIGPIPE    0x0800
+#endif
 #endif
 
 /***********************************************************************

@@ -20,7 +20,6 @@
 #ifdef LINUX
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#define SO_NOSIGPIPE    0x0800
 #endif
 
 #include <queue>
@@ -55,7 +54,6 @@ class WebServer
     bool isUserAllowed(const string &logpassb64, string &username);
     bool isAuthorizedDN(const std::string str);
 
-    void httpSend(ClientSockData *client, const void *buf, size_t len);
 
     size_t recvLine(int client, char *bufLine, size_t);
     bool accept_request(ClientSockData* client);
@@ -312,6 +310,8 @@ class WebServer
     {
       return threadWebServer != 0;
     }
+
+    static bool httpSend(ClientSockData *client, const void *buf, size_t len);
 
     inline static void freeClientSockData(ClientSockData *c)
     {

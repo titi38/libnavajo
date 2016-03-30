@@ -21,21 +21,18 @@
 
 class WebSocket
 {
-    std::list<int> webSocketClientList;
-    pthread_mutex_t webSocketClientList_mutex;
-
     list<HttpRequest*> wsclients;
     pthread_mutex_t wsclients_mutex;
 
-    static void webSocketSend(HttpRequest* request, const u_int8_t opcode, const unsigned char* message, size_t length, bool fin);
-    static void webSocketSendTextMessage(HttpRequest* request, const string &message, bool fin=true);
-    static void webSocketSendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin=true);
-    static void webSocketSendPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
-    static void webSocketSendPingCtrlFrame(HttpRequest* request, const string &message);
-    static void webSocketSendPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
-    static void webSocketSendPongCtrlFrame(HttpRequest* request, const string &message);
-    static void webSocketSendCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
-    static void webSocketSendCloseCtrlFrame(HttpRequest* request, const string &message="");
+    void webSocketSend(HttpRequest* request, const u_int8_t opcode, const unsigned char* message, size_t length, bool fin);
+    void webSocketSendTextMessage(HttpRequest* request, const string &message, bool fin=true);
+    void webSocketSendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin=true);
+    void webSocketSendPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
+    void webSocketSendPingCtrlFrame(HttpRequest* request, const string &message);
+    void webSocketSendPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
+    void webSocketSendPongCtrlFrame(HttpRequest* request, const string &message);
+    void webSocketSendCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
+    void webSocketSendCloseCtrlFrame(HttpRequest* request, const string &message="");
 
 //    inline void freeClientSockData(ClientSockData *c) { c); };
 
@@ -48,7 +45,8 @@ class WebSocket
 
     ~WebSocket()
     {
-      // Free all request
+      // Free all request, close all sockets
+      removeAllClients();
     }
 
     void listenWebSocket(WebSocket *websocket, HttpRequest* request);
@@ -118,7 +116,7 @@ class WebSocket
     * @param message: the text message
     * @param fin: is-it the final fragment of the message ?
     */ 
-    inline static void sendTextMessage(HttpRequest* request, const string &message, bool fin=true)
+    inline void sendTextMessage(HttpRequest* request, const string &message, bool fin=true)
     {
       webSocketSendTextMessage(request, message, fin);
     };
@@ -140,7 +138,7 @@ class WebSocket
     * @param length: the message length    
     * @param fin: is-it the final fragment of the message ?
     */ 
-    inline static void sendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin=true)
+    inline void sendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin=true)
     {
       webSocketSendBinaryMessage(request, message, length, fin);
     };
@@ -151,7 +149,7 @@ class WebSocket
     * @param message: the closure reason message
     * @param length: the message length
     */ 
-    inline static void sendCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
+    inline void sendCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
     {
       webSocketSendCloseCtrlFrame(request, message, length);
     };
@@ -161,7 +159,7 @@ class WebSocket
     * @param request: the http request object
     * @param message: the closure reason message
     */ 
-    inline static void sendCloseCtrlFrame(HttpRequest* request, const string& reasonMsg="")
+    inline void sendCloseCtrlFrame(HttpRequest* request, const string& reasonMsg="")
     {
       webSocketSendCloseCtrlFrame(request, reasonMsg);
     };
@@ -172,7 +170,7 @@ class WebSocket
     * @param message: the content
     * @param length: the message length
     */     
-    inline static void sendPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
+    inline void sendPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
     {
       webSocketSendPingCtrlFrame(request, message, length);
     };
@@ -182,7 +180,7 @@ class WebSocket
     * @param request: the http request object
     * @param message: the content
     */     
-    inline static void sendPingCtrlFrame(HttpRequest* request, const string &message)
+    inline void sendPingCtrlFrame(HttpRequest* request, const string &message)
     {
       webSocketSendPingCtrlFrame(request, message);
     };
@@ -194,7 +192,7 @@ class WebSocket
     * @param message: the content
     * @param length: the message length
     */     
-    inline static void sendPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
+    inline void sendPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
     {
       webSocketSendPongCtrlFrame(request, message, length);
     };
@@ -204,7 +202,7 @@ class WebSocket
     * @param request: the http request object
     * @param message: the content
     */     
-    inline static void sendPongCtrlFrame(HttpRequest* request, const string &message)
+    inline void sendPongCtrlFrame(HttpRequest* request, const string &message)
     {
       webSocketSendPongCtrlFrame(request, message);
     };
@@ -227,6 +225,16 @@ class WebSocket
       }
       pthread_mutex_unlock(&wsclients_mutex);
     };
+
+    inline void removeAllClients()
+    {
+      pthread_mutex_lock(&wsclients_mutex);
+      for (std::list<HttpRequest*>::iterator it = wsclients.begin(); it != wsclients.end(); it++)
+      {
+        delete *it; *it = NULL;
+        wsclients.erase(it);
+      }
+    }
     
     inline bool isClient(HttpRequest* request)
     {

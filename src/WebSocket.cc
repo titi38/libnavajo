@@ -37,10 +37,6 @@ void WebSocket::listenWebSocket(WebSocket *websocket, HttpRequest* request)
 
   setSocketSndRcvTimeout(client->socketId, 0, 500); // Reduce socket timeout
 
-/*  pthread_mutex_lock(&webSocketClientList_mutex);
-  webSocketClientList.push_back(client->socketId);
-  pthread_mutex_unlock(&webSocketClientList_mutex);*/
-
   addNewClient(request);
 
   bool fin=false;
@@ -248,13 +244,7 @@ void WebSocket::listenWebSocket(WebSocket *websocket, HttpRequest* request)
 
   onClosing(request);
   removeClient(request);
-
   WebServer::freeClientSockData(client);
-  webSocketClientList.push_back(client->socketId);
-  pthread_mutex_lock(&webSocketClientList_mutex);
-  std::list<int>::iterator it = std::find(webSocketClientList.begin(), webSocketClientList.end(), client->socketId);
-  if (it != webSocketClientList.end()) webSocketClientList.erase(it);
-  pthread_mutex_unlock(&webSocketClientList_mutex);
 }
 
 /***********************************************************************/
@@ -307,21 +297,13 @@ void WebSocket::webSocketSend(HttpRequest* request, const u_int8_t opcode, const
     }
   }
 
-  if (client->bio != NULL && client->ssl != NULL)
+  if (  !WebServer::httpSend(client, headerBuffer, headerLen)
+     || !WebServer::httpSend(client, msg, msgLen) )
   {
-    if ( (BIO_write(client->bio, headerBuffer, headerLen) <= 0 ) || (BIO_write(client->bio,  msg, msgLen) <= 0 ) )
-    {
-//      websocket->onClosing(request);
-//      websocket->removeClient(request);
-      WebServer::freeClientSockData(client);
-    }
-  }
-  else
-  {
-    if ( (send(client->socketId, headerBuffer, headerLen, 0) < 0) || ( msgLen && (send(client->socketId, msg, msgLen, 0) < 0) ) )
-    {
-      WebServer::freeClientSockData(client);
-    }
+    //onError(request, "write to websocket failed");
+    onClosing(request);
+    removeClient(request);
+    WebServer::freeClientSockData(client);
   }
 
   if (client->compression == ZLIB)
