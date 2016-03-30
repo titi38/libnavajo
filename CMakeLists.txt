@@ -74,14 +74,16 @@ file(GLOB sources_lib ${PROJECT_SOURCE_DIR}/src/AuthPAM.cc
   ${PROJECT_SOURCE_DIR}/src/LogSyslog.cc
   ${PROJECT_SOURCE_DIR}/src/LogStdOutput.cc
   ${PROJECT_SOURCE_DIR}/src/WebServer.cc
+  ${PROJECT_SOURCE_DIR}/src/WebSocket.cc
   ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Parser.cpp
   ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Field.cpp
   ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Exception.cpp
   )
 
 file(GLOB headers_lib ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh
-	  	      ${PROJECT_SOURCE_DIR}/include/libnavajo/thread.h
-		      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvj_gzip.h
+	  	      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjThread.h
+		      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjGzip.h
+                      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjSocket.h
 		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Field.h 
 		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Exception.h 
 		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Parser.h)

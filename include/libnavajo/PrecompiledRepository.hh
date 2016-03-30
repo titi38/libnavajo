@@ -16,7 +16,7 @@
 
 #include <string>
 #include <map>
-#include "thread.h"
+#include "nvjThread.h"
 
 #include "libnavajo/WebRepository.hh"
 

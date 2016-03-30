@@ -1,8 +1,8 @@
 //********************************************************
 /**
- * @file  gzip.cc
+ * @file  nvjGzip.h
  *
- * @brief zip compression facilities
+ * @brief zip compression's facilities
  *
  * @author T.Descombes (thierry.descombes@gmail.com)
  *
@@ -11,6 +11,12 @@
  */
 //********************************************************
 
+#ifndef NVJGZIP_H_
+#define NVJGZIP_H_
+
+
+#include <stdlib.h>
+#include <string>
 #include <stdexcept>
 #include "zlib.h"
 
@@ -148,6 +154,8 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
   (void)inflateEnd(&strm);
   return sizeDst - strm.avail_out;
 }
+
+#endif
 
 
 

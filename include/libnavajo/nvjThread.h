@@ -1,6 +1,6 @@
 //********************************************************
 /**
- * @file  thread.h
+ * @file  nvjThread.h
  *
  * @brief thread's facilities
  *
@@ -11,8 +11,8 @@
  */
 //********************************************************
 
-#ifndef THREAD_H_
-#define THREAD_H_
+#ifndef NVJTHREAD_H_
+#define NVJTHREAD_H_
 
 #include <stdio.h>
 #include <string.h>
@@ -56,7 +56,7 @@ inline void create_thread(pthread_t *thread_p,
 	if (rc != 0)
 	    fprintf(stderr, "pthread_attr_setdetachstate(): %s\n", STRERROR(rc));
 	    
-	rc = pthread_attr_setstacksize (&thread_attr, 512 * 1024); // par défault 2*1024*1024
+	rc = pthread_attr_setstacksize (&thread_attr, 512 * 1024); // par dï¿½fault 2*1024*1024
 	if (rc != 0)
 	    fprintf(stderr, "pthread_attr_setstacksize(): %s\n", STRERROR(rc));
 		
@@ -135,7 +135,7 @@ struct cancelArg
 };
 
 #ifndef WIN32
-static void *thread_timeout_scheduler(void *arg)
+inline void *thread_timeout_scheduler(void *arg)
 {
 	cancelstate_thread();
 	

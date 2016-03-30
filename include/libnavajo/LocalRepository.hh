@@ -18,7 +18,7 @@
 
 #include <set>
 #include <string>
-#include "libnavajo/thread.h"
+#include "libnavajo/nvjThread.h"
 
 using namespace std;
 

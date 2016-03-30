@@ -28,14 +28,14 @@
 #include <map>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include "libnavajo/WebSocket.hh"
 #include "libnavajo/LogRecorder.hh"
 #include "libnavajo/IpAddress.hh"
 #include "libnavajo/WebRepository.hh"
+#include "libnavajo/nvjThread.h"
 
-#include "libnavajo/thread.h"
-#include "libnavajo/nvj_gzip.h"
 
-class WebSocket;
+//class WebSocket;
 class WebServer
 {
     pthread_t threadWebServer;
@@ -43,14 +43,7 @@ class WebServer
     int s_server_session_id_context;
     static char *certpass;
     
-    inline static void freeClientSockData(ClientSockData *c)
-    {
-      if (c == NULL) return;
-      closeSocket(c);
-      if (c->peerDN != NULL) { delete c->peerDN; c->peerDN=NULL; }
-      free(c);
-      c=NULL;
-    };
+
     
     std::queue<ClientSockData *> clientsQueue;
     pthread_cond_t clientsQueue_cond;
@@ -67,7 +60,6 @@ class WebServer
     size_t recvLine(int client, char *bufLine, size_t);
     bool accept_request(ClientSockData* client);
     void fatalError(const char *);
-    int setSocketRcvTimeout(int connectSocket, int seconds);
     static std::string getHttpHeader(const char *messageType, const size_t len=0, const bool keepAlive=true, const bool zipped=false, HttpResponse* response=NULL);
     static const char* get_mime_type(const char *name);
     u_short init();
@@ -141,10 +133,9 @@ class WebServer
     static const string webSocketMagicString;
     static string generateWebSocketServerKey(string webSocketKey);
     static string getHttpWebSocketHeader(const char *messageType, const char* webSocketClientKey, const bool webSocketDeflate);
-    void listenWebSocket(WebSocket *websocket, HttpRequest* request);
+
     void startWebSocketListener(WebSocket *websocket, HttpRequest* request);
-    std::list<int> webSocketClientList;
-    pthread_mutex_t webSocketClientList_mutex;
+
     typedef struct
     {
       WebServer* webserver;
@@ -154,7 +145,7 @@ class WebServer
     inline static void* startThreadListenWebSocket(void* t)
     {
       WebSocketParams *p=static_cast<WebSocketParams *>(t);
-      p->webserver->listenWebSocket(p->websocket, p->request);
+      p->websocket->listenWebSocket(p->websocket, p->request);
       free(p);
       pthread_exit(NULL);
       return NULL;
@@ -162,15 +153,6 @@ class WebServer
     
   public:
     WebServer();
-    static void webSocketSend(HttpRequest* request, const u_int8_t opcode, const unsigned char* message, size_t length, bool fin);
-    static void webSocketSendTextMessage(HttpRequest* request, const string &message, bool fin=true);
-    static void webSocketSendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin=true);
-    static void webSocketSendPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
-    static void webSocketSendPingCtrlFrame(HttpRequest* request, const string &message);
-    static void webSocketSendPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
-    static void webSocketSendPongCtrlFrame(HttpRequest* request, const string &message);
-    static void webSocketSendCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length);
-    static void webSocketSendCloseCtrlFrame(HttpRequest* request, const string &message="");
     
     /**
     * Set the web server name in the http header
@@ -330,6 +312,15 @@ class WebServer
     {
       return threadWebServer != 0;
     }
+
+    inline static void freeClientSockData(ClientSockData *c)
+    {
+      if (c == NULL) return;
+      closeSocket(c);
+      if (c->peerDN != NULL) { delete c->peerDN; c->peerDN=NULL; }
+      free(c);
+      c=NULL;
+    };
 };
 
 #endif
