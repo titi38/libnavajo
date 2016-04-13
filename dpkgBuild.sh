@@ -5,6 +5,9 @@ mkdir -p $DPKG_BUILD_ROOT
 
 rm -rf CMakeCache.txt  CMakeFiles  cmake_install.cmake
 cmake -DCMAKE_INSTALL_PREFIX:PATH=$DPKG_BUILD_ROOT/usr
+if [ $? -ne 0 ]; then
+  exit 1;
+fi
 make clean
 make
 doxygen
@@ -28,7 +31,7 @@ Priority: optional
 Maintainer: Thierry DESCOMBES <thierry.descombes@gmail.com>
 Architecture: amd64 
 Depends: openssl, zlib1g-dev, libpam-dev
-Version: 1.0
+Version: 1.1
 Description: an implementation of a complete HTTP(S) server, complete, fast and lightweight.
 EOF_CONTROL
 
@@ -99,5 +102,5 @@ cat > $DPKG_BUILD_ROOT/DEBIAN/postinst << EOF_POSTINST
 EOF_POSTINST
 chmod 755 $DPKG_BUILD_ROOT/DEBIAN/postinst
 
-dpkg -b $DPKG_BUILD_ROOT libnavajo-1.0.amd64.deb
+dpkg -b $DPKG_BUILD_ROOT libnavajo-1.1.amd64.deb
 
