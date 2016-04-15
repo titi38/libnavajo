@@ -582,8 +582,7 @@ bool WebServer::accept_request(ClientSockData* client)
         httpSend(client, (const void*) header.c_str(), header.length());
         HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mutipartContentParser);
 
-        if (webSocket->onOpening(request))
-          startWebSocketListener(webSocket, request);      
+        webSocket->newConnectionRequest(request);
 
         if (urlBuffer != NULL) free (urlBuffer);
         if (requestParams != NULL) free (requestParams);
@@ -1632,14 +1631,3 @@ std::string WebServer::getHttpWebSocketHeader(const char *messageType, const cha
 
 /***********************************************************************/
 
-void WebServer::startWebSocketListener(WebSocket *websocket, HttpRequest* request)
-{
-  pthread_t newthread;
-  WebSocketParams *p=(WebSocketParams *)malloc( sizeof(WebSocketParams) );
-  p->webserver=this;
-  p->websocket=websocket;
-  p->request=request;
-  create_thread( &newthread, WebServer::startThreadListenWebSocket, static_cast<void *>(p) );
-}
-
-/***********************************************************************/

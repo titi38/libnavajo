@@ -15,7 +15,6 @@ set(LIBNAVAJO_MVERSION "1")
 set(LIBNAVAJO_VERSION "1.2.0")
 set(LIBNAVAJO_BUILD_DAT `/bin/date +%s`)
 
-
 ###############            Minimal flags           #####################
 IF(${UNIX})
   set (CMAKE_CXX_FLAGS " -Wall -O0 -g -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=$(LIBNAVAJO_VERSION) -DLIBNAVAJO_BUILD_DATE=$(LIBNAVAJO_BUILD_DATE) ")
@@ -32,9 +31,7 @@ endif()
 #######   Check the compiler and set the compile and link flags  #######
 set(CMAKE_BUILD_TYPE Debug)
 
-
 ###############          findPAM directory       #####################
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake.modules/")
 
 ###############          openssl include/lib dir        #####################
@@ -65,7 +62,6 @@ IF(${APPLE})
     )
 ENDIF(${APPLE})
 
-
 ###############             Library files           #####################
 file(GLOB sources_lib ${PROJECT_SOURCE_DIR}/src/AuthPAM.cc
   ${PROJECT_SOURCE_DIR}/src/LocalRepository.cc
@@ -94,7 +90,6 @@ set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 
-
 ###############      build the library     #####################
 
 add_library(navajo SHARED ${sources_lib} ${headers_lib} )
@@ -108,7 +103,6 @@ include_directories (${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/MPFDPar
 target_link_libraries(navajo ${OPENSSL_LIBRARIES})
 target_link_libraries(navajo dl pam)
 target_link_libraries(navajo ${ZLIB_LIBRARIES})
-
 
 ############### install the library ###################
 #install(TARGETS navajo DESTINATION lib)

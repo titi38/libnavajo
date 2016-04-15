@@ -20,12 +20,43 @@
 
 #define BUFSIZE 32768
 
+
 /***********************************************************************/
 
-void WebSocket::listenWebSocket(WebSocket *websocket, HttpRequest* request)
+void WebSocket::WebSocketClient::sendingThread()
+{
+
+  for (;!closing;)
+  {
+      pthread_mutex_lock(&sendingQueueMutex);
+      while (sendingQueue.empty() && !closing)
+        pthread_cond_wait(&sendingNotification, &sendingQueueMutex);
+      pthread_mutex_unlock(&sendingQueueMutex);
+
+      if (!closing)
+      {
+        MessageContent *msg = sendingQueue.front();
+        sendMessage(msg);
+        free(msg);
+        sendingQueue.pop();
+      }
+      else
+        break;
+  }
+
+  while (!sendingQueue.empty())
+  {
+    free(sendingQueue.front());
+    sendingQueue.pop();
+  }
+
+}
+
+/***********************************************************************/
+
+void WebSocket::WebSocketClient::receivingThread()
 {
   char bufferRecv[BUFSIZE];
-  volatile bool closing=false;
   u_int64_t msgLength=0, msgContentIt=0;
   bool msgMask=false;
 
@@ -35,9 +66,7 @@ void WebSocket::listenWebSocket(WebSocket *websocket, HttpRequest* request)
 
   ClientSockData* client = request->getClientSockData();
 
-  setSocketSndRcvTimeout(client->socketId, 0, 500); // Reduce socket timeout
-
-  addNewClient(request);
+  setSocketSndRcvTimeout(client->socketId, 0, 100); // Reduce socket timeout
 
   bool fin=false;
   unsigned char rsv=0, opcode=0;
@@ -103,7 +132,7 @@ void WebSocket::listenWebSocket(WebSocket *websocket, HttpRequest* request)
           msgMask = (bufferRecv[0]  & 0x80) >> 7;
           if (!msgMask)
           {
-            closing=true;
+            close();
             continue;
           }
 
@@ -194,25 +223,25 @@ void WebSocket::listenWebSocket(WebSocket *websocket, HttpRequest* request)
           {
             case 0x1:
               if (msgLength)
-                websocket->onTextMessage(request, string((char*)msgContent, msgLength), fin);
-              else websocket->onTextMessage(request, "", fin);
+                websocket->onTextMessage(this, string((char*)msgContent, msgLength), fin);
+              else websocket->onTextMessage(this, "", fin);
               break;
             case 0x2:
-              websocket->onBinaryMessage(request, msgContent, msgLength, fin);
+              websocket->onBinaryMessage(this, msgContent, msgLength, fin);
               break;
             case 0x8:
-              if (websocket->onCloseCtrlFrame(request, msgContent, msgLength))
+              if (websocket->onCloseCtrlFrame(this, msgContent, msgLength))
               {
-                webSocketSendCloseCtrlFrame(request, msgContent, msgLength);
-                closing=true;
+                sendCloseCtrlFrame( msgContent, msgLength );
+                close();
               }
               break;
             case 0x9:
-              if (websocket->onPingCtrlFrame(request, msgContent, msgLength))
-                webSocketSendPongCtrlFrame(request, msgContent, msgLength);
+              if (websocket->onPingCtrlFrame(this, msgContent, msgLength))
+                sendPongCtrlFrame( msgContent, msgLength );
               break;
             case 0xa:
-              websocket->onPongCtrlFrame(request, msgContent, msgLength);
+              websocket->onPongCtrlFrame(this, msgContent, msgLength);
               break;
             default:
               char buf[300]; snprintf(buf, 300, "WebSocket: message received with unknown opcode (%d) has been ignored", opcode);
@@ -241,15 +270,28 @@ void WebSocket::listenWebSocket(WebSocket *websocket, HttpRequest* request)
         break;
     }
   }
-
-  onClosing(request);
-  removeClient(request);
-  WebServer::freeClientSockData(client);
 }
 
 /***********************************************************************/
 
-void WebSocket::webSocketSend(HttpRequest* request, const u_int8_t opcode, const unsigned char* message, size_t length, bool fin)
+void WebSocket::WebSocketClient::close()
+{
+  websocket->removeFromClientsList(this);
+  websocket->onClosing(this);
+
+  closing=true;
+  pthread_cond_broadcast ( &sendingNotification );
+  waitingThreadsExit();
+
+  WebServer::freeClientSockData( request->getClientSockData() );
+  delete request;
+
+  delete this;
+}
+
+/***********************************************************************/
+
+void WebSocket::WebSocketClient::sendMessage( const MessageContent *msgContent )
 {
   ClientSockData* client = request->getClientSockData();
 
@@ -258,13 +300,13 @@ void WebSocket::webSocketSend(HttpRequest* request, const u_int8_t opcode, const
   unsigned char *msg = NULL;
   size_t msgLen=0;
 
-  headerBuffer[0]= 0x80 | (opcode & 0xf) ; // FIN & OPCODE:0x1
+  headerBuffer[0]= 0x80 | (msgContent->opcode & 0xf) ; // FIN & OPCODE:0x1
   if (client->compression == ZLIB)
   {
     headerBuffer[0] |= 0x40; // Set RSV1
     try
     {
-      msgLen=nvj_gzip( &msg, message, length, true );
+      msgLen=nvj_gzip( &msg, msgContent->message, msgContent->length, true );
     }
     catch(...)
     {
@@ -274,8 +316,8 @@ void WebSocket::webSocketSend(HttpRequest* request, const u_int8_t opcode, const
   }
   else
   {
-    msg=(unsigned char*)message;
-    msgLen=length;
+    msg=msgContent->message;
+    msgLen=msgContent->length;
   }
 
 
@@ -300,10 +342,7 @@ void WebSocket::webSocketSend(HttpRequest* request, const u_int8_t opcode, const
   if (  !WebServer::httpSend(client, headerBuffer, headerLen)
      || !WebServer::httpSend(client, msg, msgLen) )
   {
-    //onError(request, "write to websocket failed");
-    onClosing(request);
-    removeClient(request);
-    WebServer::freeClientSockData(client);
+    close();
   }
 
   if (client->compression == ZLIB)
@@ -312,53 +351,97 @@ void WebSocket::webSocketSend(HttpRequest* request, const u_int8_t opcode, const
 
 /***********************************************************************/
 
-void WebSocket::webSocketSendTextMessage(HttpRequest* request, const string &message, bool fin)
+void WebSocket::WebSocketClient::addSendingQueue(MessageContent *msgContent)
 {
-  webSocketSend(request, 0x1, (const unsigned char*)(message.c_str()), message.length(), fin);
+  pthread_mutex_lock(&sendingQueueMutex);
+  sendingQueue.push(msgContent);
+  pthread_mutex_unlock(&sendingQueueMutex);
+  pthread_cond_broadcast ( &sendingNotification );
 }
 
 /***********************************************************************/
 
-void WebSocket::webSocketSendBinaryMessage(HttpRequest* request, const unsigned char* message, size_t length, bool fin)
+void WebSocket::WebSocketClient::sendTextMessage(const string &message, bool fin)
 {
-  webSocketSend(request, 0x2, message, length, fin);
+  MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
+  msgContent->opcode=0x1;
+  msgContent->message = (unsigned char*) malloc ( message.length() * sizeof (char) );
+  message.copy((char*)msgContent->message, message.length());
+  msgContent->length=message.length();
+  msgContent->fin = fin;
+
+  addSendingQueue(msgContent);
 }
 
 /***********************************************************************/
 
-void WebSocket::webSocketSendPingCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
+void WebSocket::WebSocketClient::sendBinaryMessage(const unsigned char* message, size_t length, bool fin)
 {
-  webSocketSend(request, 0x9, message, length, true);
-}
+  MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
+  msgContent->opcode=0x2;
+  msgContent->message = (unsigned char*) malloc ( length * sizeof (unsigned char) );
+  memcpy(msgContent->message, message, length);
+  msgContent->length=length;
+  msgContent->fin = fin;
 
-void WebSocket::webSocketSendPingCtrlFrame(HttpRequest* request, const string &message)
-{
-  webSocketSend(request, 0x9, (const unsigned char*)message.c_str(), message.length(), true);
-}
-
-/***********************************************************************/
-
-void WebSocket::webSocketSendPongCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
-{
-  webSocketSend(request, 0xa, message, length, false);
-}
-
-void WebSocket::webSocketSendPongCtrlFrame(HttpRequest* request, const string &message)
-{
-  webSocketSend(request, 0xa, (const unsigned char*)message.c_str(), message.length(), false);
+  addSendingQueue(msgContent);
 }
 
 /***********************************************************************/
 
-void WebSocket::webSocketSendCloseCtrlFrame(HttpRequest* request, const unsigned char* message, size_t length)
+void WebSocket::WebSocketClient::sendPingCtrlFrame(const unsigned char* message, size_t length)
 {
-  webSocketSend(request, 0x8, message, length, true);
+  MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
+  msgContent->opcode=0x9;
+  msgContent->message = (unsigned char*) malloc ( length * sizeof (unsigned char) );
+  memcpy(msgContent->message, message, length);
+  msgContent->length=length;
+  msgContent->fin = true;
+
+  addSendingQueue(msgContent);
 }
 
-void WebSocket::webSocketSendCloseCtrlFrame(HttpRequest* request, const string &message)
+void WebSocket::WebSocketClient::sendPingCtrlFrame(const string &message)
 {
-  webSocketSend(request, 0x8, (const unsigned char*)message.c_str(), message.length(), true);
+  sendPingCtrlFrame((const unsigned char*)message.c_str(), message.length());
 }
 
+/***********************************************************************/
 
+void WebSocket::WebSocketClient::sendPongCtrlFrame(const unsigned char* message, size_t length)
+{
+  MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
+  msgContent->opcode=0xa;
+  msgContent->message = (unsigned char*) malloc ( length * sizeof (unsigned char) );
+  memcpy(msgContent->message, message, length);
+  msgContent->length=length;
+  msgContent->fin = false;
 
+  addSendingQueue(msgContent);
+}
+
+void WebSocket::WebSocketClient::sendPongCtrlFrame(const string &message)
+{
+  sendPongCtrlFrame((const unsigned char*)message.c_str(), message.length());
+}
+
+/***********************************************************************/
+
+void WebSocket::WebSocketClient::sendCloseCtrlFrame(const unsigned char* message, size_t length)
+{
+  MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
+  msgContent->opcode=0x8;
+  msgContent->message = (unsigned char*) malloc ( length * sizeof (unsigned char) );
+  memcpy(msgContent->message, message, length);
+  msgContent->length=length;
+  msgContent->fin = true;
+
+  addSendingQueue(msgContent);
+}
+
+void WebSocket::WebSocketClient::sendCloseCtrlFrame(const string &message)
+{
+  sendCloseCtrlFrame((const unsigned char*)message.c_str(), message.length());
+}
+
+/***********************************************************************/

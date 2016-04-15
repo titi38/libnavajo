@@ -132,23 +132,6 @@ class WebServer
     static string generateWebSocketServerKey(string webSocketKey);
     static string getHttpWebSocketHeader(const char *messageType, const char* webSocketClientKey, const bool webSocketDeflate);
 
-    void startWebSocketListener(WebSocket *websocket, HttpRequest* request);
-
-    typedef struct
-    {
-      WebServer* webserver;
-      WebSocket* websocket;
-      HttpRequest* request;
-    } WebSocketParams;
-    inline static void* startThreadListenWebSocket(void* t)
-    {
-      WebSocketParams *p=static_cast<WebSocketParams *>(t);
-      p->websocket->listenWebSocket(p->websocket, p->request);
-      free(p);
-      pthread_exit(NULL);
-      return NULL;
-    };
-    
   public:
     WebServer();
     
