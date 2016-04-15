@@ -26,16 +26,16 @@ void exitFunction( int dummy )
 
 class MyWebSocket : public WebSocket
 {
-  bool onOpening(HttpRequest* request)
+  bool onOpening(WebSocketClient* client)
   {
-    printf ("New Websocket from host '%s' - socketId=%d\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId);
+    printf ("New Websocket from host '%s' - socketId=%d\n", client->getHttpRequest()->getPeerIpAddress().str().c_str(), client->getHttpRequest()->getClientSockData()->socketId);
     return true;
   }
 
-  void onTextMessage(HttpRequest* request, const string &message, const bool fin)
+  void onTextMessage(WebSocketClient* client, const string &message, const bool fin)
   {
-    printf ("Message: '%s' received from host '%s'\n", message.c_str(), request->getPeerIpAddress().str().c_str());
-    sendTextMessage(request, "The message has been received !");
+    printf ("Message: '%s' received from host '%s'\n", message.c_str(), client->getHttpRequest()->getPeerIpAddress().str().c_str());
+    client->sendTextMessage( "The message has been received !");
   };
 } myWebSocket;
 

@@ -274,19 +274,25 @@ void WebSocketClient::receivingThread()
 
 /***********************************************************************/
 
-void WebSocketClient::close()
+void WebSocketClient::close(bool cs)
 {
-  websocket->removeFromClientsList(this);
+
+  websocket->removeFromClientsList(this, cs);
+
   websocket->onClosing(this);
 
   closing=true;
+  
   pthread_cond_broadcast ( &sendingNotification );
-  waitingThreadsExit();
-
+  
   WebServer::freeClientSockData( request->getClientSockData() );
+
+  waitingThreadsExit();
+  
   delete request;
 
   delete this;
+
 }
 
 /***********************************************************************/

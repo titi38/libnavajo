@@ -101,8 +101,9 @@ class MyDynamicRepository : public DynamicRepository
 
 class MyWebSocket : public WebSocket
 {
-  bool onOpening(HttpRequest* request)
+  bool onOpening(WebSocketClient* client)
   {
+    HttpRequest* request=client->getHttpRequest();
     printf ("New Websocket (host '%s' - socketId=%d)\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId);
     if ( ! isValidSession(request) )
       return false;
@@ -110,22 +111,24 @@ class MyWebSocket : public WebSocket
     return true;
   }
 
-  void onClosing(HttpRequest* request)
+  void onClosing(WebSocketClient* client)
   {
+    HttpRequest* request=client->getHttpRequest();
     printf ("Closing Websocket (host '%s' - socketId=%d)\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId);
     setSessionIsConnected(request, false);
   }
 
-  void onTextMessage(HttpRequest* request, const string &message, const bool fin)
+  void onTextMessage(WebSocketClient* client, const string &message, const bool fin)
   {
+    HttpRequest* request=client->getHttpRequest();
     printf ("Message: '%s' received from host '%s'\n", message.c_str(), request->getPeerIpAddress().str().c_str());
     //check username
     if (checkMessage(request, message))
       sendBroadcastTextMessage(message);
     else
-      sendCloseCtrlFrame(request, "Not allowed message format");
+      client->sendCloseCtrlFrame("Not allowed message format");
   };
-  void onBinaryMessage(HttpRequest* request, const unsigned char* message, size_t len, const bool fin)
+  void onBinaryMessage(WebSocketClient* client, const unsigned char* message, size_t len, const bool fin)
   { };
 } myWebSocket;
 

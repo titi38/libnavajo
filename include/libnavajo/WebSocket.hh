@@ -118,20 +118,22 @@ class WebSocket
     inline void removeAllClients()
     {
       pthread_mutex_lock(&webSocketClientList_mutex);
-      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); it++)
+      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); )
       {
-        (*it)->close();
-        webSocketClientList.erase(it);
+        WebSocketClient *client=*it; it++;
+        client->close(true);
+        //webSocketClientList.erase(it);
       }
+      pthread_mutex_unlock(&webSocketClientList_mutex);
     }
 
-    inline void removeFromClientsList(WebSocketClient *client)
+    inline void removeFromClientsList(WebSocketClient *client, bool cs=false)
     {
-      pthread_mutex_lock(&webSocketClientList_mutex);
+      if (!cs) pthread_mutex_lock(&webSocketClientList_mutex);
       std::list<WebSocketClient*>::iterator it = std::find(webSocketClientList.begin(), webSocketClientList.end(), client);
       if (it != webSocketClientList.end())
         webSocketClientList.erase(it);
-      pthread_mutex_unlock(&webSocketClientList_mutex);
+      if(!cs) pthread_mutex_unlock(&webSocketClientList_mutex);
     }
 
     /*

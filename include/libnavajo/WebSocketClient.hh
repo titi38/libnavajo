@@ -146,7 +146,7 @@ class WebSocketClient
 
     HttpRequest *getHttpRequest() { return request; };
 
-    void close();
+    void close(bool cs = false);
 };
 
 #endif //WEBSOCKETCLIENT_HH_
