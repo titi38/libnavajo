@@ -31,7 +31,7 @@ Priority: optional
 Maintainer: Thierry DESCOMBES <thierry.descombes@gmail.com>
 Architecture: amd64 
 Depends: openssl, zlib1g-dev, libpam-dev
-Version: 1.1
+Version: 1.2
 Description: an implementation of a complete HTTP(S) server, complete, fast and lightweight.
 EOF_CONTROL
 

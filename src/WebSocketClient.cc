@@ -15,7 +15,7 @@
 #include "libnavajo/nvjSocket.h"
 #include "libnavajo/nvjGzip.h"
 #include "libnavajo/htonll.h"
-#include "libnavajo/WebSocketClient.hh"
+#include "libnavajo/WebSocket.hh"
 #include "libnavajo/WebServer.hh"
 
 #define BUFSIZE 32768

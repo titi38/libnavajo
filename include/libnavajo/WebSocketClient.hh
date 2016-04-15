@@ -135,14 +135,14 @@ class WebSocketClient
     * @param message: the content
     * @param length: the message length
     */
-    inline void sendPongCtrlFrame(const unsigned char *message, size_t length);
+    void sendPongCtrlFrame(const unsigned char *message, size_t length);
 
     /**
     * Send Pong Message Notification on the websocket
     * @param request: the http request object
     * @param message: the content
     */
-    inline void sendPongCtrlFrame(const string &message);
+    void sendPongCtrlFrame(const string &message);
 
     HttpRequest *getHttpRequest() { return request; };
 

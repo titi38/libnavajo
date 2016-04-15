@@ -31,9 +31,6 @@ endif()
 #######   Check the compiler and set the compile and link flags  #######
 set(CMAKE_BUILD_TYPE Debug)
 
-###############          findPAM directory       #####################
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake.modules/")
-
 ###############          openssl include/lib dir        #####################
 find_package(OpenSSL REQUIRED) 
 include_directories (${OPENSSL_INCLUDE_DIR})
@@ -42,10 +39,6 @@ include_directories (${OPENSSL_INCLUDE_DIR})
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
-###############          pam include/lib dir        #####################
-
-find_package(PAM REQUIRED)
-include_directories(${PAM_INCLUDE_DIRS})
 
 ###############      library extension  #####################
 IF(${UNIX})
@@ -79,7 +72,7 @@ file(GLOB sources_lib ${PROJECT_SOURCE_DIR}/src/AuthPAM.cc
 file(GLOB headers_lib ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh
 	  	      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjThread.h
 		      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjGzip.h
-              ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjSocket.h
+              	      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjSocket.h
 		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Field.h 
 		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Exception.h 
 		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Parser.h)

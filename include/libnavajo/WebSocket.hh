@@ -18,6 +18,7 @@
 #include <list>
 #include <string>
 
+#include "libnavajo/WebServer.hh"
 #include "libnavajo/WebSocketClient.hh"
 
 class WebSocket
@@ -96,6 +97,12 @@ class WebSocket
     virtual bool onCloseCtrlFrame(WebSocketClient* client, const unsigned char* message, size_t len)
     { return true; };
 
+
+    /**
+    * Send Text Message to all connected clients
+    * @param message: the message content
+    * @param fin: is-it the final fragment of the message ?
+    */
     inline void sendBroadcastTextMessage(const std::string &message, bool fin=true)
     {
       pthread_mutex_lock(&webSocketClientList_mutex);
@@ -104,6 +111,91 @@ class WebSocket
       pthread_mutex_unlock(&webSocketClientList_mutex);
     };
 
+    /**
+    * Send Binary Message to all connected clients
+    * @param message: the message content
+    * @param length: the message length
+    * @param fin: is-it the final fragment of the message ?
+    */
+    inline void sendBroadcastBinaryMessage(const unsigned char *message, size_t length, bool fin = true)
+    {
+      pthread_mutex_lock(&webSocketClientList_mutex);
+      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); it++)
+        (*it)->sendBinaryMessage(message, length, fin);
+      pthread_mutex_unlock(&webSocketClientList_mutex);
+    };
+
+    /**
+    * Send Close Message Notification to all connected clients
+    * @param reasonMsg: the message content
+    * @param length: the message length
+    */
+    inline void sendBroadcastCloseCtrlFrame(const unsigned char *message, size_t length)
+    {
+      pthread_mutex_lock(&webSocketClientList_mutex);
+      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); it++)
+        (*it)->sendCloseCtrlFrame(message, length);
+      pthread_mutex_unlock(&webSocketClientList_mutex);
+    };
+
+    /**
+    * Send Close Message Notification to all connected clients
+    * @param reasonMsg: the message content
+    */
+    inline void sendBroadcastCloseCtrlFrame(const string &reasonMsg = "")
+    {
+      sendBroadcastCloseCtrlFrame((const unsigned char*)reasonMsg.c_str(), reasonMsg.length());
+    }
+
+    /**
+    * Send Ping Message Notification to all connected clients
+    * @param message: the message content
+    * @param length: the message length
+    */
+    inline void sendBroadcastPingCtrlFrame(const unsigned char *message, size_t length)
+    {
+      pthread_mutex_lock(&webSocketClientList_mutex);
+      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); it++)
+        (*it)->sendPingCtrlFrame(message, length);
+      pthread_mutex_unlock(&webSocketClientList_mutex);
+    };
+
+    /**
+    * Send Ping Message Notification to all connected clients
+    * @param message: the message content
+    */
+    inline void sendBroadcastPingCtrlFrame(const string &message)
+    {
+      sendBroadcastPingCtrlFrame((const unsigned char*)message.c_str(), message.length());
+    }
+
+    /**
+    * Send Pong Message Notification to all connected clients
+    * @param message: the message content
+    * @param length: the message length
+    */
+    inline void sendBroadcastPongCtrlFrame(const unsigned char *message, size_t length)
+    {
+      pthread_mutex_lock(&webSocketClientList_mutex);
+      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); it++)
+        (*it)->sendPongCtrlFrame(message, length);
+      pthread_mutex_unlock(&webSocketClientList_mutex);
+    }
+
+    /**
+    * Send Pong Message Notification to all connected clients
+    * @param message: the message content
+    */
+    inline void sendBroadcastPongCtrlFrame(const string &message)
+    {
+      sendBroadcastPongCtrlFrame((const unsigned char*)message.c_str(), message.length());
+    }
+
+    /**
+    * New Websocket Connection Request
+    * create a new websocket client if onOpening() return true
+    * @param request: the http request object
+    */
     inline void newConnectionRequest(HttpRequest* request)
     {
       pthread_mutex_lock(&webSocketClientList_mutex);
@@ -111,22 +203,34 @@ class WebSocket
       if (onOpening(newClient))
         webSocketClientList.push_back(newClient);
       else
+      {
         delete newClient;
+        WebServer::freeClientSockData( request->getClientSockData() );
+      }
+
       pthread_mutex_unlock(&webSocketClientList_mutex);
     };
 
+    /**
+    * Remove and close all Websocket client's Connection
+    */
     inline void removeAllClients()
     {
       pthread_mutex_lock(&webSocketClientList_mutex);
       for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); )
       {
-        WebSocketClient *client=*it; it++;
+        WebSocketClient *client=*it;
+        it++;
         client->close(true);
-        //webSocketClientList.erase(it);
       }
       pthread_mutex_unlock(&webSocketClientList_mutex);
     }
 
+    /**
+    * Remove and close a given Websocket client
+    * @param client: the websocket client
+    * @param cs: are we inside the critical section ?
+    */
     inline void removeFromClientsList(WebSocketClient *client, bool cs=false)
     {
       if (!cs) pthread_mutex_lock(&webSocketClientList_mutex);
@@ -135,30 +239,6 @@ class WebSocket
         webSocketClientList.erase(it);
       if(!cs) pthread_mutex_unlock(&webSocketClientList_mutex);
     }
-
-    /*
-    inline bool isClient(HttpRequest* request)
-    {
-      bool res;
-      pthread_mutex_lock(&webSocketClientList_mutex);
-      std::list<WebSocketClient*>::iterator it = std::find(webSocketClientList.begin(), webSocketClientList.end(), request);
-      res = it != webSocketClientList.end();
-      pthread_mutex_unlock(&webSocketClientList_mutex);
-      return res;
-    };
-
-    inline void removeClient(HttpRequest* request)
-    {
-      pthread_mutex_lock(&webSocketClientList_mutex);
-      std::list<WebSocketClient*>::iterator it = std::find(webSocketClientList.begin(), webSocketClientList.end(), request);
-      if (it != webSocketClientList.end())
-      {
-        delete *it; *it = NULL;
-        webSocketClientList.erase(it);
-      }
-      pthread_mutex_unlock(&webSocketClientList_mutex);
-    };
-    */
 
 };
 

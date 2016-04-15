@@ -29,14 +29,10 @@
 #include <fcntl.h>
 
 #include "libnavajo/WebServer.hh"
-#if defined(LINUX) || defined(__darwin__)
-#include "libnavajo/AuthPAM.hh"
-#endif
-
 #include "libnavajo/nvjSocket.h"
 #include "libnavajo/nvjGzip.h"
 #include "libnavajo/htonll.h"
-
+#include "libnavajo/WebSocket.hh"
 
 // MPFDParser
 #include "Parser.h"
@@ -83,7 +79,6 @@ WebServer::WebServer()
   
   sslEnabled=false;
   authPeerSsl=false;
-  authPam=false;
 
   mutipartTempDirForFileUpload = "/tmp";
   mutipartMaxCollectedDataLength = 20*1024;   
@@ -194,19 +189,7 @@ bool WebServer::isUserAllowed(const string &pwdb64, string& login)
       if ( logPass == *it )
         authOK=true;
   }
-#if defined(LINUX) || defined(__darwin__)
-  if (!authOK && isAuthPam())
-  {
-    if (authPamUsersList.size())
-    {
-      for ( vector<string>::iterator it=authPamUsersList.begin(); it != authPamUsersList.end(); it++ )
-        if (login == *it)
-          authOK=AuthPAM::authentificate(login.c_str(), pwd.c_str(), pamService.c_str());
-    }
-    else
-      authOK=AuthPAM::authentificate(login.c_str(), pwd.c_str(), pamService.c_str() );
-  }    
-#endif
+  
   if (authOK)
   {
     NVJ_LOG->append(NVJ_INFO,"WebServer: Authentification passed for user '"+login+"'");
@@ -281,7 +264,7 @@ bool WebServer::accept_request(ClientSockData* client)
 
   unsigned i=0, j=0;
   
-  bool authOK = !isAuthPam() && authLoginPwdList.size() == 0;
+  bool authOK = authLoginPwdList.size() == 0;
   char httpVers[4]="";
   int keepAlive=-1;
   bool isQueryStr=false;
@@ -1343,16 +1326,7 @@ void WebServer::threadProcessing()
   ushort port=init();
 
   initPoolThreads();
-  httpdAuth = authLoginPwdList.size() || isAuthPam() ;
-
-  if (isAuthPam())
-  {
-#if defined(LINUX) || defined(__darwin__)
-    AuthPAM::start();
-#else
-    NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : WARNING authPAM will be ignored on your system");
-#endif
-  }
+  httpdAuth = authLoginPwdList.size() ;
 
   char buf[300]; snprintf(buf, 300, "WebServer : Listen on port %d", port);
   NVJ_LOG->append(NVJ_INFO,buf);
@@ -1451,11 +1425,6 @@ void WebServer::threadProcessing()
 
   pthread_mutex_destroy(&clientsQueue_mutex);
 
-#if defined(LINUX) || defined(__darwin__)
-  if (isAuthPam())
-    AuthPAM::stop();
-#endif
- 
 }
 
 /***********************************************************************/

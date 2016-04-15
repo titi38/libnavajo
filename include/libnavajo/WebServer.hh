@@ -27,14 +27,14 @@
 #include <map>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "libnavajo/WebSocket.hh"
+
 #include "libnavajo/LogRecorder.hh"
 #include "libnavajo/IpAddress.hh"
 #include "libnavajo/WebRepository.hh"
 #include "libnavajo/nvjThread.h"
 
 
-//class WebSocket;
+class WebSocket;
 class WebServer
 {
     pthread_t threadWebServer;
@@ -114,10 +114,6 @@ class WebServer
     std::vector<std::string> authLoginPwdList;
     bool authPeerSsl;
     std::vector<std::string> authDnList;
-    bool authPam;
-    std::string pamService;
-    std::vector<std::string> authPamUsersList;
-    inline bool isAuthPam() { return authPam; };
     std::vector<IpNetwork> hostsAllowed;
     std::vector<WebRepository *> webRepositories;
     static inline bool is_base64(unsigned char c)
@@ -188,18 +184,6 @@ class WebServer
     */ 
     inline void addLoginPass(const char* login, const char* pass) { authLoginPwdList.push_back(string(login)+':'+string(pass)); };
 
-    /**
-    * Use PAM authentification (if supported)
-    * @param service : pam configuration file
-    */ 
-    inline void usePamAuth(const char* service="/etc/pam.d/login") { authPam = true; pamService = service; };
-
-    /**
-    * Restricts PAM authentification to a list of allowed users. Add this user.
-    * @param user : an allowed pam user login
-    */ 
-    inline void addAuthPamUser(const char* user) { authPamUsersList.push_back(string(user)); };
-    
     /**
     * Set the path to store uploaded files on disk. Used to set the MPFD function.
     * @param pathdir: path to a writtable directory
