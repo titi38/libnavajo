@@ -15,7 +15,7 @@
 #include "libnavajo/nvjSocket.h"
 #include "libnavajo/nvjGzip.h"
 #include "libnavajo/htonll.h"
-#include "libnavajo/WebSocket.hh"
+#include "libnavajo/WebSocketClient.hh"
 #include "libnavajo/WebServer.hh"
 
 #define BUFSIZE 32768
@@ -23,7 +23,7 @@
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::sendingThread()
+void WebSocketClient::sendingThread()
 {
 
   for (;!closing;)
@@ -54,7 +54,7 @@ void WebSocket::WebSocketClient::sendingThread()
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::receivingThread()
+void WebSocketClient::receivingThread()
 {
   char bufferRecv[BUFSIZE];
   u_int64_t msgLength=0, msgContentIt=0;
@@ -274,7 +274,7 @@ void WebSocket::WebSocketClient::receivingThread()
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::close()
+void WebSocketClient::close()
 {
   websocket->removeFromClientsList(this);
   websocket->onClosing(this);
@@ -291,7 +291,7 @@ void WebSocket::WebSocketClient::close()
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::sendMessage( const MessageContent *msgContent )
+void WebSocketClient::sendMessage( const MessageContent *msgContent )
 {
   ClientSockData* client = request->getClientSockData();
 
@@ -351,7 +351,7 @@ void WebSocket::WebSocketClient::sendMessage( const MessageContent *msgContent )
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::addSendingQueue(MessageContent *msgContent)
+void WebSocketClient::addSendingQueue(MessageContent *msgContent)
 {
   pthread_mutex_lock(&sendingQueueMutex);
   sendingQueue.push(msgContent);
@@ -361,7 +361,7 @@ void WebSocket::WebSocketClient::addSendingQueue(MessageContent *msgContent)
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::sendTextMessage(const string &message, bool fin)
+void WebSocketClient::sendTextMessage(const string &message, bool fin)
 {
   MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
   msgContent->opcode=0x1;
@@ -375,7 +375,7 @@ void WebSocket::WebSocketClient::sendTextMessage(const string &message, bool fin
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::sendBinaryMessage(const unsigned char* message, size_t length, bool fin)
+void WebSocketClient::sendBinaryMessage(const unsigned char* message, size_t length, bool fin)
 {
   MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
   msgContent->opcode=0x2;
@@ -389,7 +389,7 @@ void WebSocket::WebSocketClient::sendBinaryMessage(const unsigned char* message,
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::sendPingCtrlFrame(const unsigned char* message, size_t length)
+void WebSocketClient::sendPingCtrlFrame(const unsigned char* message, size_t length)
 {
   MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
   msgContent->opcode=0x9;
@@ -401,14 +401,14 @@ void WebSocket::WebSocketClient::sendPingCtrlFrame(const unsigned char* message,
   addSendingQueue(msgContent);
 }
 
-void WebSocket::WebSocketClient::sendPingCtrlFrame(const string &message)
+void WebSocketClient::sendPingCtrlFrame(const string &message)
 {
   sendPingCtrlFrame((const unsigned char*)message.c_str(), message.length());
 }
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::sendPongCtrlFrame(const unsigned char* message, size_t length)
+void WebSocketClient::sendPongCtrlFrame(const unsigned char* message, size_t length)
 {
   MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
   msgContent->opcode=0xa;
@@ -420,14 +420,14 @@ void WebSocket::WebSocketClient::sendPongCtrlFrame(const unsigned char* message,
   addSendingQueue(msgContent);
 }
 
-void WebSocket::WebSocketClient::sendPongCtrlFrame(const string &message)
+void WebSocketClient::sendPongCtrlFrame(const string &message)
 {
   sendPongCtrlFrame((const unsigned char*)message.c_str(), message.length());
 }
 
 /***********************************************************************/
 
-void WebSocket::WebSocketClient::sendCloseCtrlFrame(const unsigned char* message, size_t length)
+void WebSocketClient::sendCloseCtrlFrame(const unsigned char* message, size_t length)
 {
   MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
   msgContent->opcode=0x8;
@@ -439,7 +439,7 @@ void WebSocket::WebSocketClient::sendCloseCtrlFrame(const unsigned char* message
   addSendingQueue(msgContent);
 }
 
-void WebSocket::WebSocketClient::sendCloseCtrlFrame(const string &message)
+void WebSocketClient::sendCloseCtrlFrame(const string &message)
 {
   sendCloseCtrlFrame((const unsigned char*)message.c_str(), message.length());
 }
