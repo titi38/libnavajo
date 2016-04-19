@@ -23,8 +23,7 @@
 #include "libnavajo/IpAddress.hh"
 #include "HttpSession.hh"
 
-// MPFDParser
-#include "Parser.h"
+#include "MPFDParser/Parser.h"
 
 //****************************************************************************
 

@@ -56,7 +56,8 @@ IF(${APPLE})
 ENDIF(${APPLE})
 
 ###############             Library files           #####################
-file(GLOB sources_lib ${PROJECT_SOURCE_DIR}/src/AuthPAM.cc
+
+file(GLOB sources_lib
   ${PROJECT_SOURCE_DIR}/src/LocalRepository.cc
   ${PROJECT_SOURCE_DIR}/src/LogRecorder.cc
   ${PROJECT_SOURCE_DIR}/src/LogFile.cc
@@ -64,18 +65,22 @@ file(GLOB sources_lib ${PROJECT_SOURCE_DIR}/src/AuthPAM.cc
   ${PROJECT_SOURCE_DIR}/src/LogStdOutput.cc
   ${PROJECT_SOURCE_DIR}/src/WebServer.cc
   ${PROJECT_SOURCE_DIR}/src/WebSocketClient.cc
-  ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Parser.cpp
-  ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Field.cpp
-  ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Exception.cpp
+  ${PROJECT_SOURCE_DIR}/src/MPFDParser/Parser.cc
+  ${PROJECT_SOURCE_DIR}/src/MPFDParser/Field.cc
+  ${PROJECT_SOURCE_DIR}/src/MPFDParser/Exception.cc
   )
 
-file(GLOB headers_lib ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh
+ file(GLOB headers_lib 
+                      ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh
 	  	      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjThread.h
 		      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjGzip.h
               	      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjSocket.h
-		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Field.h 
-		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Exception.h 
-		      ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1/Parser.h)
+ )
+ file(GLOB mpfdHeaders_lib 
+		      ${PROJECT_SOURCE_DIR}/include/MPFDParser/Field.h 
+		      ${PROJECT_SOURCE_DIR}/include/MPFDParser/Exception.h 
+		      ${PROJECT_SOURCE_DIR}/include/MPFDParser/Parser.h
+ )
 
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 
@@ -91,7 +96,7 @@ add_library(navajoStatic STATIC ${sources_lib} ${headers_lib} )
 set_target_properties (navajo PROPERTIES VERSION ${LIBNAVAJO_VERSION} SOVERSION ${LIBNAVAJO_MVERSION})
 set_target_properties(navajoStatic PROPERTIES OUTPUT_NAME navajo)
 
-include_directories (${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/MPFDParser-1.1.1)
+include_directories (${PROJECT_SOURCE_DIR}/include)
 
 target_link_libraries(navajo ${OPENSSL_LIBRARIES})
 target_link_libraries(navajo dl pam)
@@ -101,6 +106,7 @@ target_link_libraries(navajo ${ZLIB_LIBRARIES})
 #install(TARGETS navajo DESTINATION lib)
 
 install(FILES ${headers_lib} DESTINATION include/libnavajo COMPONENT headers)
+install(FILES ${mpfdHeaders_lib} DESTINATION include/MPFDParser COMPONENT headers)
 install(TARGETS navajo LIBRARY DESTINATION lib COMPONENT libraries)
 
 install(TARGETS navajoStatic ARCHIVE DESTINATION lib LIBRARY DESTINATION lib COMPONENT libraries)

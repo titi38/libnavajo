@@ -34,8 +34,7 @@
 #include "libnavajo/htonll.h"
 #include "libnavajo/WebSocket.hh"
 
-// MPFDParser
-#include "Parser.h"
+#include "MPFDParser/Parser.h"
 
 #define DEFAULT_HTTP_PORT 8080
 #define LOGHIST_EXPIRATION_DELAY 600
