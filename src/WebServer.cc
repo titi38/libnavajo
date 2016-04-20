@@ -785,7 +785,7 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
     return true;
   }
   else
-    return sendCompat (client->socketId, buf, len, 0) == len;
+    return sendCompat (client->socketId, buf, len, 0) == (int)len;
 }
 
 /***********************************************************************
