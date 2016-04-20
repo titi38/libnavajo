@@ -98,10 +98,9 @@ rm -rf %{buildroot}
 %{_bindir}/navajoPrecompiler
 
 %changelog
-* Thu Apr 16 2015 Thierry Descombes <thierry.descombes@gmail.com> 1.0.0-el7
-- first packaged release 1.0.0
-
 * Fri Apr 15 2016 Thierry Descombes <thierry.descombes@gmail.com> 1.2.0-el7
 - new packaged release 1.2.0
+* Thu Apr 16 2015 Thierry Descombes <thierry.descombes@gmail.com> 1.0.0-el7
+- first packaged release 1.0.0
 
 
