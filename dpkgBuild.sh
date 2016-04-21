@@ -1,4 +1,13 @@
 #!/bin/sh
+LIB_VERSION=1.2
+ARCH_TYPE=`uname -m`
+
+if [ $ARCH_TYPE = "x86_64" ]; then
+  ARCH_SUFFIX=amd64
+else
+  ARCH_SUFFIX=i386
+fi
+
 export DPKG_BUILD_ROOT=debianBuild
 rm -rf $DPKG_BUILD_ROOT
 mkdir -p $DPKG_BUILD_ROOT
@@ -102,5 +111,5 @@ cat > $DPKG_BUILD_ROOT/DEBIAN/postinst << EOF_POSTINST
 EOF_POSTINST
 chmod 755 $DPKG_BUILD_ROOT/DEBIAN/postinst
 
-dpkg -b $DPKG_BUILD_ROOT libnavajo-1.1.amd64.deb
+dpkg -b $DPKG_BUILD_ROOT libnavajo-$LIB_VERSION.$ARCH_SUFFIX.deb
 
