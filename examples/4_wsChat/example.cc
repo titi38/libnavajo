@@ -15,7 +15,6 @@
 #include <string.h>
 #include <pwd.h>
 #include "libnavajo/libnavajo.hh"
-#include "libnavajo/AuthPAM.hh"
 #include "libnavajo/LogStdOutput.hh"
 #include "libnavajo/WebSocket.hh"
 
@@ -64,8 +63,7 @@ class MyDynamicRepository : public DynamicRepository
         string login, password;
         // User libnavajo/libnavajo is allowed and all PAM logins !
         if (request->getParameter("login", login) && request->getParameter("pass", password)
-            && ( (login == "libnavajo" && password == "libnavajo")
-              || AuthPAM::authentificate(login.c_str(), password.c_str(), "/etc/pam.d/login")) )
+            && (login == "libnavajo" && password == "libnavajo"))
         {
           char *username = (char*)malloc((login.length()+1)*sizeof(char));
           strcpy(username, login.c_str());
@@ -143,7 +141,6 @@ int main()
   NVJ_LOG->addLogOutput(new LogStdOutput);
   //NVJ_LOG->addLogOutput(new LogFile("/var/log/navajo.log"));
   NVJ_LOG->setDebugMode();
-  AuthPAM::start(); 
   webServer = new WebServer;
 
   webServer->listenTo(8080);
@@ -160,9 +157,6 @@ int main()
   //uncomment to active login/passwd auth
   //webServer->addLoginPass("login","password");
 
-  //uncomment to use Pam authentification
-  //webServer->usePamAuth("/etc/pam.d/login");
-
   // Fill the web repository with local files, statically compiled files or dynamic files
   PrecompiledRepository thePrecompRepo("") ;
   webServer->addRepository(&thePrecompRepo);
@@ -175,7 +169,6 @@ int main()
   // Your Processing here !
   //...
   webServer->wait();
-  AuthPAM::stop(); 
   LogRecorder::freeInstance();
   return 0;
 }

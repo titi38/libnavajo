@@ -18,13 +18,6 @@ else
 OS = OTHER
 endif
 
-DLOPEN_PAM=0
-ifeq ($(DLOPEN_PAM),1)
-        LIBPAM=-ldl
-else
-        LIBPAM=-lpam
-endif
-
 LIB_DIR      = lib
 CXX 	=  g++
 
