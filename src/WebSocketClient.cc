@@ -25,23 +25,25 @@
 
 void WebSocketClient::sendingThread()
 {
-
+  
   for (;!closing;)
   {
       pthread_mutex_lock(&sendingQueueMutex);
       while (sendingQueue.empty() && !closing)
         pthread_cond_wait(&sendingNotification, &sendingQueueMutex);
-      pthread_mutex_unlock(&sendingQueueMutex);
 
-      if (!closing)
-      {
-        MessageContent *msg = sendingQueue.front();
-        sendMessage(msg);
-        free(msg);
-        sendingQueue.pop();
-      }
-      else
+      if (closing)
         break;
+
+      MessageContent *msg = sendingQueue.front();
+      
+      if (!sendMessage(msg))
+        closeSend();
+      
+      free(msg);
+      sendingQueue.pop();
+      pthread_mutex_unlock(&sendingQueueMutex);
+      
   }
 
   while (!sendingQueue.empty())
@@ -49,6 +51,7 @@ void WebSocketClient::sendingThread()
     free(sendingQueue.front());
     sendingQueue.pop();
   }
+  pthread_mutex_unlock(&sendingQueueMutex);
 
 }
 
@@ -132,8 +135,8 @@ void WebSocketClient::receivingThread()
           msgMask = (bufferRecv[0]  & 0x80) >> 7;
           if (!msgMask)
           {
-            close();
-            continue;
+            closeRecv();
+            return;
           }
 
           msgLength =  bufferRecv[0] & 0x7f;
@@ -233,7 +236,8 @@ void WebSocketClient::receivingThread()
               if (websocket->onCloseCtrlFrame(this, msgContent, msgLength))
               {
                 sendCloseCtrlFrame( msgContent, msgLength );
-                close();
+                closeRecv();
+                return;
               }
               break;
             case 0x9:
@@ -274,30 +278,49 @@ void WebSocketClient::receivingThread()
 
 /***********************************************************************/
 
-void WebSocketClient::close(bool cs)
+void WebSocketClient::closeWS()
 {
-
-  websocket->removeFromClientsList(this, cs);
-
+  websocket->removeFromClientsList(this, true);
   websocket->onClosing(this);
 
   closing=true;
-  
   pthread_cond_broadcast ( &sendingNotification );
   
   WebServer::freeClientSockData( request->getClientSockData() );
 
   waitingThreadsExit();
+
+  delete request;
+  delete this;
+}
+
+void WebSocketClient::closeSend()
+{
+  websocket->removeFromClientsList(this, false);
+  websocket->onClosing(this);
+  closing=true;
+  WebServer::freeClientSockData( request->getClientSockData() );
+
+  delete request;
+  delete this;
+}
+
+void WebSocketClient::closeRecv()
+{       
+  websocket->removeFromClientsList(this, false);
+  websocket->onClosing(this);
+  closing=true;
+  pthread_cond_broadcast ( &sendingNotification );
+  wait_for_thread(sendingThreadId);  
+  WebServer::freeClientSockData( request->getClientSockData() );
   
   delete request;
-
   delete this;
-
 }
 
 /***********************************************************************/
 
-void WebSocketClient::sendMessage( const MessageContent *msgContent )
+bool WebSocketClient::sendMessage( const MessageContent *msgContent )
 {
   ClientSockData* client = request->getClientSockData();
 
@@ -317,7 +340,7 @@ void WebSocketClient::sendMessage( const MessageContent *msgContent )
     catch(...)
     {
       NVJ_LOG->append(NVJ_ERROR, " Websocket: nvj_gzip raised an exception");
-      return;
+      return false;
     }
   }
   else
@@ -348,11 +371,13 @@ void WebSocketClient::sendMessage( const MessageContent *msgContent )
   if (  !WebServer::httpSend(client, headerBuffer, headerLen)
      || !WebServer::httpSend(client, msg, msgLen) )
   {
-    close();
+    return false;
   }
 
   if (client->compression == ZLIB)
     free (msg);
+
+  return true;
 }
 
 /***********************************************************************/

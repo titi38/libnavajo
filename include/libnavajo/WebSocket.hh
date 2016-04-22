@@ -30,7 +30,6 @@ class WebSocket
     WebSocket()
     {
       pthread_mutex_init(&webSocketClientList_mutex, NULL);
-      //  pthread_mutex_init(&webSocketClientList_mutex, NULL);
     }
 
     ~WebSocket()
@@ -221,7 +220,7 @@ class WebSocket
       {
         WebSocketClient *client=*it;
         it++;
-        client->close(true);
+        client->closeWS();
       }
       pthread_mutex_unlock(&webSocketClientList_mutex);
     }

@@ -746,7 +746,6 @@ bool WebServer::accept_request(ClientSockData* client)
   
   /////////////////
   FREE_RETURN_TRUE:
-  if (sslEnabled) { BIO_free(client->bio); BIO_free(ssl_bio); }
   if (urlBuffer != NULL) free (urlBuffer);
   if (requestParams != NULL) free (requestParams);
   if (requestCookies != NULL) free (requestCookies);
@@ -1237,7 +1236,7 @@ void WebServer::poolThreadProcessing()
     {
       sbio=BIO_new_socket(client->socketId, BIO_NOCLOSE);
       ssl=SSL_new(sslCtx);
-      SSL_set_bio(ssl,sbio,sbio);
+      SSL_set_bio(ssl, sbio, sbio);
 
       if (SSL_accept(ssl) <= 0)
       { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
@@ -1439,6 +1438,7 @@ void WebServer::closeSocket(ClientSockData* client)
       SSL_shutdown(client->ssl);
     }
     SSL_free(client->ssl);    
+    BIO_free(client->bio);
   }
   shutdown (client->socketId, SHUT_RDWR);      
   close(client->socketId);

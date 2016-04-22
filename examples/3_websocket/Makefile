@@ -44,9 +44,8 @@ endif
 
 
 CPPFLAGS	= -I. \
-       		  -I$(LIBSSL_DIR)/include \
-		  -I../../include         \
-                  -I../../MPFDParser-1.1.1
+                  -I../../include         \
+       		  -I$(LIBSSL_DIR)/include
 
 LD		=  g++
 

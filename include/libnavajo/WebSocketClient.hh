@@ -43,13 +43,12 @@ class WebSocketClient
     void receivingThread();
     void sendingThread();
 
-    void sendMessage(const MessageContent *msg);
+    bool sendMessage(const MessageContent *msg);
 
     inline void waitingThreadsExit()
     {
-      void *status;
-      int rc = pthread_join(receivingThreadId, &status);
-      rc = pthread_join(sendingThreadId, &status);
+        wait_for_thread(receivingThreadId);
+        wait_for_thread(sendingThreadId);
     };
 
     inline static void* startReceivingThread(void* t)
@@ -81,6 +80,12 @@ class WebSocketClient
       pthread_cond_init(&sendingNotification, NULL);
       startWebSocketListener();
     };
+
+    ~WebSocketClient()
+    {
+      pthread_mutex_destroy(&sendingQueueMutex);
+      pthread_cond_destroy(&sendingNotification);
+    }
 
     /**
     * Send Text Message on the websocket
@@ -146,7 +151,9 @@ class WebSocketClient
 
     HttpRequest *getHttpRequest() { return request; };
 
-    void close(bool cs = false);
+    void closeWS();
+    void closeSend();
+    void closeRecv();
 };
 
 #endif //WEBSOCKETCLIENT_HH_

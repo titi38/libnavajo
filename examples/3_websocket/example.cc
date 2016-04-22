@@ -51,7 +51,7 @@ int main()
 
   webServer = new WebServer;
 
-  webServer->listenTo(8080);
+  webServer->listenTo(8081);
 //  webServer->setThreadsPoolSize(1);
   //uncomment to switch to https
   //webServer->setUseSSL(true, "serverCert.pem", "MyPwd");
