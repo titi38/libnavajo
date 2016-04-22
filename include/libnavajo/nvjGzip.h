@@ -157,31 +157,33 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
 
 //----------------------------------------------------------------------------------------
   
-  inline size_t nvj_gzip_websocket_v2( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, z_stream* pstream=NULL)
+  inline size_t nvj_gzip_websocket_v2( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, z_stream* pstream=NULL, const unsigned int sizeChunk = CHUNK)
   {
 
     size_t sizeDst = 0;
 
-    int iterations = sizeSrc / CHUNK;
-    int rmndr = sizeSrc % CHUNK;
+    int rmndr = sizeSrc % sizeChunk;
+    int iterations = (rmndr == 0 ? sizeSrc / sizeChunk : sizeSrc / sizeChunk + 1) ;
+    int in = sizeChunk;
     int flush = Z_NO_FLUSH;
-    int ret;
-    unsigned char out[CHUNK];
 
     *dst = NULL;
 
     printf("1 interations: %i \n", iterations);
     fflush(NULL);
 
-    for ( int i = 0; i < iterations; i++ ) //TODO Ne pas oublier le reste
+    for ( int i = 0; i < iterations; i++ ) 
     {
-      if( (i == iterations - 1) && (rmndr == 0)){
+      if(i == iterations - 1){
         flush = Z_SYNC_FLUSH;
+        if(rmndr != 0){
+          in = rmndr;
+        }
       }
 
 
-      (*pstream).avail_in = CHUNK;
-      (*pstream).next_in = (Bytef*)src + i * CHUNK;
+      (*pstream).avail_in = in;
+      (*pstream).next_in = (Bytef*)src + i * sizeChunk;
 
       printf("boucle for, i: %i \n", i);
       fflush(NULL);
@@ -189,7 +191,7 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
       
       do{
 
-        unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst + CHUNK) * sizeof (unsigned char) );
+        unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst + sizeChunk) * sizeof (unsigned char) );
 
         if (reallocDst!=NULL){
           *dst = reallocDst; 
@@ -201,7 +203,7 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
           throw std::runtime_error(std::string("gzip : (re)allocating memory") );
         }
 
-        (*pstream).avail_out = CHUNK;
+        (*pstream).avail_out = sizeChunk;
         (*pstream).next_out = (Bytef*)*dst + sizeDst;
 
         printf("Avant deflate\n");
@@ -217,7 +219,7 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
         printf("Après deflate\n");
         fflush(NULL);
 
-        sizeDst += CHUNK - (*pstream).avail_out;
+        sizeDst += sizeChunk - (*pstream).avail_out;
 
       } while ((*pstream).avail_out == 0 );
 
@@ -226,46 +228,6 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
 
     printf("2\n");
     fflush(NULL);
-
-    if (rmndr != 0){
-
-      printf("Dans reste\n");
-      fflush(NULL);
-
-
-      (*pstream).avail_in = rmndr;
-      (*pstream).next_in = (Bytef*)src + iterations * CHUNK;
-      
-      do{
-
-        unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst + CHUNK) * sizeof (unsigned char) );
-
-        if (reallocDst!=NULL){
-          *dst = reallocDst; 
-        }
-        else
-        {
-          free (reallocDst);
-          free (*dst);
-          throw std::runtime_error(std::string("gzip : (re)allocating memory") );
-        }
-
-        (*pstream).avail_out = CHUNK;
-        (*pstream).next_out = (Bytef*)*dst + sizeDst;
-
-        if (deflate(pstream, Z_SYNC_FLUSH) == Z_STREAM_ERROR)  /* state not clobbered */
-        {
-          free (*dst);
-          throw std::runtime_error(std::string("gzip : deflate error") );
-        }
-
-
-        sizeDst += CHUNK - (*pstream).avail_out;
-
-      } while ((*pstream).avail_out == 0);
-
-
-    }
 
     sizeDst -= 4;
 
@@ -312,14 +274,15 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
 
    //********************************************************
 
-inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, bool rawDeflateData=false, unsigned char* dictionary = NULL, unsigned int* dictLength = NULL)
+inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, bool rawDeflateData=false, unsigned char* dictionary = NULL, unsigned int* dictLength = NULL, const unsigned int sizeChunk = CHUNK)
 {
   printf("INFLATE\n");
   fflush(NULL);
   z_stream strm;
   size_t sizeDst=0;
-  int iterations = sizeSrc / CHUNK;
-  int rmndr = sizeSrc % CHUNK;
+  int rmndr = sizeSrc % sizeChunk;
+  int iterations = (rmndr == 0 ? sizeSrc / sizeChunk : sizeSrc / sizeChunk + 1) ;
+  int in = sizeChunk;
   int ret;
   *dst = NULL;
 
@@ -347,13 +310,17 @@ inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char*
   for ( int i = 0; i < iterations; i++ ) //TODO Ne pas oublier le reste
   {
 
-    strm.avail_in = CHUNK;
-    strm.next_in = (Bytef*)src + i * CHUNK;
+    if( (i == iterations - 1) && (rmndr != 0) ){
+      in = rmndr;
+    }
+    
+    strm.avail_in = in;
+    strm.next_in = (Bytef*)src + i * sizeChunk;
 
     do
     {
 
-      unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst + CHUNK) * sizeof (unsigned char) );
+      unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst + sizeChunk) * sizeof (unsigned char) );
 
       if (reallocDst!=NULL)
         *dst=reallocDst;
@@ -364,7 +331,7 @@ inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char*
         throw std::runtime_error(std::string("gunzip : (re)allocating memory") );
       }
 
-      strm.avail_out = CHUNK;
+      strm.avail_out = sizeChunk;
       strm.next_out = (Bytef*)*dst + sizeDst;
 
       ret = inflate(&strm, Z_NO_FLUSH);
@@ -383,7 +350,7 @@ inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char*
           throw std::runtime_error(std::string("gunzip : inflate error") );
       }
 
-      sizeDst += CHUNK - strm.avail_out;
+      sizeDst += sizeChunk - strm.avail_out;
 
               //printf("i=%d\n",i);fflush(NULL);  
     }
@@ -391,51 +358,7 @@ inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char*
 
   }
 
-  if (rmndr != 0) {
-
-    strm.avail_in = rmndr;
-    strm.next_in = (Bytef*)src + iterations * CHUNK;
-
-    do
-    {
-
-      unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst + CHUNK) * sizeof (unsigned char) );
-
-      if (reallocDst!=NULL)
-        *dst=reallocDst;
-      else
-      {
-        free (reallocDst);
-        free (*dst);
-        throw std::runtime_error(std::string("gunzip : (re)allocating memory") );
-      }
-
-      strm.avail_out = CHUNK;
-      strm.next_out = (Bytef*)*dst + sizeDst;
-
-      ret = inflate(&strm, Z_NO_FLUSH);
-
-      switch (ret) 
-      {
-        case Z_STREAM_ERROR:
-          free (*dst);
-          throw std::runtime_error(std::string("gunzip : inflate Z_STREAM_ERROR") );
-        case Z_NEED_DICT:
-        case Z_DATA_ERROR:
-    // ICI
-        case Z_MEM_ERROR:
-          (void)inflateEnd(&strm);
-          free (*dst);
-          throw std::runtime_error(std::string("gunzip : inflate error") );
-      }
-
-      sizeDst += CHUNK - strm.avail_out;
-
-              //printf("i=%d\n",i);fflush(NULL);  
-    }
-    while (strm.avail_out == 0);
-
-  }
+  
 
   unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst) * sizeof (unsigned char) );
 

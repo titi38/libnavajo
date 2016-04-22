@@ -25,10 +25,12 @@ class WebSocket
 {
     list<WebSocketClient*> webSocketClientList;
     pthread_mutex_t webSocketClientList_mutex;
+    bool compression;
 
   public:
-    WebSocket()
+    WebSocket(bool compression=true)
     {
+      this->compression = compression;
       pthread_mutex_init(&webSocketClientList_mutex, NULL);
     }
 
@@ -237,6 +239,15 @@ class WebSocket
       if (it != webSocketClientList.end())
         webSocketClientList.erase(it);
       if(!cs) pthread_mutex_unlock(&webSocketClientList_mutex);
+    }
+
+    inline bool useCompression()
+    {
+      return compression;
+    }
+
+    inline void setCompressionUsage(bool compression){
+      this->compression = compression;
     }
 
 };

@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
-    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="https://code.jquery.com/jquery-latest.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     
     <script type="text/javascript">
@@ -112,7 +112,7 @@
           else
             path = '/';
 
-          conn = new WebSocket('ws://' + location.host + path + '/wschat');
+          conn = new WebSocket('wss://' + location.host + path + '/wschat');
           conn.onopen = function()
           {
             userLoggedIn();

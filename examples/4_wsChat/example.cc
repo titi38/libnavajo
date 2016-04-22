@@ -143,10 +143,10 @@ int main()
   NVJ_LOG->setDebugMode();
   webServer = new WebServer;
 
-  webServer->listenTo(8080);
+  webServer->listenTo(8443);
 //  webServer->setThreadsPoolSize(1);
   //uncomment to switch to https
-  //webServer->setUseSSL(true, "serverCert.pem", "MyPwd");
+  webServer->setUseSSL(true, "mycert.pem");
 
   //uncomment to active X509 auth
   //webServer->setAuthPeerSSL(true, "cachain.pem");
