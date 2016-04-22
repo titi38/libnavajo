@@ -18,6 +18,7 @@
 
 #include "libnavajo/HttpRequest.hh"
 #include "libnavajo/nvjThread.h"
+#include "libnavajo/nvjGzip.h"
 
 class WebSocket;
 class WebSocketClient
@@ -30,6 +31,15 @@ class WebSocketClient
       bool fin;
     } MessageContent;
 
+    typedef struct
+    {
+      unsigned char z_dictionary_inflate[32768];
+      unsigned int dictInfLength;
+      z_stream strm_deflate;
+    } GzipContext;
+
+
+    GzipContext gzipcontext;
     std::queue<MessageContent *> sendingQueue;
     pthread_mutex_t sendingQueueMutex;
     pthread_cond_t sendingNotification;
@@ -78,11 +88,14 @@ class WebSocketClient
     {
       pthread_mutex_init(&sendingQueueMutex, NULL);
       pthread_cond_init(&sendingNotification, NULL);
+      gzipcontext.dictInfLength = 0;
+      nvj_init_stream(&(gzipcontext.strm_deflate), true);
       startWebSocketListener();
     };
 
     ~WebSocketClient()
     {
+      nvj_end_stream(&(gzipcontext.strm_deflate));
       pthread_mutex_destroy(&sendingQueueMutex);
       pthread_cond_destroy(&sendingNotification);
     }

@@ -13,7 +13,6 @@
 //********************************************************
 
 #include "libnavajo/nvjSocket.h"
-#include "libnavajo/nvjGzip.h"
 #include "libnavajo/htonll.h"
 #include "libnavajo/WebSocket.hh"
 #include "libnavajo/WebServer.hh"
@@ -166,9 +165,9 @@ void WebSocketClient::receivingThread()
             //msgLength=ntohll(*(u_int64_t*)bufferRecv);
           }
         }
-
-        if ( (msgLength > 0x7FFF)
-             || ( (msgContent = (unsigned char*)malloc(msgLength*sizeof(unsigned char))) == NULL ))
+        
+        if ( /*(msgLength > 0x7FFF)
+             ||*/ ( (msgContent = (unsigned char*)malloc(msgLength*sizeof(unsigned char))) == NULL ))
         {
           char logBuffer[500];
           snprintf(logBuffer, 500, " Websocket: Message content allocation failed (length: %llu)", static_cast<unsigned long long>(msgLength));
@@ -208,7 +207,7 @@ void WebSocketClient::receivingThread()
             try
             {
               unsigned char *msg = NULL;
-              size_t msgLen=nvj_gunzip( &msg, msgContent, msgLength, true );
+              size_t msgLen=nvj_gunzip_websocket_v2( &msg, msgContent, msgLength, true, gzipcontext.z_dictionary_inflate, &(gzipcontext.dictInfLength) );
               free(msgContent);
               msgContent=msg;
               msgLength=msgLen;
@@ -335,7 +334,7 @@ bool WebSocketClient::sendMessage( const MessageContent *msgContent )
     headerBuffer[0] |= 0x40; // Set RSV1
     try
     {
-      msgLen=nvj_gzip( &msg, msgContent->message, msgContent->length, true );
+      msgLen=nvj_gzip_websocket_v2( &msg, msgContent->message, msgContent->length, &(gzipcontext.strm_deflate));
     }
     catch(...)
     {
