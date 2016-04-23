@@ -38,7 +38,6 @@ class WebSocketClient
       z_stream strm_deflate;
     } GzipContext;
 
-
     GzipContext gzipcontext;
     std::queue<MessageContent *> sendingQueue;
     pthread_mutex_t sendingQueueMutex;

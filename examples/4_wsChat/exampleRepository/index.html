@@ -112,7 +112,7 @@
           else
             path = '/';
 
-          conn = new WebSocket('wss://' + location.host + path + '/wschat');
+          conn = new WebSocket('wss://' + location.host + path + 'wschat');
           conn.onopen = function()
           {
             userLoggedIn();

@@ -73,7 +73,7 @@ int main()
 //  webServer->setThreadsPoolSize(1);
   //uncomment to switch to https
   //webServer->setUseSSL(true, "serverCert.pem", "MyPwd");
-
+webServer->setUseSSL(true, "../myCert.pem");
   //uncomment to active X509 auth
   //webServer->setAuthPeerSSL(true, "cachain.pem");
   //webServer->addAuthPeerDN("/C=FR/O=CNRS/OU=UMR5821/CN=Thierry Descombes/emailAddress=thierry.descombes@lpsc.in2p3.fr");

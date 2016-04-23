@@ -125,7 +125,6 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
         throw std::runtime_error(std::string("gunzip : inflate Z_STREAM_ERROR") );
       case Z_NEED_DICT:
       case Z_DATA_ERROR:
-// ICI
       case Z_MEM_ERROR:
         (void)inflateEnd(&strm);
         free (*dst);
@@ -133,7 +132,6 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
     }
   
     i++;
-    //printf("i=%d\n",i);fflush(NULL);  
      if (strm.avail_out == 0)
      {
       unsigned char* reallocDst = (unsigned char*) realloc (*dst, CHUNK * (i+1) * sizeof (unsigned char) );
@@ -169,9 +167,6 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
 
     *dst = NULL;
 
-    printf("1 interations: %i \n", iterations);
-    fflush(NULL);
-
     for ( int i = 0; i < iterations; i++ ) 
     {
       if(i == iterations - 1){
@@ -185,12 +180,8 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
       (*pstream).avail_in = in;
       (*pstream).next_in = (Bytef*)src + i * sizeChunk;
 
-      printf("boucle for, i: %i \n", i);
-      fflush(NULL);
-
-      
-      do{
-
+      do
+      {
         unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst + sizeChunk) * sizeof (unsigned char) );
 
         if (reallocDst!=NULL){
@@ -206,33 +197,17 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
         (*pstream).avail_out = sizeChunk;
         (*pstream).next_out = (Bytef*)*dst + sizeDst;
 
-        printf("Avant deflate\n");
-        fflush(NULL);
-
-
         if (deflate(pstream, flush) == Z_STREAM_ERROR)  /* state not clobbered */
         {
           free (*dst);
           throw std::runtime_error(std::string("gzip : deflate error") );
         }
-
-        printf("Après deflate\n");
-        fflush(NULL);
-
         sizeDst += sizeChunk - (*pstream).avail_out;
-
-      } while ((*pstream).avail_out == 0 );
-
+      }
+      while ((*pstream).avail_out == 0 );
     }
 
-
-    printf("2\n");
-    fflush(NULL);
-
     sizeDst -= 4;
-
-    printf("3\n");
-    fflush(NULL);
 
     unsigned char* reallocDst = (unsigned char*) realloc (*dst, sizeDst * sizeof (unsigned char) );
 
@@ -245,10 +220,6 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
       free (*dst);
       throw std::runtime_error(std::string("gzip : (re)allocating memory") );
     }
-
-
-    printf("4 sizeDst: %i\n", sizeDst);
-    fflush(NULL);
 
     return sizeDst;
 
@@ -276,8 +247,6 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
 
 inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, bool rawDeflateData=false, unsigned char* dictionary = NULL, unsigned int* dictLength = NULL, const unsigned int sizeChunk = CHUNK)
 {
-  printf("INFLATE\n");
-  fflush(NULL);
   z_stream strm;
   size_t sizeDst=0;
   int rmndr = sizeSrc % sizeChunk;
@@ -304,8 +273,6 @@ inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char*
     if( inflateSetDictionary(&strm, (Bytef*) dictionary, *dictLength) != Z_OK ) 
        throw std::runtime_error(std::string("gunzip : inflateSetDictionary error") ) ;
   }
-
-
 
   for ( int i = 0; i < iterations; i++ ) //TODO Ne pas oublier le reste
   {
@@ -351,14 +318,9 @@ inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char*
       }
 
       sizeDst += sizeChunk - strm.avail_out;
-
-              //printf("i=%d\n",i);fflush(NULL);  
     }
     while (strm.avail_out == 0);
-
   }
-
-  
 
   unsigned char* reallocDst = (unsigned char*) realloc (*dst, (sizeDst) * sizeof (unsigned char) );
 
@@ -369,11 +331,9 @@ inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char*
     free (reallocDst);
     free (*dst);
     throw std::runtime_error(std::string("gunzip : (re)allocating memory") );
-  }    
+  }
 
-  inflateGetDictionary(&strm,(Bytef*)dictionary,dictLength);
-
-
+  inflateGetDictionary(&strm, (Bytef*)dictionary, dictLength);
 
   /* clean up and return */
   (void)inflateEnd(&strm);
@@ -381,8 +341,4 @@ inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char*
 }
 
 #endif
-
-
-
-
 

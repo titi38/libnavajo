@@ -41,9 +41,7 @@ class WebServer
     SSL_CTX *sslCtx;
     int s_server_session_id_context;
     static char *certpass;
-    
 
-    
     std::queue<ClientSockData *> clientsQueue;
     pthread_cond_t clientsQueue_cond;
     pthread_mutex_t clientsQueue_mutex;
@@ -53,7 +51,6 @@ class WebServer
 
     bool isUserAllowed(const string &logpassb64, string &username);
     bool isAuthorizedDN(const std::string str);
-
 
     size_t recvLine(int client, char *bufLine, size_t);
     bool accept_request(ClientSockData* client);

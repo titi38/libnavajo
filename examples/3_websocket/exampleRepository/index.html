@@ -2,6 +2,8 @@
 <html>
   <head>	
     <script type="text/javascript">
+
+//jQuery.url.attr("protocol");
     
     function WebSocketTest()
     {
@@ -15,7 +17,7 @@
         else
          path = '/';
 
-        var ws = new WebSocket('ws://' + location.host + path + '/test');          
+        var ws = new WebSocket('wss://' + location.host + path + 'test');          
         ws.onopen = function()
         {
           ws.send("The client message");

@@ -26,7 +26,6 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-#include <fcntl.h>
 
 #include "libnavajo/WebServer.hh"
 #include "libnavajo/nvjSocket.h"

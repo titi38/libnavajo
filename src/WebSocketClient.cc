@@ -68,6 +68,11 @@ void WebSocketClient::receivingThread()
 
   ClientSockData* client = request->getClientSockData();
 
+  struct pollfd pfd;
+  memset(&pfd, 0 , sizeof(pollfd));
+  pfd.fd = client->socketId;
+  pfd.events = POLLIN;
+
   setSocketSndRcvTimeout(client->socketId, 0, 100); // Reduce socket timeout
 
   bool fin=false;
@@ -78,7 +83,6 @@ void WebSocketClient::receivingThread()
 
   for (;!closing;)
   {
-
     int n=0;
     size_t it=0;
     size_t length=readLength;
@@ -91,16 +95,25 @@ void WebSocketClient::receivingThread()
 
     do
     {
+      while ( ( poll( &pfd, 1, 250 ) < 0 ) && ( errno == EINTR ) ) ;
+
+      if (closing)
+        break;
+      if ( !(pfd.revents & POLLIN) )
+        continue;
+
       if (client->bio != NULL && client->ssl != NULL)
       {
         n=BIO_read(client->bio, bufferRecv+it, length-it);
-
         if (SSL_get_error(client->ssl,n) == SSL_ERROR_ZERO_RETURN)
           closing=true;
+        if ( (n==0) || (n==-1) )
+          continue;
       }
       else
       {
         n=recv(client->socketId, bufferRecv+it, length-it, 0);
+
         if ( n <= 0 )
         {
           if ( errno==ENOTCONN || errno==EBADF || errno==ECONNRESET )
@@ -118,7 +131,6 @@ void WebSocketClient::receivingThread()
     // Decode message header
     switch(step)
     {
-
       case FIRSTBYTE:
         fin=(bufferRecv[0] & 0x80) >> 7;
         rsv=(bufferRecv[0] & 0x70) >> 4;
@@ -156,18 +168,15 @@ void WebSocketClient::receivingThread()
           {
             u_int16_t *tmp=(u_int16_t*)bufferRecv;
             msgLength=ntohs(*tmp);
-            //msgLength=ntohs(*(u_int16_t*)bufferRecv);
           }
           if (msgLength == 127)
           {
             u_int64_t *tmp=(u_int64_t*)bufferRecv;
             msgLength=ntohll(*tmp);
-            //msgLength=ntohll(*(u_int64_t*)bufferRecv);
           }
         }
         
-        if ( /*(msgLength > 0x7FFF)
-             ||*/ ( (msgContent = (unsigned char*)malloc(msgLength*sizeof(unsigned char))) == NULL ))
+        if ( (msgContent = (unsigned char*)malloc(msgLength*sizeof(unsigned char))) == NULL )
         {
           char logBuffer[500];
           snprintf(logBuffer, 500, " Websocket: Message content allocation failed (length: %llu)", static_cast<unsigned long long>(msgLength));

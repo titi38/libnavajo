@@ -13,7 +13,6 @@
 
 #include <signal.h> 
 #include <string.h> 
-#include "libnavajo/AuthPAM.hh"
 #include "libnavajo/libnavajo.hh"
 #include "libnavajo/LogStdOutput.hh"
 
@@ -85,10 +84,9 @@ class MyDynamicRepository : public DynamicRepository
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
         string login, password;
-        // User libnavajo/libnavajo is allowed and all PAM logins !
+        // User libnavajo/libnavajo is allowed
         if (request->getParameter("login", login) && request->getParameter("pass", password)
-            && ( (login == "libnavajo" && password == "libnavajo")
-              || AuthPAM::authentificate(login.c_str(), password.c_str(), "/etc/pam.d/login")) )
+            && (login == "libnavajo" && password == "libnavajo"))
         {
           char *username = (char*)malloc((login.length()+1)*sizeof(char));
           strcpy(username, login.c_str());
@@ -154,7 +152,6 @@ int main()
   signal( SIGINT, exitFunction );
   
   NVJ_LOG->addLogOutput(new LogStdOutput);
-  AuthPAM::start(); 
   webServer = new WebServer;
   //webServer->setUseSSL(true, "../mycert.pem");
   LocalRepository myLocalRepo("", "./html");
@@ -167,7 +164,6 @@ int main()
 
   webServer->wait();
   
-  AuthPAM::stop();
   LogRecorder::freeInstance();
   return 0;
 }
