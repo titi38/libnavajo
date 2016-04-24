@@ -42,9 +42,6 @@
 
 #define setsockoptCompat setsockopt
 #define sendCompat send
-#ifdef LINUX
-  #define SO_NOSIGPIPE    0x0800
-#endif
 #endif
 
 /***********************************************************************
@@ -56,8 +53,12 @@
 
 inline bool setSocketNoSigpipe(int socket)
 {
+#ifndef LINUX
   int set = 1;
   return setsockoptCompat( socket, SOL_SOCKET, SO_NOSIGPIPE, (void *) &set, sizeof(int) ) == 0;
+#else
+  return true;
+#endif
 }
 
 /***********************************************************************

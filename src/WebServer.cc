@@ -414,12 +414,12 @@ bool WebServer::accept_request(ClientSockData* client)
 
         if (isQueryStr)
         {
-          while (isspace((int)(bufLine[j])) && j < bufLineLen) j++;
+          while (isspace((int)(bufLine[j])) && j < (unsigned)bufLineLen) j++;
 
           // Decode URL
           urlBuffer = (char*)malloc ( (strlen(bufLine+j)+1) * sizeof(char) );
           i=0; 
-          while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen) && bufLine[j]!='?')
+          while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < (unsigned)bufLineLen) && bufLine[j]!='?')
             if ( !i && ( bufLine[j] == '/' ) ) // remove first '/'
               j++;
             else
@@ -431,7 +431,7 @@ bool WebServer::accept_request(ClientSockData* client)
           { 
             i=0; j++;
             requestParams = (char*) malloc ( BUFSIZE * sizeof(char) );
-            while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < bufLineLen))
+            while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < (unsigned)bufLineLen))
               requestParams[i++] = bufLine[j++];
             requestParams[i]='\0'; 
           }
@@ -1403,9 +1403,9 @@ void WebServer::threadProcessing()
       else
       {
         if (!setSocketSndRcvTimeout(client_sock, 1, 0))
-          NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : setSocketSndRcvTimeout error");
+          NVJ_LOG->appendUniq(NVJ_ERROR, std::string("WebServer : setSocketSndRcvTimeout error - ") + strerror(errno) );
         if (!setSocketNoSigpipe(client_sock))
-          NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : setSocketNoSigpipe error");
+          NVJ_LOG->appendUniq(NVJ_ERROR, std::string("WebServer : setSocketNoSigpipe error - ") + strerror(errno) );
 
         ClientSockData* client=(ClientSockData*)malloc(sizeof(ClientSockData));
         client->socketId=client_sock;
