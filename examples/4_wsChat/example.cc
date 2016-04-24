@@ -60,6 +60,9 @@ class MyDynamicRepository : public DynamicRepository
     {        
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
+        #ifdef DEBUG_TRACES
+        NVJ_LOG->append(NVJ_DEBUG, "Connect");
+        #endif
         string login, password;
         // User libnavajo/libnavajo is allowed and all PAM logins !
         if (request->getParameter("login", login) && request->getParameter("pass", password)
@@ -68,10 +71,13 @@ class MyDynamicRepository : public DynamicRepository
           char *username = (char*)malloc((login.length()+1)*sizeof(char));
           strcpy(username, login.c_str());
           request->setSessionAttribute ( "username", (void*)username );
+
           bool *connect = (bool*)malloc(sizeof(bool));
           *connect=false;
           request->setSessionAttribute ( "wschat", (void*)connect );
-          
+          #ifdef DEBUG_TRACES
+          NVJ_LOG->append(NVJ_DEBUG, "authOK");
+          #endif
           return fromString("authOK", response);
         }
         return fromString("authBAD", response);
@@ -102,7 +108,7 @@ class MyWebSocket : public WebSocket
   bool onOpening(WebSocketClient* client)
   {
     HttpRequest* request=client->getHttpRequest();
-    printf ("New Websocket (host '%s' - socketId=%d)\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId);
+    printf ("New Websocket (host '%s' - socketId=%d)\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId); fflush(NULL);
     if ( ! isValidSession(request) )
       return false;
     setSessionIsConnected(request, true);
@@ -143,10 +149,10 @@ int main()
   NVJ_LOG->setDebugMode();
   webServer = new WebServer;
 
-  webServer->listenTo(8443);
+  webServer->listenTo(8080);
 //  webServer->setThreadsPoolSize(1);
   //uncomment to switch to https
-webServer->setUseSSL(true, "../mycert.pem");
+//webServer->setUseSSL(true, "../mycert.pem");
 
   //uncomment to active X509 auth
   //webServer->setAuthPeerSSL(true, "cachain.pem");

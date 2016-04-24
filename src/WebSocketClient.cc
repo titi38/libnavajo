@@ -73,7 +73,8 @@ void WebSocketClient::receivingThread()
   pfd.fd = client->socketId;
   pfd.events = POLLIN;
 
-  setSocketSndRcvTimeout(client->socketId, 0, 100); // Reduce socket timeout
+  if (!setSocketSndRcvTimeout(client->socketId, 0, 250)) // Reduce socket timeout
+    NVJ_LOG->appendUniq(NVJ_ERROR, "WebSocketClient : setSocketSndRcvTimeout error");
 
   bool fin=false;
   unsigned char rsv=0, opcode=0;
@@ -95,16 +96,10 @@ void WebSocketClient::receivingThread()
 
     do
     {
-      while ( ( poll( &pfd, 1, 250 ) < 0 ) && ( errno == EINTR ) ) ;
-
-      if (closing)
-        break;
-      if ( !(pfd.revents & POLLIN) )
-        continue;
-
       if (client->bio != NULL && client->ssl != NULL)
       {
         n=BIO_read(client->bio, bufferRecv+it, length-it);
+
         if (SSL_get_error(client->ssl,n) == SSL_ERROR_ZERO_RETURN)
           closing=true;
         if ( (n==0) || (n==-1) )

@@ -54,10 +54,10 @@
 * \return result of setsockopt (successfull: 0, otherwise -1)
 ***********************************************************************/
 
-inline int setSocketNoSigpipe(int socket)
+inline bool setSocketNoSigpipe(int socket)
 {
   int set = 1;
-  return setsockoptCompat( socket, SOL_SOCKET, SO_NOSIGPIPE, (void *) &set, sizeof(int) );
+  return setsockoptCompat( socket, SOL_SOCKET, SO_NOSIGPIPE, (void *) &set, sizeof(int) ) == 0;
 }
 
 /***********************************************************************
@@ -96,15 +96,27 @@ inline int setSocketDoLinger(int socket, bool dolinger)
 * \return result of setsockopt (successfull: 0, otherwise -1)
 ***********************************************************************/
 
-inline int setSocketSndRcvTimeout(int socket, time_t seconds, long int useconds=0)
+inline bool setSocketSndRcvTimeout(int socket, time_t seconds, long int useconds=0)
 {
-  struct timeval tv;
+#ifdef WIN32
+  int nTimeout = seconds * 1000 + useconds;
+  if (  (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO,(const char*)&nTimeout, sizeof(int)) == 0 )
+     && (setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO,(const char*)&nTimeout, sizeof(int)) == 0 )
+  return true;
+#else
 
+  struct timeval tv,tv2;
   tv.tv_sec = seconds ;
-  tv.tv_usec = useconds  ;
+  tv.tv_usec = useconds ;
+  tv2.tv_sec = seconds ;
+  tv2.tv_usec = useconds ;
 
-  return setsockoptCompat (socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof (tv) )
-         && setsockoptCompat (socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof (tv) );
+  if (  (setsockoptCompat (socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)) == 0)
+     && (setsockoptCompat (socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv2, sizeof(struct timeval)) == 0))
+    return true;
+#endif
+
+  return false;
 }
 
 /***********************************************************************

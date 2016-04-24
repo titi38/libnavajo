@@ -249,7 +249,7 @@ bool WebServer::accept_request(ClientSockData* client)
   bool websocket=false;
   int webSocketVersion=-1;
   string username;
-  size_t bufLineLen=0;
+  int bufLineLen=0;
   BIO *ssl_bio = NULL;
 
   if (sslEnabled)
@@ -300,6 +300,8 @@ bool WebServer::accept_request(ClientSockData* client)
         switch(SSL_get_error(client->ssl,r))
         {
           case SSL_ERROR_NONE:
+            if ( (r==0) || (r==-1) )
+              continue;
             bufLineLen=r;
             break;
           case SSL_ERROR_ZERO_RETURN:
@@ -465,17 +467,17 @@ bool WebServer::accept_request(ClientSockData* client)
     {
       urlBuffer = (char*) realloc( urlBuffer, strlen(urlBuffer) + 10 + 1 );
       strcpy (urlBuffer + strlen(urlBuffer), "index.html");
-    }   
-    
+    }
+
+    #ifdef DEBUG_TRACES
     char logBuffer[BUFSIZE];
     snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", urlBuffer, requestMethod, requestParams, requestCookies, httpVers, keepAlive, client->compression );
     NVJ_LOG->append(NVJ_DEBUG, logBuffer);
-    
+    #endif
+
     // determine if client support keepAlive
     if (keepAlive==-1) 
       keepAlive = ( strncmp (httpVers,"1.1", 3) >= 0 );
-      
-    // PB requestParams : requestContentLength > BUFSIZE ??
 
     if (mutipartContent != NULL) // strlen (mutipartContent) == 0
     {
@@ -495,6 +497,7 @@ bool WebServer::accept_request(ClientSockData* client)
         mutipartContentParser = NULL;
       }
     }
+
     // Read request content
     if ( requestContentLength && ( urlencodedForm || (mutipartContentParser != NULL) ) )
     {
@@ -507,17 +510,23 @@ bool WebServer::accept_request(ClientSockData* client)
 
         if (sslEnabled)
         {
-          bufLineLen=BIO_gets(client->bio, buffer, requestedLength);
+          int r=BIO_gets(client->bio, buffer, requestedLength+1); //BUFSIZE);
 
-          if (SSL_get_error(client->ssl,bufLineLen) == SSL_ERROR_ZERO_RETURN)
+          switch(SSL_get_error(client->ssl,r))
           {
+            case SSL_ERROR_NONE:
+              if ( (r==0) || (r==-1) )
+                continue;
+              bufLineLen=r;
+              break;
+            case SSL_ERROR_ZERO_RETURN:
               NVJ_LOG->append(NVJ_DEBUG, "WebServer::accept_request - BIO_gets() failed with SSL_ERROR_ZERO_RETURN - 2");
               goto FREE_RETURN_TRUE;
           }
         }
         else
           bufLineLen=recvLine(client->socketId, buffer, requestedLength);
-        
+
         if ( urlencodedForm )
         {
           if (requestParams == NULL)
@@ -526,7 +535,7 @@ bool WebServer::accept_request(ClientSockData* client)
             requestParams = (char*) realloc(requestParams, (datalen + bufLineLen + 1));
 
           memcpy(requestParams + datalen, buffer, bufLineLen);
-          *(requestParams + datalen + bufLineLen)='\0';  
+          *(requestParams + datalen + bufLineLen)='\0';
         }
         else
           if ( mutipartContentParser != NULL && bufLineLen)
@@ -597,10 +606,6 @@ bool WebServer::accept_request(ClientSockData* client)
     int sizeZip=0;
     bool zippedFile=false;
 
-#ifdef DEBUG_TRACES
-    printf( "url: %s?%s\n", urlBuffer, requestParams ); fflush(NULL);
-#endif
-
     HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mutipartContentParser);
 
     const char *mime=get_mime_type(urlBuffer); 
@@ -627,7 +632,7 @@ bool WebServer::accept_request(ClientSockData* client)
     if (!fileFound)
     {
       char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page not found %s",  urlBuffer);
-      NVJ_LOG->append(NVJ_WARNING,bufLinestr);
+      NVJ_LOG->append(NVJ_DEBUG,bufLinestr);
 
       std::string msg = getNotFoundErrorMsg();
       httpSend(client, (const void*) msg.c_str(), msg.length());
@@ -653,9 +658,10 @@ bool WebServer::accept_request(ClientSockData* client)
         sizeZip = webpageLen;
       }
     }
-    
+    #ifdef DEBUG_TRACES
     char bufLinestr[300]; snprintf(bufLinestr, 300, "Webserver: page found %s",  urlBuffer);
     NVJ_LOG->append(NVJ_DEBUG,bufLinestr);
+    #endif
 
     if ( (client->compression == NONE) && zippedFile )
     {
@@ -1086,6 +1092,9 @@ void WebServer::exit()
   pthread_mutex_lock( &clientsQueue_mutex );
   exiting=true;
 
+  for (std::map<std::string, WebSocket *>::iterator it=webSocketEndPoints.begin(); it!=webSocketEndPoints.end(); ++it)
+    it->second->removeAllClients();
+
   while (nbServerSock>0)
   {
     shutdown ( server_sock[ --nbServerSock ], 2 ) ;
@@ -1273,6 +1282,7 @@ void WebServer::poolThreadProcessing()
       else
         authSSL=true;
     }
+
     if (accept_request(client))
       freeClientSockData(client);
   }
@@ -1346,7 +1356,6 @@ void WebServer::threadProcessing()
 
   for (;!exiting;)
   {
-
     do
     {
       status = poll( pfd, nbServerSock, 500 );
@@ -1393,12 +1402,15 @@ void WebServer::threadProcessing()
         NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : An error occurred when attempting to access the socket (accept == -1)");
       else
       {
-        setSocketSndRcvTimeout(client_sock, 1);
-        setSocketNoSigpipe(client_sock);
+        if (!setSocketSndRcvTimeout(client_sock, 1, 0))
+          NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : setSocketSndRcvTimeout error");
+        if (!setSocketNoSigpipe(client_sock))
+          NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : setSocketNoSigpipe error");
 
         ClientSockData* client=(ClientSockData*)malloc(sizeof(ClientSockData));
         client->socketId=client_sock;
         client->ip=webClientAddr;
+        client->compression=NONE;
         client->ssl=NULL;
         client->bio=NULL;
         client->peerDN=NULL;
@@ -1423,7 +1435,6 @@ void WebServer::threadProcessing()
     SSL_CTX_free(sslCtx);
 
   pthread_mutex_destroy(&clientsQueue_mutex);
-
 }
 
 /***********************************************************************/
