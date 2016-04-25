@@ -64,7 +64,7 @@ class MyDynamicRepository : public DynamicRepository
         NVJ_LOG->append(NVJ_DEBUG, "Connect");
         #endif
         string login, password;
-        // User libnavajo/libnavajo is allowed and all PAM logins !
+        // User libnavajo/libnavajo is allowed !
         if (request->getParameter("login", login) && request->getParameter("pass", password)
             && (login == "libnavajo" && password == "libnavajo"))
         {
@@ -149,10 +149,13 @@ int main()
   NVJ_LOG->setDebugMode();
   webServer = new WebServer;
 
-  webServer->listenTo(8081);
+  webServer->setServerPort(8080);
 //  webServer->setThreadsPoolSize(1);
+
+
   //uncomment to switch to https
-webServer->setUseSSL(true, "../mycert.pem");
+  //webServer->setUseSSL(true, "../myCert.pem");
+
 
   //uncomment to active X509 auth
   //webServer->setAuthPeerSSL(true, "cachain.pem");

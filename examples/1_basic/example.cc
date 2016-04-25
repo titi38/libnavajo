@@ -13,7 +13,6 @@
 
 #include <signal.h> 
 #include <string.h> 
-#include "libnavajo/AuthPAM.hh"
 #include "libnavajo/libnavajo.hh"
 #include "libnavajo/LogStdOutput.hh"
 
@@ -77,7 +76,7 @@ int main()
 
   webServer = new WebServer;
 
-  webServer->listenTo(8080);
+  webServer->setServerPort(8080);
 //  webServer->setThreadsPoolSize(1);
   //uncomment to switch to https
   //webServer->setUseSSL(true, "mycert.pem");
@@ -90,9 +89,6 @@ int main()
 
   //uncomment to active login/passwd auth
   //webServer->addLoginPass("login","password");
-
-  //uncomment to use Pam authentification
-  //webServer->usePamAuth("/etc/pam.d/login");
 
 
   // Fill the web repository with local files, statically compiled files or dynamic files

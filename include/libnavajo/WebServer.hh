@@ -144,7 +144,7 @@ class WebServer
     * Set the tcp port to listen. 
     * @param p: the port number, from 1 to 65535 (Default value: 8080)
     */     
-    inline void listenTo(const ushort p) { tcpPort = p; };
+    inline void setServerPort(const ushort p) { tcpPort = p; };
 
     /**
     * Set the device to use (work on linux only). 

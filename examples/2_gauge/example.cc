@@ -153,7 +153,7 @@ int main()
   
   NVJ_LOG->addLogOutput(new LogStdOutput);
   webServer = new WebServer;
-  //webServer->setUseSSL(true, "../mycert.pem");
+  //webServer->setUseSSL(true, "../myCert.pem");
   LocalRepository myLocalRepo("", "./html");
   webServer->addRepository(&myLocalRepo);
 

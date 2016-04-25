@@ -235,11 +235,11 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
 
   //********************************************************
 
-  inline void nvj_init_stream(z_stream* pstream=NULL, bool rawDeflateData=false){
+  inline void nvj_init_stream(z_stream* pstream=NULL, bool rawDeflateData=false, int level=Z_BEST_COMPRESSION, int strategy=Z_DEFAULT_STRATEGY ){
         (*pstream).zalloc = Z_NULL;
         (*pstream).zfree = Z_NULL;
         (*pstream).opaque = Z_NULL;
-    if ( deflateInit2(pstream, Z_BEST_SPEED, Z_DEFLATED, rawDeflateData ? -15 : 16+MAX_WBITS, 9, Z_DEFAULT_STRATEGY) != Z_OK)
+    if ( deflateInit2(pstream, level, Z_DEFLATED, rawDeflateData ? -15 : 16+MAX_WBITS, 9, strategy) != Z_OK)
       throw std::runtime_error(std::string("gzip : deflateInit2 error") );
   }
 

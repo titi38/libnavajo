@@ -23,14 +23,14 @@ CXX 	=  g++
 
 ifeq ($(OS),MACOSX)
 LIBSSL_DIR = /usr/local/Cellar/openssl/1.0.1j
-LIBS       = -lnavajo -L../../$(LIB_DIR) -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto $(LIBPAM)
+LIBS       = -lnavajo -L../../$(LIB_DIR) -lz  -L$(LIBSSL_DIR)/lib -lssl -lcrypto 
 DEFS            =   -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT
 CXXFLAGS        =  -O3  -Wdeprecated-declarations -I/opt/local/include
 else
 #ifeq ($(LBITS),64)
 #  LIB_DIR=lib64
 #endif
-LIBS       = -lnavajo -L../../$(LIB_DIR) -lz -lssl -lcrypto -pthread $(LIBPAM)
+LIBS       = -lnavajo -L../../$(LIB_DIR) -lz -lssl -lcrypto -pthread 
 DEFS            =  -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT
 CXXFLAGS        =  -O4  -Wdeprecated-declarations
 endif
