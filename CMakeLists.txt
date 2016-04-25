@@ -99,7 +99,6 @@ set_target_properties(navajoStatic PROPERTIES OUTPUT_NAME navajo)
 include_directories (${PROJECT_SOURCE_DIR}/include)
 
 target_link_libraries(navajo ${OPENSSL_LIBRARIES})
-target_link_libraries(navajo dl pam)
 target_link_libraries(navajo ${ZLIB_LIBRARIES})
 
 ############### install the library ###################
@@ -117,7 +116,6 @@ file( GLOB  navajoPrecompiler_source ${PROJECT_SOURCE_DIR}/src/navajoPrecompiler
 add_executable(navajoPrecompiler ${navajoPrecompiler_source})
 
 target_link_libraries(navajoPrecompiler ${OPENSSL_LIBRARIES})
-target_link_libraries(navajoPrecompiler dl pam)
 target_link_libraries(navajoPrecompiler ${ZLIB_LIBRARIES})
 
 install(TARGETS navajoPrecompiler DESTINATION bin COMPONENT headers)

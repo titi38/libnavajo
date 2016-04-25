@@ -14,8 +14,8 @@ Release:	1
 License:	LGPLv3
 Group:		System/Libraries
 URL:		  http://www.libnavajo.org
-BuildRequires:	zlib-devel openssl-devel pam-devel
-BuildRequires:	libtool  openssl zlib pam automake cmake
+BuildRequires:	zlib-devel openssl-devel
+BuildRequires:	libtool  openssl zlib automake cmake
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 Source: libnavajo-%{version}.tar.bz2
 
