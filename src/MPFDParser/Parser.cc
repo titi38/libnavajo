@@ -10,16 +10,15 @@ std::map<std::string, MPFD::Field *> MPFD::Parser::GetFieldsMap() {
 }
 
 MPFD::Field * MPFD::Parser::GetField(std::string Name) {
-    if (Fields.count(Name)) {
-        return Fields[Name];
+    std::map<std::string, Field *>::iterator it = Fields.find(Name);
+    if (it != Fields.end()) {
+        return it->second;
     } else {
         return NULL;
     }
 }
 
 MPFD::Parser::Parser() {
-    DataCollector = NULL;
-    DataCollectorLength = 0;
     _HeadersOfTheFieldAreProcessed = false;
     CurrentStatus = Status_LookingForStartingBoundary;
 
@@ -30,13 +29,10 @@ MPFD::Parser::Parser() {
 
 MPFD::Parser::~Parser() {
     std::map<std::string, Field *>::iterator it;
-    for (it = Fields.begin(); it != Fields.end(); it++) {
+    for (it = Fields.begin(); it != Fields.end(); ++it) {
         delete it->second;
     }
 
-    if (DataCollector) {
-        delete DataCollector;
-    }
 }
 
 void MPFD::Parser::SetContentType(const std::string type) {
@@ -57,19 +53,15 @@ void MPFD::Parser::SetContentType(const std::string type) {
 void MPFD::Parser::AcceptSomeData(const char *data, const long length) {
     if (Boundary.length() > 0) {
         // Append data to existing accumulator
-        if (DataCollector == NULL) {
-            DataCollector = new char[length];
-            memcpy(DataCollector, data, length);
-            DataCollectorLength = length;
-        } else {
-            DataCollector = (char*) realloc(DataCollector, DataCollectorLength + length);
-            memcpy(DataCollector + DataCollectorLength, data, length);
-            DataCollectorLength += length;
-        }
+        long DataCollectorLength = DataCollector.size();
+        long newDataCollectorLength = DataCollectorLength + length;
 
-        if (DataCollectorLength > MaxDataCollectorLength) {
+	if (newDataCollectorLength > MaxDataCollectorLength) {
             throw Exception("Maximum data collector length reached.");
         }
+
+	DataCollector.resize(newDataCollectorLength);
+	memcpy(&DataCollector[0]+DataCollectorLength, data, length);
 
         _ProcessData();
     } else {
@@ -118,11 +110,11 @@ bool MPFD::Parser::ProcessContentOfTheField() {
         DataLengthToSendToField = BoundaryPosition - 2;
     } else {
         // We need to save +2 chars for \r\n chars before boundary
-        DataLengthToSendToField = DataCollectorLength - (Boundary.length() + 2);
+      DataLengthToSendToField = DataCollector.size() - (Boundary.length() + 2);
     }
 
     if (DataLengthToSendToField > 0) {
-        Fields[ProcessingFieldName]->AcceptSomeData(DataCollector, DataLengthToSendToField);
+        Fields[ProcessingFieldName]->AcceptSomeData(&DataCollector[0], DataLengthToSendToField);
         TruncateDataCollectorFromTheBeginning(DataLengthToSendToField);
     }
 
@@ -135,18 +127,16 @@ bool MPFD::Parser::ProcessContentOfTheField() {
 }
 
 bool MPFD::Parser::WaitForHeadersEndAndParseThem() {
+    const int DataCollectorLength = DataCollector.size();
     for (int i = 0; i < DataCollectorLength - 3; i++) {
         if ((DataCollector[i] == 13) && (DataCollector[i + 1] == 10) && (DataCollector[i + 2] == 13) && (DataCollector[i + 3] == 10)) {
             long headers_length = i;
-            char *headers = new char[headers_length + 1];
-            memset(headers, 0, headers_length + 1);
-            memcpy(headers, DataCollector, headers_length);
+	    std::vector<char> headers(headers_length+1, 0);
+            memcpy(&headers[0], &DataCollector[0], headers_length);
 
-            _ParseHeaders(std::string(headers));
+            _ParseHeaders(std::string(&headers[0]));
 
             TruncateDataCollectorFromTheBeginning(i + 4);
-
-            delete[] headers;
 
             return true;
         }
@@ -202,7 +192,7 @@ void MPFD::Parser::_ParseHeaders(std::string headers) {
             // find Content-Type if exists
             size_t content_type_pos = headers.find("Content-Type: ");
             if (content_type_pos != std::string::npos) {
-                size_t content_type_end_pos = 0;
+                long content_type_end_pos = 0;
                 for (size_t i = content_type_pos + 14; (i < headers.length()) && (!content_type_end_pos); i++) {
                     if ((headers[i] == ' ') || (headers[i] == 10) || (headers[i] == 13)) {
                         content_type_end_pos = i - 1;
@@ -225,23 +215,18 @@ void MPFD::Parser::SetMaxCollectedDataLength(long max) {
 }
 
 void MPFD::Parser::TruncateDataCollectorFromTheBeginning(long n) {
-    long TruncatedDataCollectorLength = DataCollectorLength - n;
-
-    char *tmp = DataCollector;
-
-    DataCollector = new char[TruncatedDataCollectorLength];
-    memcpy(DataCollector, tmp + n, TruncatedDataCollectorLength);
-
-    DataCollectorLength = TruncatedDataCollectorLength;
-
-    delete tmp;
-
+    const size_t DataCollectorLength = DataCollector.size();
+    for (size_t i=n; i<DataCollectorLength; ++i) {
+        DataCollector[i-n] = DataCollector[i];
+    }
+    DataCollector.resize(DataCollectorLength-n);
 }
 
 long MPFD::Parser::BoundaryPositionInDataCollector() {
-    const char *b = Boundary.c_str();
     int bl = Boundary.length();
+    const int DataCollectorLength = DataCollector.size();
     if (DataCollectorLength >= bl) {
+        const char *b = Boundary.c_str();
         bool found = false;
         for (int i = 0; (i <= DataCollectorLength - bl) && (!found); i++) {
             found = true;
