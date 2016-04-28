@@ -24,7 +24,6 @@
 
 #define NVJ_LOG LogRecorder::getInstance()
 
-using namespace std;
 
 
   /**
@@ -35,7 +34,7 @@ using namespace std;
 
      pthread_mutex_t log_mutex;
      bool debugMode;
-     std::set<string> uniqLog; // Only one entry !
+     std::set<std::string> uniqLog; // Only one entry !
      
     public:
 
@@ -67,7 +66,7 @@ using namespace std;
       void append(const NvjLogSeverity& l, const std::string& msg, const std::string& details="");
       inline void appendUniq(const NvjLogSeverity& l, const std::string& msg, const std::string& details="")
       { 
-	      set<string>::iterator it;
+	      std::set<std::string>::iterator it;
 	      it=uniqLog.find(msg+details);
 	      if (it==uniqLog.end())
 	      {

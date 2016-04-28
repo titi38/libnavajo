@@ -22,6 +22,7 @@
 #include "libnavajo/LogRecorder.hh"
 #include "libnavajo/LocalRepository.hh"
 
+using namespace std;
 
 /**********************************************************************/
 

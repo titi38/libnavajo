@@ -51,7 +51,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-using namespace std;
 
 #define INET6_ADDRLEN 	16
 
@@ -85,7 +84,7 @@ class IpAddress
   IpAddress(const in6_addr &addrIPv6) :
 	  ipversion(6) { memcpy ((void*)&(ip.v6), (void*)(&addrIPv6), INET6_ADDRLEN); };
 
-  IpAddress(const string& value)
+  IpAddress(const std::string& value)
   {
     init();
     if ( index(value.c_str(), ':') != NULL ) // IPv6
@@ -141,9 +140,9 @@ class IpAddress
 
   inline const bool isUndef() const { return ipversion == 0; };
 
-  inline const string str() const
+  inline const std::string str() const
   {
-    string res="";
+    std::string res="";
     if (ipversion == 4)
     {
       struct in_addr iplocal;
@@ -191,7 +190,7 @@ class IpAddress
     return (!error);
   };
 
-  inline static IpAddress* fromString(const string& value)
+  inline static IpAddress* fromString(const std::string& value)
   {
     IpAddress* newIp =  new IpAddress(value);
 
@@ -223,7 +222,7 @@ class IpNetwork
       { addr = a; mask=m;  };
 
 
-  // TODO: IpNetwork(const string& value)
+  // TODO: IpNetwork(const std::string& value)
   
 
     inline bool operator<(const IpNetwork& A) const
@@ -269,9 +268,9 @@ class IpNetwork
       return false;
     };
 
-    inline string strCIDR() const
+    inline std::string strCIDR() const
     {
-      string netCIDR=addr.str()+"/";
+      std::string netCIDR=addr.str()+"/";
       std::stringstream masklengthSs; masklengthSs << (int)mask;
       netCIDR+=masklengthSs.str();
       return netCIDR;
@@ -321,12 +320,12 @@ class IpNetwork
       return res;
     };
 
-    inline static IpNetwork* fromString(const string& value)
+    inline static IpNetwork* fromString(const std::string& value)
     {
       IpNetwork *ipNet=NULL;
-      string ipstr;
+      std::string ipstr;
       size_t found=value.find_first_of('/');
-      if (found == string::npos)
+      if (found == std::string::npos)
       {
         IpAddress *addr=IpAddress::fromString(value);
         if (addr==NULL) return NULL;
@@ -342,10 +341,10 @@ class IpNetwork
         if (addr==NULL) return NULL;
 
         u_int8_t maskDec=0;
-        string maskStr=value.substr(found+1);
+        std::string maskStr=value.substr(found+1);
 
         // Mask
-        if ( maskStr.find_first_of('.') != string::npos ) // mask is formating like "w.x.y.z"
+        if ( maskStr.find_first_of('.') != std::string::npos ) // mask is formating like "w.x.y.z"
         {
 	        if (addr->ipversion == 6)
 	        {

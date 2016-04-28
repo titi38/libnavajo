@@ -21,7 +21,6 @@
 
 #include "libnavajo/LogOutput.hh"
 
-using namespace std;
 
   /**
   * LogSyslog - LogOutput 

@@ -24,7 +24,7 @@ class HttpResponse
   std::string mimeType;
   std::string forwardToUrl;
   bool cors, corsCred;
-  string corsDomain;
+  std::string corsDomain;
   
   public:
     HttpResponse(std::string mime="") : responseContent (NULL), responseContentLength (0), zippedFile (false), mimeType(mime), forwardToUrl(""), cors(false), corsCred(false), corsDomain("")
@@ -182,7 +182,7 @@ class HttpResponse
     * @param cors: enabled or not
     * @param cred: enabled credentials or not
     */    
-    void setCORS(bool cors=true, bool cred=false, string domain="*")
+    void setCORS(bool cors=true, bool cred=false, std::string domain="*")
     {
       this->cors=cors;
       corsCred=cred;
@@ -203,7 +203,7 @@ class HttpResponse
       return corsCred;
     }
     
-    string& getCORSdomain()
+    std::string& getCORSdomain()
     {
       return corsDomain;
     };

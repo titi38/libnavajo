@@ -220,7 +220,7 @@ void WebSocketClient::receivingThread()
             }
             catch (std::exception& e)
             {
-              NVJ_LOG->append(NVJ_ERROR, string(" Websocket: nvj_gzip raised an exception: ") +  e.what());
+              NVJ_LOG->append(NVJ_ERROR, std::string(" Websocket: nvj_gzip raised an exception: ") +  e.what());
               msgLength = 0;
             }
           }
@@ -229,7 +229,7 @@ void WebSocketClient::receivingThread()
           {
             case 0x1:
               if (msgLength)
-                websocket->onTextMessage(this, string((char*)msgContent, msgLength), fin);
+                websocket->onTextMessage(this, std::string((char*)msgContent, msgLength), fin);
               else websocket->onTextMessage(this, "", fin);
               break;
             case 0x2:
@@ -395,7 +395,7 @@ void WebSocketClient::addSendingQueue(MessageContent *msgContent)
 
 /***********************************************************************/
 
-void WebSocketClient::sendTextMessage(const string &message, bool fin)
+void WebSocketClient::sendTextMessage(const std::string &message, bool fin)
 {
   MessageContent *msgContent = (MessageContent*)malloc( sizeof(MessageContent) );
   msgContent->opcode=0x1;
@@ -435,7 +435,7 @@ void WebSocketClient::sendPingCtrlFrame(const unsigned char* message, size_t len
   addSendingQueue(msgContent);
 }
 
-void WebSocketClient::sendPingCtrlFrame(const string &message)
+void WebSocketClient::sendPingCtrlFrame(const std::string &message)
 {
   sendPingCtrlFrame((const unsigned char*)message.c_str(), message.length());
 }
@@ -454,7 +454,7 @@ void WebSocketClient::sendPongCtrlFrame(const unsigned char* message, size_t len
   addSendingQueue(msgContent);
 }
 
-void WebSocketClient::sendPongCtrlFrame(const string &message)
+void WebSocketClient::sendPongCtrlFrame(const std::string &message)
 {
   sendPongCtrlFrame((const unsigned char*)message.c_str(), message.length());
 }
@@ -473,7 +473,7 @@ void WebSocketClient::sendCloseCtrlFrame(const unsigned char* message, size_t le
   addSendingQueue(msgContent);
 }
 
-void WebSocketClient::sendCloseCtrlFrame(const string &message)
+void WebSocketClient::sendCloseCtrlFrame(const std::string &message)
 {
   sendCloseCtrlFrame((const unsigned char*)message.c_str(), message.length());
 }

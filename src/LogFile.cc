@@ -25,7 +25,7 @@
   void LogFile::append(const NvjLogSeverity& l, const std::string& message, const std::string& details)
   {
     if (file!=NULL)
-      (*file) << message << endl;
+      (*file) << message << std::endl;
   }
 
   /***********************************************************************/
@@ -35,12 +35,12 @@
 
   void LogFile::initialize()
   {
-    file=new ofstream;
-    file->open(filename, ios::out | ios::app);
+    file=new std::ofstream;
+    file->open(filename, std::ios::out | std::ios::app);
 
     if (file->fail())
     {
-      	cerr <<"Can't open " << filename << endl;
+        std::cerr <<"Can't open " << filename << std::endl;
       	exit(1);
     }
   }

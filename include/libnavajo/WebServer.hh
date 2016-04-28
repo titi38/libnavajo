@@ -49,7 +49,7 @@ class WebServer
     void initialize_ctx(const char *certfile, const char *cafile, const char *password);
     static int password_cb(char *buf, int num, int rwflag, void *userdata);
 
-    bool isUserAllowed(const string &logpassb64, string &username);
+    bool isUserAllowed(const std::string &logpassb64, std::string &username);
     bool isAuthorizedDN(const std::string str);
 
     size_t recvLine(int client, char *bufLine, size_t);
@@ -101,9 +101,9 @@ class WebServer
     bool disableIpV4, disableIpV6;
     ushort tcpPort;
     size_t threadsPoolSize;
-    string device;
+    std::string device;
     
-    string mutipartTempDirForFileUpload;
+    std::string mutipartTempDirForFileUpload;
     long mutipartMaxCollectedDataLength;
     
     bool sslEnabled;
@@ -115,15 +115,15 @@ class WebServer
     std::vector<WebRepository *> webRepositories;
     static inline bool is_base64(unsigned char c)
       { return (isalnum(c) || (c == '+') || (c == '/')); };
-    static const string base64_chars;
+    static const std::string base64_chars;
     static std::string base64_decode(const std::string& encoded_string);
     static std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len);
     static void closeSocket(ClientSockData* client);
     std::map<std::string, WebSocket *> webSocketEndPoints;
-    static std::string SHA1_encode(const string& input);
-    static const string webSocketMagicString;
-    static string generateWebSocketServerKey(string webSocketKey);
-    static string getHttpWebSocketHeader(const char *messageType, const char* webSocketClientKey, const bool webSocketDeflate);
+    static std::string SHA1_encode(const std::string& input);
+    static const std::string webSocketMagicString;
+    static std::string generateWebSocketServerKey(std::string webSocketKey);
+    static std::string getHttpWebSocketHeader(const char *messageType, const char* webSocketClientKey, const bool webSocketDeflate);
 
   public:
     WebServer();
@@ -172,20 +172,20 @@ class WebServer
     * Restricted X509 authentification to a DN user list. Add this given DN.
     * @param dn: user certificate DN
     */ 
-    inline void addAuthPeerDN(const char* dn) { authDnList.push_back(string(dn)); };
+    inline void addAuthPeerDN(const char* dn) { authDnList.push_back(std::string(dn)); };
 
     /**
     * Enabled http authentification for a given login/password list
     * @param login: user login
     * @param pass : user password
     */ 
-    inline void addLoginPass(const char* login, const char* pass) { authLoginPwdList.push_back(string(login)+':'+string(pass)); };
+    inline void addLoginPass(const char* login, const char* pass) { authLoginPwdList.push_back(std::string(login)+':'+std::string(pass)); };
 
     /**
     * Set the path to store uploaded files on disk. Used to set the MPFD function.
     * @param pathdir: path to a writtable directory
     */   
-    inline void setMutipartTempDirForFileUpload(const string& pathdir) { mutipartTempDirForFileUpload = pathdir; };
+    inline void setMutipartTempDirForFileUpload(const std::string& pathdir) { mutipartTempDirForFileUpload = pathdir; };
 
     /**
     * Set the size of internal MPFD buffer.
@@ -210,7 +210,7 @@ class WebServer
     * @param endpoint : websocket endpoint
     * @param websocket : WebSocket instance
     */  
-    void addWebSocket(const string endPoint, WebSocket* websocket) { webSocketEndPoints[endPoint]=websocket; };
+    void addWebSocket(const std::string endPoint, WebSocket* websocket) { webSocketEndPoints[endPoint]=websocket; };
     
     /**
     * IpV4 hosts only
