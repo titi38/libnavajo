@@ -103,6 +103,9 @@ bool loadFilename_dir (const std::string& path, const std::string& subpath="")
       if (type == S_IFDIR)
         loadFilename_dir(path, spath+entry->d_name);
     }
+
+    closedir (dir);
+
     return true;
 }
 
@@ -172,12 +175,13 @@ int main (int argc, char *argv[])
     // allocate memory to contain the whole file.
     buffer = (unsigned char*) malloc ((lSize+1)*sizeof(unsigned char));
     if (buffer == NULL)
-     { fprintf(stderr, "ERROR: can't malloc reading file: %s\n", filenamesVec[i].c_str()); exit (2); }
+      { fprintf(stderr, "ERROR: can't malloc reading file: %s\n", filenamesVec[i].c_str()); fclose(pFile); exit (2); }
 
     // copy the file into the buffer.
     if (fread (buffer,1,lSize,pFile) != lSize)
     {
       fprintf(stderr,"\nCan't read file %s ... ABORT !\n", filenamesVec[i].c_str() );
+      fclose(pFile);
       exit(1);
     };
 

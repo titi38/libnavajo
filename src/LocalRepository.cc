@@ -88,6 +88,8 @@ bool LocalRepository::loadFilename_dir (const std::string& alias, const std::str
         loadFilename_dir(alias, path, subpath+"/"+entry->d_name);
     }
 
+    closedir (dir);
+
     return true;
 }
 
