@@ -45,8 +45,8 @@ class MyDynamicPage: public DynamicPage
     *cptExample=*cptExample+1;    
     //
 
-    string content="<HTML><BODY>";
-    string param;
+    std::string content="<HTML><BODY>";
+    std::string param;
     if (request->getParameter("param1", param))
     {
       //int pint=getValue<int>(param);
@@ -55,7 +55,7 @@ class MyDynamicPage: public DynamicPage
     else
       content+="param1 hasn't been set";
 
-    stringstream myAttributess; myAttributess << *cptExample;
+    std::stringstream myAttributess; myAttributess << *cptExample;
     content+="<BR/>my session attribute myAttribute contains "+myAttributess.str();
 
     content+="</BODY></HTML>";
@@ -85,7 +85,7 @@ int main()
   //webServer->setAuthPeerSSL(true, "cachain.pem");
   //webServer->addAuthPeerDN("/C=FR/O=CNRS/OU=UMR5821/CN=Thierry Descombes/emailAddress=thierry.descombes@lpsc.in2p3.fr");
 
-  //webServer->addHostsAllowed(IpNetwork(string("134.158.40.0/21")));
+  //webServer->addHostsAllowed(IpNetwork(std::string("134.158.40.0/21")));
 
   //uncomment to active login/passwd auth
   //webServer->addLoginPass("login","password");

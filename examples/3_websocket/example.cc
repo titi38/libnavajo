@@ -33,7 +33,7 @@ class MyWebSocket : public WebSocket
     return true;
   }
 
-  void onTextMessage(WebSocketClient* client, const string &message, const bool fin)
+  void onTextMessage(WebSocketClient* client, const std::string &message, const bool fin)
   {
     printf ("Message: '%s' received from host '%s'\n", message.c_str(), client->getHttpRequest()->getPeerIpAddress().str().c_str());
     client->sendTextMessage("The message has been received!");
@@ -63,7 +63,7 @@ int main()
   //webServer->setAuthPeerSSL(true, "cachain.pem");
   //webServer->addAuthPeerDN("/C=FR/O=CNRS/OU=UMR5821/CN=Thierry Descombes/emailAddress=thierry.descombes@lpsc.in2p3.fr");
 
-  //webServer->addHostsAllowed(IpNetwork(string("134.158.40.0/21")));
+  //webServer->addHostsAllowed(IpNetwork(std::string("134.158.40.0/21")));
 
   //uncomment to active login/passwd auth
   //webServer->addLoginPass("login","password");

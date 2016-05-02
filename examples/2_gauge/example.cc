@@ -83,7 +83,7 @@ class MyDynamicRepository : public DynamicRepository
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-        string login, password;
+	std::string login, password;
         // User libnavajo/libnavajo is allowed
         if (request->getParameter("login", login) && request->getParameter("pass", password)
             && (login == "libnavajo" && password == "libnavajo"))
@@ -103,7 +103,7 @@ class MyDynamicRepository : public DynamicRepository
       {
         if (!isValidSession(request))
           return fromString("ERR", response);;
-        ostringstream ss;
+	std::ostringstream ss;
         ss << getCpuLoad();
         return fromString(ss.str(), response);
       }
@@ -113,7 +113,7 @@ class MyDynamicRepository : public DynamicRepository
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-        string param;
+	std::string param;
 
         if (request->getParameter("pageId", param) && param == "LOGIN" && isValidSession(request))
         {

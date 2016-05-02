@@ -53,7 +53,7 @@ class MyDynamicRepository : public DynamicRepository
 
             // Copy files to upload directory
             std::ifstream  src( fields[it->first]->GetTempFileName().c_str(), std::ios::binary);
-            string dstFilename= string(UPLOAD_DIR)+'/'+fields[it->first]->GetFileName();
+	    std::string dstFilename= std::string(UPLOAD_DIR)+'/'+fields[it->first]->GetFileName();
             std::ofstream  dst( dstFilename.c_str(), std::ios::binary);
             if (!src || !dst)
               NVJ_LOG->append(NVJ_ERROR, "Copy error: check read/write permissions");
@@ -74,12 +74,12 @@ class MyDynamicRepository : public DynamicRepository
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-        string json = "{ \"data\" : [";
-        set< string >* filenames = myUploadRepo->getFilenames();
+	std::string json = "{ \"data\" : [";
+	std::set< std::string >* filenames = myUploadRepo->getFilenames();
         std::set<std::string>::iterator it = filenames->begin(); 
         while (it != filenames->end())
         {
-          json += string("\"") + it->c_str() + '\"';
+          json += std::string("\"") + it->c_str() + '\"';
           if (++it != filenames->end()) 
             json += ", ";
         }
