@@ -5,7 +5,7 @@
 ##############################
 
 OUTPUTFILENAME = PrecompiledRepository.cc
-NAVAJO_PRECOMPILER_EXEC = ../../bin/navajoPrecompiler
+NAVAJO_PRECOMPILER_EXEC = ../../build/bin/navajoPrecompiler
 
 UNAME := $(shell uname)
 LBITS := $(shell getconf LONG_BIT)
@@ -55,7 +55,7 @@ EXAMPLE_OBJS = \
 
 %.o: %.cc
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
-	
+
 all: $(EXAMPLE_NAME)
 
 PrecompiledRepository.o:
@@ -64,7 +64,7 @@ PrecompiledRepository.o:
 	@find . \( -name "*~" -o -name "*.old" -o -name "*.bak" \) -exec rm -f '{}' \;
 	$(NAVAJO_PRECOMPILER_EXEC) exampleRepository >> $(OUTPUTFILENAME) ; cd ..
 	$(CXX) -c PrecompiledRepository.cc -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS)
-	
+
 $(EXAMPLE_NAME): $(EXAMPLE_OBJS) $(LIB_STATIC_NAME)
 	rm -f $@
 	$(LD) $(LDFLAGS) -o $@ $(EXAMPLE_OBJS) $(LIB_STATIC_NAME) $(LIBS) 

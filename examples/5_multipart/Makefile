@@ -4,7 +4,7 @@
 #                    2016    #
 ##############################
 
-NAVAJO_PRECOMPILER_EXEC = ../bin/navajoPrecompiler
+NAVAJO_PRECOMPILER_EXEC = ../../build/bin/navajoPrecompiler
 
 UNAME := $(shell uname)
 LBITS := $(shell getconf LONG_BIT)
@@ -56,9 +56,9 @@ EXAMPLE_OBJS = \
 
 %.o: %.cc
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
-	
+
 all: $(EXAMPLE_NAME)
-	
+
 $(EXAMPLE_NAME): $(EXAMPLE_OBJS) $(LIB_STATIC_NAME)
 	rm -f $@
 	mkdir -p upload

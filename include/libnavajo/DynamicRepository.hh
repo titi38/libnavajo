@@ -37,11 +37,11 @@ class DynamicRepository : public WebRepository
     { 
       size_t i=0; 
       while (url.size() && url[i]=='/') i++;
-      indexMap.insert(pair<string, DynamicPage *>(url.substr(i, url.size()-i), page)); };
+      indexMap.insert(std::pair<std::string, DynamicPage *>(url.substr(i, url.size()-i), page)); };
 
     inline virtual bool getFile(HttpRequest* request, HttpResponse *response)
     {
-      string url = request->getUrl();
+      std::string url = request->getUrl();
       while (url.size() && url[0]=='/') url.erase(0, 1);
       pthread_mutex_lock( &_mutex );
       IndexMap::const_iterator i = indexMap.find (url);

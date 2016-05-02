@@ -27,7 +27,7 @@ class DynamicPage
 
     /**********************************************************************/
      
-    template<class T> static inline T getValue (string s)
+    template<class T> static inline T getValue (std::string s)
     { 
       if (!s.length())
        throw std::bad_cast();
@@ -52,7 +52,7 @@ class DynamicPage
 
     /**********************************************************************/
     
-    inline bool fromString( const string& resultat, HttpResponse *response )
+    inline bool fromString( const std::string& resultat, HttpResponse *response )
     {
       size_t webpageLen;
       unsigned char *webpage;

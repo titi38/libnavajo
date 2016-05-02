@@ -43,15 +43,15 @@
 const char WebServer::authStr[]="Authorization: Basic ";
 const int WebServer::verify_depth=512;
 char *WebServer::certpass=NULL;
-string WebServer::webServerName;
+std::string WebServer::webServerName;
 pthread_mutex_t IpAddress::resolvIP_mutex = PTHREAD_MUTEX_INITIALIZER;
 HttpSession::HttpSessionsContainerMap HttpSession::sessions;
 pthread_mutex_t HttpSession::sessions_mutex=PTHREAD_MUTEX_INITIALIZER;
-const string WebServer::base64_chars = 
+const std::string WebServer::base64_chars =
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
              "abcdefghijklmnopqrstuvwxyz"
              "0123456789+/";
-const string WebServer::webSocketMagicString="258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+const std::string WebServer::webSocketMagicString="258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 
 time_t HttpSession::lastExpirationSearchTime=0;
@@ -145,7 +145,7 @@ void WebServer::updatePeerDnHistory(std::string dn)
 * @param name: set to the decoded login name  
 * @return true if user is allowed
 */ 
-bool WebServer::isUserAllowed(const string &pwdb64, string& login)
+bool WebServer::isUserAllowed(const std::string &pwdb64, std::string& login)
 {
 
   pthread_mutex_lock( &usersAuthHistory_mutex );
@@ -168,22 +168,22 @@ bool WebServer::isUserAllowed(const string &pwdb64, string& login)
 
   // It's a new user !
   bool authOK=false;
-  string loginPwd=base64_decode(pwdb64.c_str());
+  std::string loginPwd=base64_decode(pwdb64.c_str());
   size_t loginPwdSep=loginPwd.find(':');
-  if (loginPwdSep==string::npos)
+  if (loginPwdSep==std::string::npos)
   {
     pthread_mutex_unlock( &usersAuthHistory_mutex );
     return false;
   }
 
   login=loginPwd.substr(0,loginPwdSep);
-  string pwd=loginPwd.substr(loginPwdSep+1);
+  std::string pwd=loginPwd.substr(loginPwdSep+1);
 
-  vector<string> httpAuthLoginPwd=authLoginPwdList;
+  std::vector<std::string> httpAuthLoginPwd=authLoginPwdList;
   if (httpAuthLoginPwd.size())
   {
-    string logPass=login+':'+pwd;
-    for ( vector<string>::iterator it=httpAuthLoginPwd.begin(); it != httpAuthLoginPwd.end(); it++ )
+    std::string logPass=login+':'+pwd;
+    for ( std::vector<std::string>::iterator it=httpAuthLoginPwd.begin(); it != httpAuthLoginPwd.end(); it++ )
       if ( logPass == *it )
         authOK=true;
   }
@@ -248,7 +248,7 @@ bool WebServer::accept_request(ClientSockData* client)
   char *webSocketClientKey=NULL;
   bool websocket=false;
   int webSocketVersion=-1;
-  string username;
+  std::string username;
   int bufLineLen=0;
   BIO *ssl_bio = NULL;
 
@@ -333,7 +333,7 @@ bool WebServer::accept_request(ClientSockData* client)
         {
           j+=sizeof authStr - 1;
 
-          string pwdb64="";
+          std::string pwdb64="";
           while ( j < (unsigned)bufLineLen && *(bufLine + j) != 0x0d && *(bufLine + j) != 0x0a)
             pwdb64+=*(bufLine + j++);;
           if (!authOK)
@@ -609,7 +609,7 @@ bool WebServer::accept_request(ClientSockData* client)
     HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mutipartContentParser);
 
     const char *mime=get_mime_type(urlBuffer); 
-    string mimeStr; if (mime != NULL) mimeStr=mime;
+    std::string mimeStr; if (mime != NULL) mimeStr=mime;
     HttpResponse response(mimeStr);
 
     std::vector<WebRepository *>::const_iterator repo=webRepositories.begin();
@@ -801,7 +801,7 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
 
 void WebServer::fatalError(const char *s)
 {
-  NVJ_LOG->append(NVJ_FATAL,string(s)+": "+string(strerror(errno)));
+  NVJ_LOG->append(NVJ_FATAL,std::string(s)+": "+std::string(strerror(errno)));
   ::exit(1);
 }
 
@@ -898,7 +898,7 @@ std::string WebServer::getHttpHeader(const char *messageType, const size_t len, 
   else
     header+="Connection: close\r\n";
 
-  string mimetype="text/html";
+  std::string mimetype="text/html";
   if (response != NULL)
     mimetype=response->getMimeType();
   header+="Content-Type: "+ mimetype  + "\r\n";
@@ -1250,8 +1250,8 @@ void WebServer::poolThreadProcessing()
 
       if (SSL_accept(ssl) <= 0)
       { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
-        string msg="SSL accept error ";
-        if (sslmsg != NULL) msg+=": "+string(sslmsg);
+        std::string msg="SSL accept error ";
+        if (sslmsg != NULL) msg+=": "+std::string(sslmsg);
         NVJ_LOG->append(NVJ_DEBUG,msg);
       }
       
@@ -1554,9 +1554,9 @@ std::string WebServer::base64_encode(unsigned char const* bytes_to_encode, unsig
 * @param input - the string to encode
 * \return the encoded string
 ************************************************************************/
-string WebServer::SHA1_encode(const string& input)
+std::string WebServer::SHA1_encode(const std::string& input)
 {
-    string hash;
+    std::string hash;
     SHA_CTX context;
     SHA1_Init(&context);
     SHA1_Update(&context, &input[0], input.size());
@@ -1570,9 +1570,9 @@ string WebServer::SHA1_encode(const string& input)
 * @param webSocketKey - the websocket client key.
 * \return the websocket server key
 ************************************************************************/
-string WebServer::generateWebSocketServerKey(string webSocketKey)
+std::string WebServer::generateWebSocketServerKey(std::string webSocketKey)
 {
-  string sha1Key=SHA1_encode(webSocketKey+webSocketMagicString);
+  std::string sha1Key=SHA1_encode(webSocketKey+webSocketMagicString);
   return base64_encode(reinterpret_cast<const unsigned char*>(sha1Key.c_str()), sha1Key.length());
 }
 

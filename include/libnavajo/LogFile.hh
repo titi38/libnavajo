@@ -21,7 +21,6 @@
 
 #include "libnavajo/LogOutput.hh"
 
-using namespace std;
 
   /**
   * LogFile - LogOutput 
@@ -37,7 +36,7 @@ using namespace std;
   
     private:
       char filename[30];
-      ofstream *file;
+      std::ofstream *file;
   
   };
   

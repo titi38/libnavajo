@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sstream>
+#include <vector>
 
 namespace MPFD {
 
@@ -51,7 +52,6 @@ namespace MPFD {
 
 
     private:
-        unsigned long FieldContentLength;
 
         int WhereToStoreUploadedFiles;
 
@@ -59,7 +59,7 @@ namespace MPFD {
         std::string FileContentType, FileName;
 
         int type;
-        char * FieldContent;
+	std::vector<char> FieldContent;
         std::ofstream file;
 
     };

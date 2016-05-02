@@ -25,7 +25,7 @@
 
 /**********************************************************************/
 
-LocalRepository::LocalRepository(const string& alias, const string& dirPath)
+LocalRepository::LocalRepository(const std::string& alias, const std::string& dirPath)
 {
   char resolved_path[4096];
 
@@ -54,12 +54,12 @@ void LocalRepository::reload()
 
 /**********************************************************************/
 
-bool LocalRepository::loadFilename_dir (const string& alias, const string& path, const string& subpath)
+bool LocalRepository::loadFilename_dir (const std::string& alias, const std::string& path, const std::string& subpath)
 {
     struct dirent *entry;
     DIR *dir;
     struct stat s;
-    string fullPath=path+subpath;
+    std::string fullPath=path+subpath;
 
     dir = opendir (fullPath.c_str());
     if (dir == NULL) return false;
@@ -71,14 +71,14 @@ bool LocalRepository::loadFilename_dir (const string& alias, const string& path,
 
       if (stat(filepath.c_str(), &s) == -1) 
       {
-        NVJ_LOG->append(NVJ_ERROR,string("LocalRepository - stat error : ")+string(strerror(errno)));
+        NVJ_LOG->append(NVJ_ERROR,std::string("LocalRepository - stat error : ")+std::string(strerror(errno)));
         continue;
       }
 
       int type=s.st_mode & S_IFMT;
       if (type == S_IFREG || type == S_IFLNK)
       {
-        string filename=alias+subpath+"/"+entry->d_name;
+        std::string filename=alias+subpath+"/"+entry->d_name;
         while (filename.size() && filename[0]=='/')
           filename.erase(0, 1);
         filenamesSet.insert(filename);
@@ -88,12 +88,14 @@ bool LocalRepository::loadFilename_dir (const string& alias, const string& path,
         loadFilename_dir(alias, path, subpath+"/"+entry->d_name);
     }
 
+    closedir (dir);
+
     return true;
 }
 
 /**********************************************************************/
 
-bool LocalRepository::fileExist(const string& url)
+bool LocalRepository::fileExist(const std::string& url)
 {
   return filenamesSet.find(url) != filenamesSet.end();
 }
@@ -110,7 +112,7 @@ void LocalRepository::printFilenames()
 
 bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
 {
-  string url = request->getUrl();
+  std::string url = request->getUrl();
   size_t webpageLen;
   unsigned char *webpage;
   pthread_mutex_lock( &_mutex );
@@ -120,7 +122,7 @@ bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
     
   pthread_mutex_unlock( &_mutex);
 
-  string resultat, filename=url;
+  std::string resultat, filename=url;
 
   if (aliasName.size())
     filename.replace(0, aliasName.size(), fullPathToLocalDir);

@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
 #include "Exception.h"
 #include "Field.h"
 #include <string.h>
@@ -34,7 +35,7 @@ namespace MPFD {
 
         void SetMaxCollectedDataLength(long max);
         void SetTempDirForFileUpload(std::string dir);
-        inline std::string GetTempDirForFileUpload() { return TempDirForFileUpload; };
+	inline std::string GetTempDirForFileUpload() { return TempDirForFileUpload; };
         void SetUploadedFilesStorage(int where);
 
         std::map<std::string, Field *> GetFieldsMap();
@@ -56,9 +57,8 @@ namespace MPFD {
         std::string Boundary;
         std::string ProcessingFieldName;
         bool _HeadersOfTheFieldAreProcessed;
- //       long ContentLength;
-        char *DataCollector;
-        long DataCollectorLength, MaxDataCollectorLength;
+	std::vector<char> DataCollector;
+        long MaxDataCollectorLength;
         bool FindStartingBoundaryAndTruncData();
         void _ProcessData();
         void _ParseHeaders(std::string headers);

@@ -36,7 +36,7 @@ typedef struct
   CompressionMode compression;
   SSL *ssl;
   BIO *bio;
-  string *peerDN;
+  std::string *peerDN;
 } ClientSockData;
 
 class HttpRequest
@@ -355,7 +355,7 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const string &username, ClientSockData *client, MPFD::Parser *parser=NULL) 
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client, MPFD::Parser *parser=NULL)
     { 
       this->httpMethod = type;
       this->url = url;
@@ -422,7 +422,7 @@ class HttpRequest
     * get http authentification username
     * @return the login
     */    
-    inline string& getHttpAuthUsername()
+    inline std::string& getHttpAuthUsername()
     {
       return httpAuthUsername;
     };
@@ -432,7 +432,7 @@ class HttpRequest
     * get peer x509 dn 
     * @return the DN of the peer certificate
     */   
-    inline string& getX509PeerDN()
+    inline std::string& getX509PeerDN()
     {
       return *(clientSockData->peerDN);
     };

@@ -23,7 +23,7 @@
 
 class WebSocket
 {
-    list<WebSocketClient*> webSocketClientList;
+    std::list<WebSocketClient*> webSocketClientList;
     pthread_mutex_t webSocketClientList_mutex;
     bool compression;
 
@@ -143,7 +143,7 @@ class WebSocket
     * Send Close Message Notification to all connected clients
     * @param reasonMsg: the message content
     */
-    inline void sendBroadcastCloseCtrlFrame(const string &reasonMsg = "")
+    inline void sendBroadcastCloseCtrlFrame(const std::string &reasonMsg = "")
     {
       sendBroadcastCloseCtrlFrame((const unsigned char*)reasonMsg.c_str(), reasonMsg.length());
     }
@@ -165,7 +165,7 @@ class WebSocket
     * Send Ping Message Notification to all connected clients
     * @param message: the message content
     */
-    inline void sendBroadcastPingCtrlFrame(const string &message)
+    inline void sendBroadcastPingCtrlFrame(const std::string &message)
     {
       sendBroadcastPingCtrlFrame((const unsigned char*)message.c_str(), message.length());
     }
@@ -187,7 +187,7 @@ class WebSocket
     * Send Pong Message Notification to all connected clients
     * @param message: the message content
     */
-    inline void sendBroadcastPongCtrlFrame(const string &message)
+    inline void sendBroadcastPongCtrlFrame(const std::string &message)
     {
       sendBroadcastPongCtrlFrame((const unsigned char*)message.c_str(), message.length());
     }
