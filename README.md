@@ -22,7 +22,11 @@ Libnavajo makes it easy to run an HTTP server into your own application, impleme
 
     git clone https://github.com/titi38/libnavajo.git
 
-    cmake .
+    mkdir build
+
+    cd build
+
+    cmake ..
 
     make
 
