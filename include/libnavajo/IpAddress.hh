@@ -138,9 +138,9 @@ class IpAddress
 	  return res;
   };
 
-  inline const bool isUndef() const { return ipversion == 0; };
+  inline bool isUndef() const { return ipversion == 0; };
 
-  inline const std::string str() const
+  inline std::string str() const
   {
     std::string res="";
     if (ipversion == 4)
