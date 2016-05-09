@@ -15,7 +15,7 @@
 #define WEBSOCKETCLIENT_HH_
 
 #include <queue>
-
+#include <sys/timeb.h>
 #include "libnavajo/HttpRequest.hh"
 #include "libnavajo/nvjThread.h"
 #include "libnavajo/nvjGzip.h"
@@ -29,6 +29,7 @@ class WebSocketClient
       unsigned char* message;
       size_t length;
       bool fin;
+      timeb date;
     } MessageContent;
 
     typedef struct
@@ -82,15 +83,10 @@ class WebSocketClient
       create_thread( &sendingThreadId,   WebSocketClient::startSendingThread, static_cast<void *>(this) );
     }
 
+    unsigned short snd_maxLatency;
+
   public:
-    WebSocketClient(WebSocket *ws, HttpRequest *req) : websocket(ws), request(req), closing(false)
-    {
-      pthread_mutex_init(&sendingQueueMutex, NULL);
-      pthread_cond_init(&sendingNotification, NULL);
-      gzipcontext.dictInfLength = 0;
-      nvj_init_stream(&(gzipcontext.strm_deflate), true);
-      startWebSocketListener();
-    };
+    WebSocketClient(WebSocket *ws, HttpRequest *req);
 
     ~WebSocketClient()
     {

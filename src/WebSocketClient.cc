@@ -22,6 +22,18 @@
 
 /***********************************************************************/
 
+WebSocketClient::WebSocketClient(WebSocket *ws, HttpRequest *req): websocket(ws), request(req), closing(false)
+{
+  snd_maxLatency=ws->getClientSendingMaxLatency();
+  pthread_mutex_init(&sendingQueueMutex, NULL);
+  pthread_cond_init(&sendingNotification, NULL);
+  gzipcontext.dictInfLength = 0;
+  nvj_init_stream(&(gzipcontext.strm_deflate), true);
+  startWebSocketListener();
+};
+
+/***********************************************************************/
+
 void WebSocketClient::sendingThread()
 {
   
@@ -35,8 +47,12 @@ void WebSocketClient::sendingThread()
         break;
 
       MessageContent *msg = sendingQueue.front();
-      
-      if (!sendMessage(msg))
+
+      struct timeb t;
+      ftime(&t);
+      long long msgLatency = (long long)(t.time - msg->date.time) + (long long)(t.millitm - msg->date.millitm)*1000;
+
+      if ( msgLatency > snd_maxLatency || !sendMessage(msg))
         closeSend();
       
       free(msg);
@@ -75,6 +91,10 @@ void WebSocketClient::receivingThread()
 
   if (!setSocketSndRcvTimeout(client->socketId, 0, 250)) // Reduce socket timeout
     NVJ_LOG->appendUniq(NVJ_ERROR, "WebSocketClient : setSocketSndRcvTimeout error");
+
+  if (! websocket->isUsingNaggleAlgo())
+    if (! setSocketNagleAlgo(client->socketId, false)) // Disable Naggle Algorithm
+      NVJ_LOG->appendUniq(NVJ_ERROR, "WebSocketClient : setSocketNagleAlgo error");
 
   bool fin=false;
   unsigned char rsv=0, opcode=0;
@@ -371,6 +391,7 @@ bool WebSocketClient::sendMessage( const MessageContent *msgContent )
     }
   }
 
+
   if (  !WebServer::httpSend(client, headerBuffer, headerLen)
      || !WebServer::httpSend(client, msg, msgLen) )
   {
@@ -403,6 +424,7 @@ void WebSocketClient::sendTextMessage(const std::string &message, bool fin)
   message.copy((char*)msgContent->message, message.length());
   msgContent->length=message.length();
   msgContent->fin = fin;
+  ftime(&msgContent->date);
 
   addSendingQueue(msgContent);
 }
@@ -417,6 +439,7 @@ void WebSocketClient::sendBinaryMessage(const unsigned char* message, size_t len
   memcpy(msgContent->message, message, length);
   msgContent->length=length;
   msgContent->fin = fin;
+  ftime(&msgContent->date);
 
   addSendingQueue(msgContent);
 }
@@ -431,6 +454,7 @@ void WebSocketClient::sendPingCtrlFrame(const unsigned char* message, size_t len
   memcpy(msgContent->message, message, length);
   msgContent->length=length;
   msgContent->fin = true;
+  ftime(&msgContent->date);
 
   addSendingQueue(msgContent);
 }
@@ -450,6 +474,7 @@ void WebSocketClient::sendPongCtrlFrame(const unsigned char* message, size_t len
   memcpy(msgContent->message, message, length);
   msgContent->length=length;
   msgContent->fin = false;
+  ftime(&msgContent->date);
 
   addSendingQueue(msgContent);
 }
@@ -469,6 +494,7 @@ void WebSocketClient::sendCloseCtrlFrame(const unsigned char* message, size_t le
   memcpy(msgContent->message, message, length);
   msgContent->length=length;
   msgContent->fin = true;
+  ftime(&msgContent->date);
 
   addSendingQueue(msgContent);
 }

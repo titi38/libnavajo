@@ -21,16 +21,22 @@
 #include "libnavajo/WebServer.hh"
 #include "libnavajo/WebSocketClient.hh"
 
+// Max latency allowed is fixed to 500ms by default
+#define CLIENTSENDING_MAXLATENCY_DEFAULT 500
+
 class WebSocket
 {
     std::list<WebSocketClient*> webSocketClientList;
     pthread_mutex_t webSocketClientList_mutex;
-    bool compression;
+    bool useCompression;
+    bool useNaggleAlgo;
+    unsigned short clientSending_maxLatency;
 
   public:
-    WebSocket(bool compression=true)
+    WebSocket(bool compression=true): useCompression(compression), useNaggleAlgo(true),
+                                      clientSending_maxLatency(CLIENTSENDING_MAXLATENCY_DEFAULT)
+
     {
-      this->compression = compression;
       pthread_mutex_init(&webSocketClientList_mutex, NULL);
     }
 
@@ -241,13 +247,50 @@ class WebSocket
       if(!cs) pthread_mutex_unlock(&webSocketClientList_mutex);
     }
 
-    inline bool useCompression()
+    /**
+    * Get the compression behavior: data compression allowed or not
+    *  @return true if compression is allowed
+    */
+    inline bool isUsingCompression()
     {
-      return compression;
+      return useCompression;
     }
 
-    inline void setCompressionUsage(bool compression){
-      this->compression = compression;
+    /**
+    * Set if client should compress data (if it's supported by browser) or not
+    * @param compression: true to compress
+    */
+    inline void setUseCompression(bool compression)
+    {
+      useCompression = compression;
+    }
+
+    inline bool isUsingNaggleAlgo()
+    {
+      return useNaggleAlgo;
+    }
+
+    inline void setUseNaggleAlgo(bool naggle)
+    {
+      useNaggleAlgo=naggle;
+    }
+
+    /**
+    * Get the maximum latency allowed to send data
+    * @return the latency in milliseconds
+    */
+    inline unsigned short getClientSendingMaxLatency()
+    {
+      return clientSending_maxLatency;
+    }
+
+    /**
+    * Set the maximum latency allowed to the clients to send data
+    * @param ms: the latency in milliseconds
+    */
+    inline void setClientSendingMaxLatency(unsigned short ms)
+    {
+      clientSending_maxLatency=ms;
     }
 
 };

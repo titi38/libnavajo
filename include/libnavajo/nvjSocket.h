@@ -33,6 +33,7 @@
 #else
 
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 #include <strings.h>
 #include <netdb.h>
@@ -51,10 +52,10 @@
 * \return result of setsockopt (successfull: 0, otherwise -1)
 ***********************************************************************/
 
-inline bool setSocketNoSigpipe(int socket)
+inline bool setSocketNoSigpipe(int socket, bool sigpipe = false)
 {
 #ifndef LINUX
-  int set = 1;
+  int set = sigpipe ? 1 : 0;
   return setsockoptCompat( socket, SOL_SOCKET, SO_NOSIGPIPE, (void *) &set, sizeof(int) ) == 0;
 #else
   return true;
@@ -70,7 +71,7 @@ inline bool setSocketNoSigpipe(int socket)
 
 inline int setSocketKeepAlive(int socket, bool keepAlive)
 {
-  int set = keepAlive?1:0;
+  int set = keepAlive ? 1 : 0;
   return setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, (void *)&set, sizeof(int) );
 }
 
@@ -125,17 +126,30 @@ inline bool setSocketSndRcvTimeout(int socket, time_t seconds, long int useconds
 * @param socket  - socket descriptor
 * @param seconds - number of seconds
 * @param milliseconds - number of milliseconds
-* \return result of setsockopt (successfull: 0, otherwise -1)
+* \return true if no error, otherwise return false
 ***********************************************************************/
 
-inline int setSocketTcpAckTimeout(int socket, int seconds, int milliseconds)
+inline bool setSocketTcpAckTimeout(int socket, int seconds, int milliseconds)
 {
 #if defined(SOL_TCP) && defined(TCP_USER_TIMEOUT)
   int timeout = 1000 * seconds + milliseconds;  // user timeout in milliseconds [ms]
-    return setsockopt (fd, SOL_TCP, TCP_USER_TIMEOUT, (char*) &timeout, sizeof (timeout));
+  return setsockopt (socket, SOL_TCP, TCP_USER_TIMEOUT, (char*) &timeout, sizeof (timeout)) == 0;
 #else
   return false;
 #endif
+}
+
+/***********************************************************************
+* setSocketNagleAlgo:
+* @param socket  - socket descriptor
+* @param enabled - use Nagle Algorithm
+* \return true if no error, otherwise return false
+***********************************************************************/
+
+inline int setSocketNagleAlgo(int socket, bool naggle = false)
+{
+  int flag = naggle ? 1 : 0;
+  return setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char *)&flag,sizeof(flag)) == 0;
 }
 
 #endif
