@@ -238,13 +238,33 @@ class WebSocket
     * @param client: the websocket client
     * @param cs: are we inside the critical section ?
     */
-    inline void removeFromClientsList(WebSocketClient *client, bool cs=false)
+    inline void removeClient(WebSocketClient *client, bool cs=false)
     {
       if (!cs) pthread_mutex_lock(&webSocketClientList_mutex);
       std::list<WebSocketClient*>::iterator it = std::find(webSocketClientList.begin(), webSocketClientList.end(), client);
       if (it != webSocketClientList.end())
         webSocketClientList.erase(it);
       if(!cs) pthread_mutex_unlock(&webSocketClientList_mutex);
+    }
+
+    /**
+    * Remove and close a given Websocket client
+    * @param request: the related http request object
+    */
+    inline void removeClient(HttpRequest *request)
+    {
+      pthread_mutex_lock(&webSocketClientList_mutex);
+      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); )
+      {
+        WebSocketClient *client=*it;
+        it++;
+        if (client->getHttpRequest() == request)
+        {
+          client->closeWS();
+          break;
+        }
+      }
+      pthread_mutex_unlock(&webSocketClientList_mutex);
     }
 
     /**

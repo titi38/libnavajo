@@ -292,6 +292,7 @@ class HttpRequest
     {
       if (sessionId == "") createSession();
       HttpSession::setObjectAttribute(sessionId, name, value);
+printf("setSessionObjectAttribute - sessionId=%s\n", sessionId.c_str());
     }
     
     /**
@@ -313,6 +314,8 @@ class HttpRequest
     SessionAttributeObject* getSessionObjectAttribute( const std::string &name )
     {
       if (sessionId == "") return NULL;
+printf("getObjectAttribute: %s - %s\n", sessionId.c_str(), name.c_str()); fflush(NULL);
+HttpSession::printAll();
       return HttpSession::getObjectAttribute(sessionId, name);
     }
     

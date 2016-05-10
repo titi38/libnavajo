@@ -303,7 +303,7 @@ void WebSocketClient::receivingThread()
 
 void WebSocketClient::closeWS()
 {
-  websocket->removeFromClientsList(this, true);
+  websocket->removeClient(this, true);
   websocket->onClosing(this);
 
   closing=true;
@@ -319,7 +319,7 @@ void WebSocketClient::closeWS()
 
 void WebSocketClient::closeSend()
 {
-  websocket->removeFromClientsList(this, false);
+  websocket->removeClient(this, false);
   websocket->onClosing(this);
   closing=true;
   WebServer::freeClientSockData( request->getClientSockData() );
@@ -330,7 +330,7 @@ void WebSocketClient::closeSend()
 
 void WebSocketClient::closeRecv()
 {       
-  websocket->removeFromClientsList(this, false);
+  websocket->removeClient(this, false);
   websocket->onClosing(this);
   closing=true;
   pthread_cond_broadcast ( &sendingNotification );
