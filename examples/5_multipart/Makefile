@@ -4,7 +4,7 @@
 #                    2016    #
 ##############################
 
-NAVAJO_PRECOMPILER_EXEC = ../../build/bin/navajoPrecompiler
+NAVAJO_PRECOMPILER_EXEC = ../../bin/navajoPrecompiler
 
 UNAME := $(shell uname)
 LBITS := $(shell getconf LONG_BIT)

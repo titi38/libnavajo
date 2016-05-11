@@ -18,9 +18,15 @@
 #include <stdlib.h>
 #include <string>
 #include <stdexcept>
-#include "zlib.h"
+ 
+#include "zlib.h" 
+#if (ZLIB_VERNUM < 0x1271)
+ #include "zlibPatchOldVersion.h"
+#endif
 
 #define CHUNK 16384
+
+
 
 //********************************************************
 
@@ -245,7 +251,7 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
 
    //********************************************************
 
-inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, bool rawDeflateData=false, unsigned char* dictionary = NULL, unsigned int* dictLength = NULL, const unsigned int sizeChunk = CHUNK)
+inline size_t nvj_gunzip_websocket_v2( unsigned char** dst, const unsigned char* src,  size_t sizeSrc, bool rawDeflateData=false, unsigned char* dictionary = NULL, unsigned int* dictLength = NULL, const unsigned int sizeChunk = CHUNK)
 {
   z_stream strm;
   size_t sizeDst=0;
