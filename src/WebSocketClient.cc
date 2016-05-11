@@ -1,8 +1,8 @@
 //********************************************************
 /**
- * @file  WebSocket.cc
+ * @file  WebSocketClient.cc
  *
- * @brief WebSocket Server
+ * @brief The WebSocket client class
  *        rfc6455 The WebSocket Protocol
  *
  * @author T.Descombes (thierry.descombes@gmail.com)
@@ -43,22 +43,19 @@ void WebSocketClient::sendingThread()
       while (sendingQueue.empty() && !closing)
         pthread_cond_wait(&sendingNotification, &sendingQueueMutex);
 
-      if (closing)
-        break;
+      if (closing) break;
 
       MessageContent *msg = sendingQueue.front();
+      sendingQueue.pop();
+      pthread_mutex_unlock(&sendingQueueMutex);
 
       struct timeb t;
       ftime(&t);
-      long long msgLatency = (long long)(t.time - msg->date.time) + (long long)(t.millitm - msg->date.millitm)*1000;
-
+      long long msgLatency = (long long)( t.time - msg->date.time )*1000 + (long long)( t.millitm - msg->date.millitm );
       if ( msgLatency > snd_maxLatency || !sendMessage(msg))
         closeSend();
       
-      free(msg);
-      sendingQueue.pop();
-      pthread_mutex_unlock(&sendingQueueMutex);
-      
+      free(msg);      
   }
 
   while (!sendingQueue.empty())
@@ -66,8 +63,8 @@ void WebSocketClient::sendingThread()
     free(sendingQueue.front());
     sendingQueue.pop();
   }
-  pthread_mutex_unlock(&sendingQueueMutex);
 
+  pthread_mutex_unlock(&sendingQueueMutex);
 }
 
 /***********************************************************************/
