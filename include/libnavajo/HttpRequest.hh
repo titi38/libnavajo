@@ -113,8 +113,7 @@ class HttpRequest
   /**
   * decode all http cookies and fill the cookies Map
   * @param c: raw string containing all the cockies definitions
-  */  
-  
+  */
   inline void decodCookies( const std::string& c )
   {
     std::stringstream ss(c);
@@ -131,6 +130,22 @@ class HttpRequest
     }
   };
 
+  /**********************************************************************/
+  /**
+  * check the SID cookie and set the sessionID attribute if the session is valid
+  * (called by constructor)
+  */
+  inline void getSession()
+  {
+    sessionId = getCookie("SID");
+
+    if (sessionId.length() && HttpSession::find(sessionId))
+      return;
+
+    initSessionId();
+  };
+
+
 
   public:
   
@@ -138,8 +153,7 @@ class HttpRequest
     /**
     * get cookie value
     * @param name: the cookie name
-    */  
-  
+    */
     inline std::string getCookie( const std::string& name ) const
     {
       std::string res="";
@@ -242,21 +256,16 @@ class HttpRequest
     
     /**********************************************************************/
     /**
-    * is there a session cookie
-    * @param b: if true (default), create a server session if none exists
-    */ 
-    inline void getSession()
+    * is there a valid session cookie
+    */
+    inline bool isSessionValid()
     {
-      sessionId = getCookie("SID");
-      
-      if (sessionId.length() && HttpSession::find(sessionId))
-        return;
-
-      initSessionId();
+      return sessionId != "";
     }
-    
+
+    /**********************************************************************/
     /**
-    * create the session cookie
+    * create a session cookie
     */ 
     inline void createSession()
     {
@@ -292,7 +301,6 @@ class HttpRequest
     {
       if (sessionId == "") createSession();
       HttpSession::setObjectAttribute(sessionId, name, value);
-printf("setSessionObjectAttribute - sessionId=%s\n", sessionId.c_str());
     }
     
     /**
@@ -314,8 +322,6 @@ printf("setSessionObjectAttribute - sessionId=%s\n", sessionId.c_str());
     SessionAttributeObject* getSessionObjectAttribute( const std::string &name )
     {
       if (sessionId == "") return NULL;
-printf("getObjectAttribute: %s - %s\n", sessionId.c_str(), name.c_str()); fflush(NULL);
-HttpSession::printAll();
       return HttpSession::getObjectAttribute(sessionId, name);
     }
     
