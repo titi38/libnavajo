@@ -55,12 +55,6 @@ class WebSocketClient
 
     bool sendMessage(const MessageContent *msg);
 
-    inline void waitingThreadsExit()
-    {
-        wait_for_thread(receivingThreadId);
-        wait_for_thread(sendingThreadId);
-    };
-
     inline static void* startReceivingThread(void* t)
     {
       WebSocketClient *_this=static_cast<WebSocketClient *>(t);
