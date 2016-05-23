@@ -39,7 +39,6 @@
 #define LOGHIST_EXPIRATION_DELAY 600
 #define BUFSIZE 32768
 
-
 const char WebServer::authStr[]="Authorization: Basic ";
 const int WebServer::verify_depth=512;
 char *WebServer::certpass=NULL;
