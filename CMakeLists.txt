@@ -21,7 +21,7 @@ IF(${UNIX})
 ENDIF(${UNIX})
 
 IF(${APPLE})
-  set (CMAKE_CXX_FLAGS " -Wall -fPIC -fno-common -O3 -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=\"${LIBNAVAJO_VERSION}\" ")
+  set (CMAKE_CXX_FLAGS " -Wall -fPIC -fno-common -O3 -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=\"\\\"${LIBNAVAJO_VERSION}\\\"\" ")
 ENDIF(${APPLE})
 
 if(NOT DEFINED CMAKE_MACOSX_RPATH)
