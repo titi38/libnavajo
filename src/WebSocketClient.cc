@@ -85,12 +85,20 @@ void WebSocketClient::receivingThread()
   pfd.fd = client->socketId;
   pfd.events = POLLIN;
 
-  if (!setSocketSndRcvTimeout(client->socketId, 0, 250)) // Reduce socket timeout
+  if (!setSocketSndRcvTimeout(client->socketId, 0, 250))
+  {// Reduce socket timeout
     NVJ_LOG->appendUniq(NVJ_ERROR, "WebSocketClient : setSocketSndRcvTimeout error");
+    closeRecv();
+    return;
+  }
 
   if (! websocket->isUsingNaggleAlgo())
     if (! setSocketNagleAlgo(client->socketId, false)) // Disable Naggle Algorithm
+    {
       NVJ_LOG->appendUniq(NVJ_ERROR, "WebSocketClient : setSocketNagleAlgo error");
+      closeRecv();
+      return;
+    }
 
   bool fin=false;
   unsigned char rsv=0, opcode=0;
@@ -299,10 +307,10 @@ void WebSocketClient::receivingThread()
 
 void WebSocketClient::closeWS()
 {
+  closing=true;
   websocket->removeClient(this, true);
   websocket->onClosing(this);
 
-  closing=true;
   pthread_cond_broadcast ( &sendingNotification );
   wait_for_thread(sendingThreadId);
 
@@ -315,9 +323,9 @@ void WebSocketClient::closeWS()
 
 void WebSocketClient::closeSend()
 {
+  closing=true;
   websocket->removeClient(this, false);
   websocket->onClosing(this);
-  closing=true;
   WebServer::freeClientSockData( request->getClientSockData() );
 
   delete request;
@@ -325,12 +333,14 @@ void WebSocketClient::closeSend()
 }
 
 void WebSocketClient::closeRecv()
-{       
+{
+  closing=true;
   websocket->removeClient(this, false);
   websocket->onClosing(this);
-  closing=true;
+
   pthread_cond_broadcast ( &sendingNotification );
-  wait_for_thread(sendingThreadId);  
+  wait_for_thread(sendingThreadId);
+
   WebServer::freeClientSockData( request->getClientSockData() );
   
   delete request;

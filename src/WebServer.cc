@@ -566,9 +566,9 @@ bool WebServer::accept_request(ClientSockData* client)
       if (it != webSocketEndPoints.end()) // FOUND
       {
         WebSocket* webSocket=it->second;
-        if(!webSocket->isUsingCompression()){
+        if(!webSocket->isUsingCompression())
           client->compression = NONE;
-        }
+
         std::string header = getHttpWebSocketHeader("101 Switching Protocols", webSocketClientKey, client->compression == ZLIB);
 
         httpSend(client, (const void*) header.c_str(), header.length());
