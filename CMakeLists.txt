@@ -13,15 +13,15 @@ project(libnavajo)
 ###############            version variables           #####################
 set(LIBNAVAJO_MVERSION "1")
 set(LIBNAVAJO_VERSION "1.2.0")
-set(LIBNAVAJO_BUILD_DAT `/bin/date +%s`)
+set(LIBNAVAJO_BUILD_DATE `/bin/date +%s`)
 
 ###############            Minimal flags           #####################
 IF(${UNIX})
-  set (CMAKE_CXX_FLAGS " -Wall -O4 -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=$(LIBNAVAJO_VERSION) -DLIBNAVAJO_BUILD_DATE=$(LIBNAVAJO_BUILD_DATE) ")
+  set (CMAKE_CXX_FLAGS " -Wall -O4 -DLINUX -Wall -Wno-unused -fexceptions -fPIC -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=\"${LIBNAVAJO_VERSION}\" ")
 ENDIF(${UNIX})
 
 IF(${APPLE})
-  set (CMAKE_CXX_FLAGS " -Wall -fPIC -fno-common -O3 -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=$(LIBNAVAJO_VERSION) -DLIBNAVAJO_BUILD_DATE=$(LIBNAVAJO_BUILD_DATE)")
+  set (CMAKE_CXX_FLAGS " -Wall -fPIC -fno-common -O3 -D__darwin__ -D__x86__ -fPIC -fno-common -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=\"${LIBNAVAJO_VERSION}\" ")
 ENDIF(${APPLE})
 
 if(NOT DEFINED CMAKE_MACOSX_RPATH)
