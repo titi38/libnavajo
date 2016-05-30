@@ -50,7 +50,7 @@ class WebSocket
     * Callback on new websocket client connection
     * @param request: the http request object
     */
-    virtual bool onOpening(WebSocketClient* client) { return true; };
+    virtual bool onOpening(HttpRequest* request) { return true; };
 
     /**
     * Callback before closing websocket client connection
@@ -206,14 +206,11 @@ class WebSocket
     inline void newConnectionRequest(HttpRequest* request)
     {
       pthread_mutex_lock(&webSocketClientList_mutex);
-      WebSocketClient* newClient = new WebSocketClient(this, request);
-      if (onOpening(newClient))
-        webSocketClientList.push_back(newClient);
+
+      if (onOpening(request))
+        webSocketClientList.push_back(new WebSocketClient(this, request));
       else
-      {
-        delete newClient;
         WebServer::freeClientSockData( request->getClientSockData() );
-      }
 
       pthread_mutex_unlock(&webSocketClientList_mutex);
     };

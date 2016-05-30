@@ -71,10 +71,10 @@ class WebSocketClient
       return NULL;
     };
 
-    void startWebSocketListener()
+    void startWebSocketThreads()
     {
       create_thread( &receivingThreadId, WebSocketClient::startReceivingThread, static_cast<void *>(this) );
-      create_thread( &sendingThreadId,   WebSocketClient::startSendingThread, static_cast<void *>(this) );
+      create_thread( &sendingThreadId,   WebSocketClient::startSendingThread,   static_cast<void *>(this) );
     }
 
     unsigned short snd_maxLatency;

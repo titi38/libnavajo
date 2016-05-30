@@ -105,9 +105,8 @@ class MyDynamicRepository : public DynamicRepository
 
 class MyWebSocket : public WebSocket
 {
-  bool onOpening(WebSocketClient* client)
+  bool onOpening( HttpRequest* request )
   {
-    HttpRequest* request=client->getHttpRequest();
     printf ("New Websocket (host '%s' - socketId=%d)\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId); fflush(NULL);
     if ( ! isValidSession(request) )
       return false;

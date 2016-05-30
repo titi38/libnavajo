@@ -27,9 +27,9 @@ void exitFunction( int dummy )
 
 class MyWebSocket : public WebSocket
 {
-  bool onOpening(WebSocketClient* client)
+  bool onOpening(HttpRequest* request)
   {
-    printf ("New Websocket from host '%s' - socketId=%d\n", client->getHttpRequest()->getPeerIpAddress().str().c_str(), client->getHttpRequest()->getClientSockData()->socketId);
+    printf ("New Websocket from host '%s' - socketId=%d\n", request->getPeerIpAddress().str().c_str(), request->getClientSockData()->socketId);
     return true;
   }
 
