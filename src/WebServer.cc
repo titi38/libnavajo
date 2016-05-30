@@ -107,7 +107,7 @@ void WebServer::updatePeerIpHistory(IpAddress& ip)
   }
 
   if (dispPeer)
-     NVJ_LOG->append(NVJ_INFO,std::string ("WebServer: Connection from IP: ") + ip.str());
+     NVJ_LOG->append(NVJ_DEBUG,std::string ("WebServer: Connection from IP: ") + ip.str());
 }
 
 /*********************************************************************/
@@ -132,7 +132,7 @@ void WebServer::updatePeerDnHistory(std::string dn)
   }
 
   if (dispPeer)
-    NVJ_LOG->append(NVJ_INFO,"WebServer: Authorized DN: "+dn);
+    NVJ_LOG->append(NVJ_DEBUG,"WebServer: Authorized DN: "+dn);
 
   pthread_mutex_unlock( &peerDnHistory_mutex );
 }
@@ -194,7 +194,7 @@ bool WebServer::isUserAllowed(const std::string &pwdb64, std::string& login)
       usersAuthHistory[pwdb64]=t;
   }
   else
-    NVJ_LOG->append(NVJ_INFO,"WebServer: Authentification failed for user '"+login+"'");
+    NVJ_LOG->append(NVJ_DEBUG,"WebServer: Authentification failed for user '"+login+"'");
 
   pthread_mutex_unlock( &usersAuthHistory_mutex );
   return authOK;
@@ -1143,7 +1143,7 @@ int WebServer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
     char buftmp[300];
     snprintf(buftmp, 300, "X509_verify_cert error: num=%d:%s:depth=%d:%s", err,
               X509_verify_cert_error_string(err), depth, buf);
-    NVJ_LOG->append(NVJ_INFO,buftmp);
+    NVJ_LOG->append(NVJ_DEBUG,buftmp);
   }
 
   /*
@@ -1154,7 +1154,7 @@ int WebServer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
   {
    X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), buf, 256);
    char buftmp[300]; snprintf(buftmp, 300, "X509_verify_cert error: issuer= %s", buf);
-     NVJ_LOG->append(NVJ_INFO,buftmp);
+     NVJ_LOG->append(NVJ_DEBUG,buftmp);
   }
 
   return 1;
@@ -1337,7 +1337,7 @@ void WebServer::threadProcessing()
   httpdAuth = authLoginPwdList.size() ;
 
   char buf[300]; snprintf(buf, 300, "WebServer : Listen on port %d", port);
-  NVJ_LOG->append(NVJ_INFO,buf);
+  NVJ_LOG->append(NVJ_DEBUG,buf);
 
   struct pollfd *pfd;
   if ( (pfd = (pollfd *)malloc( nbServerSock * sizeof( struct pollfd ) )) == NULL )
