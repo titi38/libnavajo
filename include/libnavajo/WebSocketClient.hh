@@ -55,6 +55,8 @@ class WebSocketClient
 
     bool sendMessage(const MessageContent *msg);
 
+    void updateSessionExpiration(HttpRequest *request);
+
     inline static void* startReceivingThread(void* t)
     {
       WebSocketClient *_this=static_cast<WebSocketClient *>(t);

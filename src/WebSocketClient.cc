@@ -280,14 +280,11 @@ void WebSocketClient::receivingThread()
               break;
           }
 
-          // FINISHED
-          /*        if (msgContent != NULL)
-                    for (u_int64_t i=0; i<msgLength; i++)
-                      printf("%c(%2x)", msgContent[i],msgContent[i]);
-                    printf("\n"); fflush(NULL);*/
-
           if ((client->compression == ZLIB) && (rsv & 4) && msgLength)
             free (msgContent);
+
+          updateSessionExpiration(request);
+          
           fin=false; rsv=0;
           opcode=0;
           msgLength=0;
@@ -349,9 +346,20 @@ void WebSocketClient::closeRecv()
 
 /***********************************************************************/
 
+void WebSocketClient::updateSessionExpiration(HttpRequest *request)
+{
+  std::string sessionId=request->getSessionId();
+  if (sessionId != "")
+    HttpSession::updateExpiration(request->getSessionId());
+}
+
+/***********************************************************************/
+
 bool WebSocketClient::sendMessage( const MessageContent *msgContent )
 {
   ClientSockData* client = request->getClientSockData();
+
+  updateSessionExpiration(request);
 
   unsigned char headerBuffer[10]; // 10 is the max header size
   size_t headerLen=2; // default header size
