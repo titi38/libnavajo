@@ -29,6 +29,7 @@ WebSocketClient::WebSocketClient(WebSocket *ws, HttpRequest *req): websocket(ws)
   pthread_cond_init(&sendingNotification, NULL);
   gzipcontext.dictInfLength = 0;
   nvj_init_stream(&(gzipcontext.strm_deflate), true);
+  noSessionExpiration(request);
   startWebSocketThreads();
 };
 
@@ -283,8 +284,6 @@ void WebSocketClient::receivingThread()
           if ((client->compression == ZLIB) && (rsv & 4) && msgLength)
             free (msgContent);
 
-          updateSessionExpiration(request);
-          
           fin=false; rsv=0;
           opcode=0;
           msgLength=0;
@@ -310,10 +309,9 @@ void WebSocketClient::closeWS()
 
   pthread_cond_broadcast ( &sendingNotification );
   wait_for_thread(sendingThreadId);
-
   WebServer::freeClientSockData( request->getClientSockData() );
   wait_for_thread(receivingThreadId);
-
+  restoreSessionExpiration(request);
   delete request;
   delete this;
 }
@@ -323,8 +321,9 @@ void WebSocketClient::closeSend()
   closing=true;
   websocket->removeClient(this, false);
   websocket->onClosing(this);
-  WebServer::freeClientSockData( request->getClientSockData() );
 
+  WebServer::freeClientSockData( request->getClientSockData() );
+  restoreSessionExpiration(request);
   delete request;
   delete this;
 }
@@ -337,16 +336,22 @@ void WebSocketClient::closeRecv()
 
   pthread_cond_broadcast ( &sendingNotification );
   wait_for_thread(sendingThreadId);
-
   WebServer::freeClientSockData( request->getClientSockData() );
-  
+  restoreSessionExpiration(request);
   delete request;
   delete this;
 }
 
 /***********************************************************************/
 
-void WebSocketClient::updateSessionExpiration(HttpRequest *request)
+void WebSocketClient::noSessionExpiration(HttpRequest *request)
+{
+  std::string sessionId=request->getSessionId();
+  if (sessionId != "")
+    HttpSession::noExpiration(request->getSessionId());
+}
+
+void WebSocketClient::restoreSessionExpiration(HttpRequest *request)
 {
   std::string sessionId=request->getSessionId();
   if (sessionId != "")
@@ -358,8 +363,6 @@ void WebSocketClient::updateSessionExpiration(HttpRequest *request)
 bool WebSocketClient::sendMessage( const MessageContent *msgContent )
 {
   ClientSockData* client = request->getClientSockData();
-
-  updateSessionExpiration(request);
 
   unsigned char headerBuffer[10]; // 10 is the max header size
   size_t headerLen=2; // default header size

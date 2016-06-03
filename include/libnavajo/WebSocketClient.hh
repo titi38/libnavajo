@@ -81,6 +81,10 @@ class WebSocketClient
 
     unsigned short snd_maxLatency;
 
+    void noSessionExpiration(HttpRequest *request);
+    void restoreSessionExpiration(HttpRequest *request);
+
+
   public:
     WebSocketClient(WebSocket *ws, HttpRequest *req);
 

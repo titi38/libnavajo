@@ -98,6 +98,15 @@ class HttpSession
 
     /**********************************************************************/
 
+    static void noExpiration(const std::string& id)
+    {
+      time_t *expiration=(time_t*)getAttribute(id, "session_expiration");
+      if (expiration != NULL)
+        *expiration=0;
+    };
+
+    /**********************************************************************/
+
     static void removeExpiredSession()
     {
 
@@ -110,7 +119,7 @@ class HttpSession
         time_t *expiration=NULL;
         if (it2 != attributesMap->end()) expiration=(time_t*) it2->second.ptr;
 
-        if (expiration!=NULL && *expiration > time(NULL))
+        if (expiration!=NULL && *expiration && *expiration > time(NULL))
         {
           it++;
           continue;
