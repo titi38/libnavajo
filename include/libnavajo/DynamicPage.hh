@@ -15,7 +15,10 @@
 #define DYNAMICPAGE_HH_
 
 #include <string>
-#include <typeinfo> 
+#include <typeinfo>
+#include <ctype.h>
+#include <string>
+#include <algorithm>
 
 class DynamicPage
 {
@@ -27,20 +30,31 @@ class DynamicPage
 
     /**********************************************************************/
      
-    template<class T> static inline T getValue (std::string s)
+    template<class T> static inline T getValue (const std::string &s)
     { 
       if (!s.length())
        throw std::bad_cast();
        
-	     std::istringstream iss(s); 
-	     T tmp; iss>>tmp;   
-	       
-	     if(iss.fail())
-	       throw std::bad_cast();
+      std::istringstream iss(s); 
+      T tmp; iss>>tmp;   
+       
+      if(iss.fail())
+        throw std::bad_cast();
 	      
-	      return tmp;
+      return tmp;
+    };
 
-	  };
+    /**********************************************************************/
+
+    static inline bool isNotPrintable (char c)
+    {
+      return !isprint( static_cast<unsigned char>( c ) );
+    }
+
+    static inline void stripUnprintableChar(std::string &str)
+    {
+      str.erase(std::remove_if(str.begin(),str.end(), isNotPrintable), str.end());
+    }
     
     /**********************************************************************/
 
