@@ -70,12 +70,7 @@ file(GLOB sources_lib
   ${PROJECT_SOURCE_DIR}/src/MPFDParser/Exception.cc
   )
 
- file(GLOB headers_lib 
-                      ${PROJECT_SOURCE_DIR}/include/libnavajo/*.hh
-	  	      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjThread.h
-		      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjGzip.h
-              	      ${PROJECT_SOURCE_DIR}/include/libnavajo/nvjSocket.h
- )
+ file(GLOB headers_lib ${PROJECT_SOURCE_DIR}/include/libnavajo/* )
  file(GLOB mpfdHeaders_lib 
 		      ${PROJECT_SOURCE_DIR}/include/MPFDParser/Field.h 
 		      ${PROJECT_SOURCE_DIR}/include/MPFDParser/Exception.h 
