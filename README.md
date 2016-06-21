@@ -35,5 +35,5 @@ Libnavajo makes it easy to run an HTTP server into your own application, impleme
 
 **Notes**:
 
-Libnavajo is released under the LGPLv3 licence.
+Libnavajo is released under the CeCILL-C licence ( http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.txt ) 
 If you want to support us or contribute, please contact support@libnavajo.org
