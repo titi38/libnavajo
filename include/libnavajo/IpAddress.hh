@@ -404,7 +404,7 @@ class IpNetwork
 
         if ((maskDec > 32 && addr->ipversion == 4) || (maskDec > 128 && addr->ipversion == 6))
         {
-        	delete addr;
+          delete addr;
           return NULL;
         }
 
@@ -413,6 +413,17 @@ class IpNetwork
       }
       return ipNet;
     }
+ 
+    IpNetwork(const std::string& value)
+    {
+      IpNetwork *net=fromString(value);
+      if (net != NULL)
+      {
+        *this=*net;
+        delete net;
+      }
+    }
+
 } ;
 
 

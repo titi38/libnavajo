@@ -85,7 +85,7 @@ int main()
   //webServer->setAuthPeerSSL(true, "cachain.pem");
   //webServer->addAuthPeerDN("/C=FR/O=CNRS/OU=UMR5821/CN=Thierry Descombes/emailAddress=thierry.descombes@lpsc.in2p3.fr");
 
-  //webServer->addHostsAllowed(IpNetwork(std::string("134.158.40.0/21")));
+  //webServer->addHostsAllowed(IpNetwork("134.158.40.0/21"));
 
   //uncomment to active login/passwd auth
   //webServer->addLoginPass("login","password");
