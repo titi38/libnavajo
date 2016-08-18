@@ -97,7 +97,6 @@ class WebSocketClient
 
     /**
     * Send Text Message on the websocket
-    * @param request: the http request object
     * @param message: the text message
     * @param fin: is-it the final fragment of the message ?
     */
@@ -105,7 +104,6 @@ class WebSocketClient
 
     /**
     * Send Binary Message on the websocket
-    * @param request: the http request object
     * @param message: the content
     * @param length: the message length
     * @param fin: is-it the final fragment of the message ?
@@ -114,7 +112,6 @@ class WebSocketClient
 
     /**
     * Send Close Message Notification on the websocket
-    * @param request: the http request object
     * @param message: the closure reason message
     * @param length: the message length
     */
@@ -122,7 +119,6 @@ class WebSocketClient
 
     /**
     * Send Close Message Notification on the websocket
-    * @param request: the http request object
     * @param message: the closure reason message
     */
     void sendCloseCtrlFrame(const std::string &reasonMsg = "");
@@ -137,14 +133,12 @@ class WebSocketClient
 
     /**
     * Send Ping Message Notification on the websocket
-    * @param request: the http request object
     * @param message: the content
     */
     void sendPingCtrlFrame(const std::string &message);
 
     /**
     * Send Pong Message Notification on the websocket
-    * @param request: the http request object
     * @param message: the content
     * @param length: the message length
     */
@@ -152,7 +146,6 @@ class WebSocketClient
 
     /**
     * Send Pong Message Notification on the websocket
-    * @param request: the http request object
     * @param message: the content
     */
     void sendPongCtrlFrame(const std::string &message);
