@@ -37,9 +37,10 @@ WebSocketClient::WebSocketClient(WebSocket *ws, HttpRequest *req): websocket(ws)
 
 void WebSocketClient::sendingThread()
 {
+  pthread_mutex_lock(&sendingQueueMutex);
+
   for (;;)
   {
-    pthread_mutex_lock(&sendingQueueMutex);
     while (sendingQueue.empty() && !closing)
       pthread_cond_wait(&sendingNotification, &sendingQueueMutex);
 
@@ -56,6 +57,7 @@ void WebSocketClient::sendingThread()
       closeSend();
 
     free(msg);
+    pthread_mutex_lock(&sendingQueueMutex);
   }
 
   while (!sendingQueue.empty())
