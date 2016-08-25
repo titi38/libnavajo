@@ -48,14 +48,15 @@
 /***********************************************************************
 * setSocketNoSigpipe:  Place a timeout on the socket
 * @param socket   - socket descriptor
+* @param sigpipe  - sigpipe generation: no by default  
 * diabled generation of SIGPIPE for the socket
-* \return result of setsockopt (successfull: 0, otherwise -1)
+* \return true if successfull else false
 ***********************************************************************/
 
 inline bool setSocketNoSigpipe(int socket, bool sigpipe = false)
 {
 #ifndef LINUX
-  int set = sigpipe ? 1 : 0;
+  int set = sigpipe ? 0 : 1;
   return setsockoptCompat( socket, SOL_SOCKET, SO_NOSIGPIPE, (void *) &set, sizeof(int) ) == 0;
 #else
   return true;
@@ -64,8 +65,9 @@ inline bool setSocketNoSigpipe(int socket, bool sigpipe = false)
 
 /***********************************************************************
 * setSocketKeepAlive:  Place a timeout on the socket
-* @param socket   - socket descriptor
-* diabled generation of SIGPIPE for the socket
+* @param socket    - socket descriptor
+* @param keepAlive - use keepAlive mode ?
+* keepAlive mode for the socket
 * \return result of setsockopt (successfull: 0, otherwise -1)
 ***********************************************************************/
 
@@ -78,8 +80,7 @@ inline int setSocketKeepAlive(int socket, bool keepAlive)
 /***********************************************************************
 * setSocketDoLinger:  Place a timeout on the socket
 * @param socket   - socket descriptor
-* @param seconds  - number of seconds
-* @param useconds - number of useconds
+* @param dolinger - use dolinger mode ?
 * \return result of setsockopt (successfull: 0, otherwise -1)
 ***********************************************************************/
 
@@ -95,7 +96,7 @@ inline int setSocketDoLinger(int socket, bool dolinger)
 * @param socket   - socket descriptor
 * @param seconds  - number of seconds
 * @param useconds - number of useconds
-* \return result of setsockopt (successfull: 0, otherwise -1)
+* \return true is successfull, else false
 ***********************************************************************/
 
 inline bool setSocketSndRcvTimeout(int socket, time_t seconds, long int useconds=0)
@@ -143,7 +144,7 @@ inline bool setSocketTcpAckTimeout(int socket, int seconds, int milliseconds)
 * setSocketNagleAlgo:
 * @param socket  - socket descriptor
 * @param enabled - use Nagle Algorithm
-* \return true if no error, otherwise return false
+* \return result of setsockopt (successfull: 0, otherwise -1)
 ***********************************************************************/
 
 inline int setSocketNagleAlgo(int socket, bool naggle = false)
@@ -153,3 +154,4 @@ inline int setSocketNagleAlgo(int socket, bool naggle = false)
 }
 
 #endif
+
