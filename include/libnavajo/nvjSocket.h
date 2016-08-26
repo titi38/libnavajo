@@ -14,6 +14,8 @@
 #ifndef NVJSOCKET_H_
 #define NVJSOCKET_H_
 
+#include <string.h>
+
 #ifdef WIN32
 
 #define usleep(n) Sleep(n/1000>=1 ? n/1000 : 1)
@@ -99,7 +101,7 @@ inline bool setSocketReuseAddr(int socket, bool reuse = true)
 inline bool setSocketBindToDevice(int socket, const char *device)
 {
 #if defined(SO_BINDTODEVICE)
-  return setsockopt( server_sock[ nbServerSock ], SOL_SOCKET, SO_BINDTODEVICE, device, strlen(device) ) == 0;
+  return setsockopt( socket, SOL_SOCKET, SO_BINDTODEVICE, device, strlen(device) ) == 0;
 #else
   return true;
 #endif
