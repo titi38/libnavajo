@@ -373,7 +373,8 @@ bool WebServer::accept_request(ClientSockData* client)
             continue; 
           }
   
-        if (strncasecmp(bufLine+j, "Content-Length: ",16) == 0) { j+=16; requestContentLength = atoi(bufLine+j); continue; }
+        if (strncasecmp(bufLine+j, "Content-Length: ",16) == 0)
+          { j+=16; requestContentLength = atoi(bufLine+j); continue; }
 
         if (strncasecmp(bufLine+j, "Cookie: ",8) == 0) 
         { 
@@ -399,9 +400,11 @@ bool WebServer::accept_request(ClientSockData* client)
           continue;
         }
 
-        if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0) { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
+        if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0)
+          { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
         
-        if (strncasecmp(bufLine+j, "Sec-WebSocket-Version: ", 23) == 0) { j+=23; webSocketVersion = atoi(bufLine+j); continue; }
+        if (strncasecmp(bufLine+j, "Sec-WebSocket-Version: ", 23) == 0)
+          { j+=23; webSocketVersion = atoi(bufLine+j); continue; }
 
         isQueryStr=false;
         if (strncmp(bufLine+j, "GET", 3) == 0)
