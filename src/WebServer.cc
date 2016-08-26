@@ -56,6 +56,11 @@ const std::string WebServer::webSocketMagicString="258EAFA5-E914-47DA-95CA-C5AB0
 time_t HttpSession::lastExpirationSearchTime=0;
 time_t HttpSession::sessionLifeTime=20*60;
 
+#ifndef MSG_NOSIGNAL
+  #define MSG_NOSIGNAL 0
+#endif
+
+
 /*********************************************************************/
 
 WebServer::WebServer()
@@ -1030,8 +1035,6 @@ u_short WebServer::init()
   for (rp = result; rp != NULL && nbServerSock < sizeof(server_sock)/sizeof(int) ; rp = rp->ai_next)
   {
     if ( (server_sock[ nbServerSock ] = socket( rp->ai_family, rp->ai_socktype, rp->ai_protocol)) == -1 ) continue;
-
-    int optval = 1;
 
     setSocketReuseAddr(server_sock [ nbServerSock ]);
 

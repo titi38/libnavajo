@@ -56,7 +56,7 @@
 inline bool setSocketIp6Only(int socket, bool v6only = true)
 {
   int set = v6only ? 1 : 0;
-  setsockoptCompat( socket, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &set, sizeof(int) ) == 0;
+  return setsockoptCompat( socket, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &set, sizeof(int) ) == 0;
 }
 
 /***********************************************************************
@@ -99,7 +99,7 @@ inline bool setSocketReuseAddr(int socket, bool reuse = true)
 inline bool setSocketBindToDevice(int socket, const char *device)
 {
 #if defined(SO_BINDTODEVICE)
-  setsockopt( server_sock[ nbServerSock ], SOL_SOCKET, SO_BINDTODEVICE, device, strlen(device) ) == 0;
+  return setsockopt( server_sock[ nbServerSock ], SOL_SOCKET, SO_BINDTODEVICE, device, strlen(device) ) == 0;
 #else
   return true;
 #endif
