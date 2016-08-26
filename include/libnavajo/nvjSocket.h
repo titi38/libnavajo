@@ -45,18 +45,31 @@
 #define sendCompat send
 #endif
 
+
 /***********************************************************************
-* setSocketNoSigpipe:  Place a timeout on the socket
+* setSocketIp6Only:  restricted socket able to send and receive IPv6 packets only
 * @param socket   - socket descriptor
-* @param sigpipe  - sigpipe generation: no by default  
-* diabled generation of SIGPIPE for the socket
-* \return true if successfull else false
+* @param v6only  - IP6 socket only : true by default
+* \return true is successful, otherwise false
 ***********************************************************************/
 
-inline bool setSocketNoSigpipe(int socket, bool sigpipe = false)
+inline bool setSocketIp6Only(int socket, bool v6only = true)
 {
-#ifndef LINUX
-  int set = sigpipe ? 0 : 1;
+  int set = v6only ? 1 : 0;
+  setsockoptCompat( socket, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &set, sizeof(int) ) == 0;
+}
+
+/***********************************************************************
+* setSocketNoSigpipe:  Disable generation of SIGPIPE for the socket
+* @param socket   - socket descriptor
+* @param sigpipe  - sigpipe generation: true by default
+* \return true is successful, otherwise false
+***********************************************************************/
+
+inline bool setSocketNoSigpipe(int socket, bool nosigpipe = true)
+{
+#if defined(SO_NOSIGPIPE)
+  int set = nosigpipe ? 1 : 0;
   return setsockoptCompat( socket, SOL_SOCKET, SO_NOSIGPIPE, (void *) &set, sizeof(int) ) == 0;
 #else
   return true;
@@ -64,39 +77,67 @@ inline bool setSocketNoSigpipe(int socket, bool sigpipe = false)
 }
 
 /***********************************************************************
-* setSocketKeepAlive:  Place a timeout on the socket
-* @param socket    - socket descriptor
-* @param keepAlive - use keepAlive mode ?
-* keepAlive mode for the socket
-* \return result of setsockopt (successfull: 0, otherwise -1)
+* setSocketReuseAddr:  Reuse the socket even if the port is busy
+* @param socket   - socket descriptor
+* @param reuse  - sigpipe generation: true by default
+* \return true is successful, otherwise false
 ***********************************************************************/
 
-inline int setSocketKeepAlive(int socket, bool keepAlive)
+inline bool setSocketReuseAddr(int socket, bool reuse = true)
 {
-  int set = keepAlive ? 1 : 0;
-  return setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, (void *)&set, sizeof(int) );
+  int optval = reuse ? 1 : 0;
+  return setsockoptCompat( socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval ) == 0;
 }
 
 /***********************************************************************
-* setSocketDoLinger:  Place a timeout on the socket
+* setSocketBindToDevice:  Bind socket to a device
 * @param socket   - socket descriptor
-* @param dolinger - use dolinger mode ?
-* \return result of setsockopt (successfull: 0, otherwise -1)
+* @param device  - the device to use
+* \return true is successful, otherwise false
 ***********************************************************************/
 
-inline int setSocketDoLinger(int socket, bool dolinger)
+inline bool setSocketBindToDevice(int socket, const char *device)
+{
+#if defined(SO_BINDTODEVICE)
+  setsockopt( server_sock[ nbServerSock ], SOL_SOCKET, SO_BINDTODEVICE, device, strlen(device) ) == 0;
+#else
+  return true;
+#endif
+}
+
+/***********************************************************************
+* setSocketKeepAlive:  keepAlive mode for the socket
+* @param socket    - socket descriptor
+* @param keepAlive - use keepAlive mode ?
+* \return true is successful, otherwise false
+***********************************************************************/
+
+inline bool setSocketKeepAlive(int socket, bool keepAlive)
+{
+  int set = keepAlive ? 1 : 0;
+  return setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, (void *)&set, sizeof(int) ) == 0;
+}
+
+/***********************************************************************
+* setSocketDoLinger:  DoLinger Socket Mode
+* @param socket   - socket descriptor
+* @param dolinger - use dolinger mode ?
+* \return true is successful, otherwise false
+***********************************************************************/
+
+inline bool setSocketDoLinger(int socket, bool dolinger)
 {
   linger value;
   value.l_onoff = dolinger != 0;
   value.l_linger = dolinger;
-  return setsockopt( socket, SOL_SOCKET, SO_LINGER, (char*)&value, sizeof (linger) );
+  return setsockopt( socket, SOL_SOCKET, SO_LINGER, (char*)&value, sizeof (linger) ) == 0;
 }
 /***********************************************************************
 * setSocketSndRcvTimeout:  Place a timeout on the socket
 * @param socket   - socket descriptor
 * @param seconds  - number of seconds
 * @param useconds - number of useconds
-* \return true is successfull, else false
+* \return true is successful, otherwise false
 ***********************************************************************/
 
 inline bool setSocketSndRcvTimeout(int socket, time_t seconds, long int useconds=0)
@@ -115,7 +156,7 @@ inline bool setSocketSndRcvTimeout(int socket, time_t seconds, long int useconds
   tv2.tv_usec = useconds ;
 
   if (  (setsockoptCompat (socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(struct timeval)) == 0)
-     && (setsockoptCompat (socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv2, sizeof(struct timeval)) == 0))
+        && (setsockoptCompat (socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv2, sizeof(struct timeval)) == 0))
     return true;
 #endif
 
@@ -127,7 +168,7 @@ inline bool setSocketSndRcvTimeout(int socket, time_t seconds, long int useconds
 * @param socket  - socket descriptor
 * @param seconds - number of seconds
 * @param milliseconds - number of milliseconds
-* \return true if no error, otherwise return false
+* \return true is successful, otherwise false
 ***********************************************************************/
 
 inline bool setSocketTcpAckTimeout(int socket, int seconds, int milliseconds)
@@ -144,10 +185,10 @@ inline bool setSocketTcpAckTimeout(int socket, int seconds, int milliseconds)
 * setSocketNagleAlgo:
 * @param socket  - socket descriptor
 * @param enabled - use Nagle Algorithm
-* \return result of setsockopt (successfull: 0, otherwise -1)
+* \return true is successful, otherwise false
 ***********************************************************************/
 
-inline int setSocketNagleAlgo(int socket, bool naggle = false)
+inline bool setSocketNagleAlgo(int socket, bool naggle = false)
 {
   int flag = naggle ? 1 : 0;
   return setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char *)&flag,sizeof(flag)) == 0;

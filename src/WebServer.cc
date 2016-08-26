@@ -1033,15 +1033,14 @@ u_short WebServer::init()
 
     int optval = 1;
 
-    setsockoptCompat( server_sock [ nbServerSock ], SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
-
+    setSocketReuseAddr(server_sock [ nbServerSock ]);
 
     if (device.length())
     {
 #ifndef LINUX
       NVJ_LOG->append(NVJ_WARNING, "WebServer: HttpdDevice parameter will be ignored on your system");
 #else
-      setsockopt( server_sock [ nbServerSock ], SOL_SOCKET, SO_BINDTODEVICE, device.c_str(), device.length());
+      setSocketBindToDevice(server_sock [ nbServerSock ], device.c_str());
 #endif
     }
 
@@ -1053,11 +1052,7 @@ u_short WebServer::init()
 #if defined( IPV6_V6ONLY )
       
       //Disable IPv4 mapped addresses.
-      
-      int v6Only = 1;
-
-      setsockoptCompat( server_sock [ nbServerSock ], IPPROTO_IPV6, IPV6_V6ONLY, &v6Only, sizeof( v6Only ) ) ;
-                
+      setSocketIp6Only( server_sock [ nbServerSock ] );
 #else
       NVJ_LOG->append(NVJ_WARNING, "WebServer: Cannot set IPV6_V6ONLY socket option.  Closing IPv6 socket.");
       close(  server_sock[ nbServerSock ] );
