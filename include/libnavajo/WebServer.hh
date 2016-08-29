@@ -161,12 +161,16 @@ class WebServer
     inline void setUseSSL(bool ssl, const char* certFile = "", const char* certPwd = "")
         { sslEnabled = ssl; sslCertFile = certFile; sslCertPwd = certPwd; };
 
-    /**
+    inline bool isUseSSL() { return sslEnabled; };
+
+  /**
     * Enabled or disabled X509 authentification
     * @param a: boolean. X509 authentification is required if a is true.
     * @param caFile: the path to cachain file
     */
     inline void setAuthPeerSSL(const bool a = true, const char* caFile = "") { authPeerSsl = a; sslCaFile = caFile; };
+
+    inline bool isAuthPeerSSL() { return authPeerSsl; };
 
     /**
     * Restricted X509 authentification to a DN user list. Add this given DN.

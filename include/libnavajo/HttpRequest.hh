@@ -448,6 +448,14 @@ class HttpRequest
 
     /**********************************************************************/
     /**
+    * is it a x509 authentification request ?
+    * @return true if x509 auth
+    */
+    inline bool isX509auth()
+    { return clientSockData->peerDN == NULL; }
+
+    /**********************************************************************/
+    /**
     * get compression mode
     * @return the compression mode requested
     */   
