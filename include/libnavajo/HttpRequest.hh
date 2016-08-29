@@ -452,7 +452,7 @@ class HttpRequest
     * @return true if x509 auth
     */
     inline bool isX509auth()
-    { return clientSockData->peerDN == NULL; }
+    { return clientSockData->peerDN != NULL; }
 
     /**********************************************************************/
     /**
