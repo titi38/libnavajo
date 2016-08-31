@@ -370,6 +370,7 @@ bool WebSocketClient::sendMessage( const MessageContent *msgContent )
   size_t headerLen=2; // default header size
   unsigned char *msg = NULL;
   size_t msgLen=0;
+  bool result = true;
 
   headerBuffer[0]= 0x80 | (msgContent->opcode & 0xf) ; // FIN & OPCODE:0x1
   if (client->compression == ZLIB)
@@ -410,17 +411,14 @@ bool WebSocketClient::sendMessage( const MessageContent *msgContent )
     }
   }
 
-
   if (  !WebServer::httpSend(client, headerBuffer, headerLen)
      || !WebServer::httpSend(client, msg, msgLen) )
-  {
-    return false;
-  }
+    result = false;
 
   if (client->compression == ZLIB)
     free (msg);
 
-  return true;
+  return result;
 }
 
 /***********************************************************************/

@@ -578,7 +578,9 @@ bool WebServer::accept_request(ClientSockData* client)
 
         std::string header = getHttpWebSocketHeader("101 Switching Protocols", webSocketClientKey, client->compression == ZLIB);
 
-        httpSend(client, (const void*) header.c_str(), header.length());
+        if (! httpSend(client, (const void*) header.c_str(), header.length()) )
+          goto FREE_RETURN_TRUE;
+
         HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mutipartContentParser);
 
         webSocket->newConnectionRequest(request);
@@ -599,7 +601,7 @@ bool WebServer::accept_request(ClientSockData* client)
 
         std::string msg = getNotFoundErrorMsg();
         httpSend(client, (const void*) msg.c_str(), msg.length());
-        
+
         goto FREE_RETURN_TRUE;
       }
     }
@@ -729,14 +731,16 @@ bool WebServer::accept_request(ClientSockData* client)
     if (sizeZip>0 && (client->compression == GZIP))
     {  
       std::string header = getHttpHeader("200 OK", sizeZip, keepAlive, true, &response);
-      httpSend(client, (const void*) header.c_str(), header.length());
-      httpSend(client, (const void*) gzipWebPage, sizeZip);
+      if ( !httpSend(client, (const void*) header.c_str(), header.length())
+        || !httpSend(client, (const void*) gzipWebPage, sizeZip) )
+        goto FREE_RETURN_TRUE;
     }
     else
     {
       std::string header = getHttpHeader("200 OK", webpageLen, keepAlive, false, &response);
-      httpSend(client, (const void*) header.c_str(), header.length());
-      httpSend(client, (const void*) webpage, webpageLen);
+      if ( !httpSend(client, (const void*) header.c_str(), header.length())
+        || !httpSend(client, (const void*) webpage, webpageLen) )
+        goto FREE_RETURN_TRUE;
     }
 
     if (sizeZip>0 && !zippedFile) // cas compression = double desalloc
