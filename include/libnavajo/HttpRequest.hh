@@ -53,6 +53,7 @@ class HttpRequest
   HttpRequestParametersMap parameters;
   std::string sessionId;
   MPFD::Parser *mutipartContentParser;
+  std::string jsonPayload ;
 
   /**********************************************************************/
   /**
@@ -364,7 +365,7 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client, MPFD::Parser *parser=NULL)
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client, const char *json, MPFD::Parser *parser=NULL)
     { 
       this->httpMethod = type;
       this->url = url;
@@ -372,6 +373,7 @@ class HttpRequest
       this->httpAuthUsername=username;
       this->clientSockData=client;
       this->mutipartContentParser=parser;
+      this->jsonPayload=json ;
       
       if (params != NULL && strlen(params))
         decodParams(params);
@@ -395,6 +397,13 @@ class HttpRequest
     */    
     inline MPFD::Parser *getMPFDparser() { return mutipartContentParser; };
     
+    /**********************************************************************/
+    /**
+    * get the MPFD parser
+    * @return a pointer to the MPFDparser instance
+    */
+    inline std::string getJsonPayload() { return jsonPayload; };
+
     /**********************************************************************/
     /**
     * get url    
