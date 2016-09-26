@@ -445,7 +445,6 @@ bool WebServer::accept_request(ClientSockData* client)
               requestParams[i++] = bufLine[j++];
             requestParams[i]='\0'; 
           }
-          //else requestParams[0]='\0';
 
           while (isspace((int)(bufLine[j])) && j < (unsigned)bufLineLen) j++;
           if (strncmp(bufLine+j, "HTTP/", 5) == 0)
@@ -572,6 +571,11 @@ bool WebServer::accept_request(ClientSockData* client)
           else
             requestParams = (char*) realloc(requestParams, (datalen + bufLineLen + 1));
 
+          if (requestParams == NULL)
+          {
+            NVJ_LOG->append( NVJ_DEBUG, "WebServer::accept_request -  memory allocation failed" );
+            break;
+          }
           memcpy(requestParams + datalen, buffer, bufLineLen);
           *(requestParams + datalen + bufLineLen)='\0';
         }
@@ -590,7 +594,17 @@ bool WebServer::accept_request(ClientSockData* client)
           else
           {
             if (!payload.size())
-              payload.reserve(requestContentLength);
+            {
+              try
+              {
+                payload.reserve(requestContentLength);
+              }
+              catch (std::bad_alloc &e)
+              {
+                NVJ_LOG->append( NVJ_DEBUG, "WebServer::accept_request -  payload.reserve() failed with exception: " + std::string(e.what()) );
+                break;
+              }
+            }
 
             payload.resize( datalen+bufLineLen );
             memcpy(&payload[datalen], buffer, bufLineLen);
