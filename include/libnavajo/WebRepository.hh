@@ -20,9 +20,25 @@
 
 class WebRepository
 {
+
   public:
+
+    /**
+    * Try to resolve an http request by requesting the webrepository
+    * called from WebServer::accept_request() method
+    * @param request: a pointer to the current request
+    * @param response: a pointer to the new generated response
+    * \return true if the repository contains the requested resource
+    */
     virtual bool getFile(HttpRequest* request, HttpResponse *response) = 0;
+
+    /**
+    * Free resources after use.
+    * called from WebServer::accept_request() method
+    * @param webpage: a pointer to the generated page
+    */
     virtual void freeFile(unsigned char *webpage) = 0;
+
 };
 
 #endif

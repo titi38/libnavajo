@@ -49,8 +49,20 @@ class PrecompiledRepository : public WebRepository
     
     static void initIndexMap();
 
+   /**
+    * Free resources after use. Inherited from class WebRepository
+    * called from WebServer::accept_request() method
+    * @param webpage: a pointer to the generated page
+    */
     inline void freeFile(unsigned char *webpage) { };
 
+   /**
+    * Try to resolve an http request by requesting the PrecompiledRepository. Inherited from class WebRepository
+    * called from WebServer::accept_request() method
+    * @param request: a pointer to the current request
+    * @param response: a pointer to the new generated response
+    * \return true if the repository contains the requested resource
+    */
     inline virtual bool getFile(HttpRequest* request, HttpResponse *response)
     {
       std::string url = request->getUrl();

@@ -102,14 +102,6 @@ bool LocalRepository::fileExist(const std::string& url)
 
 /**********************************************************************/
 
-void LocalRepository::printFilenames()
-{
-  for (std::set<std::string>::iterator it = filenamesSet.begin(); it != filenamesSet.end(); it++)
-    printf ("%s\n", it->c_str() );
-}
-
-/**********************************************************************/
-
 bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
 {
   std::string url = request->getUrl();
