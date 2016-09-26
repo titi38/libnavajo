@@ -53,6 +53,7 @@ class HttpRequest
   HttpRequestParametersMap parameters;
   std::string sessionId;
   MPFD::Parser *mutipartContentParser;
+  const char *contentType;
   std::vector<uint8_t> *payload;
 
   /**********************************************************************/
@@ -368,16 +369,18 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client, MPFD::Parser *parser=NULL, std::vector<uint8_t>* payload=NULL)
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client,
+                const char* contentType, std::vector<uint8_t>* payload=NULL, MPFD::Parser *parser=NULL)
     { 
       this->httpMethod = type;
       this->url = url;
       this->origin = origin;
       this->httpAuthUsername=username;
       this->clientSockData=client;
-      this->mutipartContentParser=parser;
+      this->contentType=contentType ;
       this->payload=payload ;
-      
+      this->mutipartContentParser=parser;
+
       if (params != NULL && strlen(params))
         decodParams(params);
       
@@ -399,7 +402,14 @@ class HttpRequest
     * @return a pointer to the MPFDparser instance
     */    
     inline MPFD::Parser *getMPFDparser() { return mutipartContentParser; };
-    
+
+    /**********************************************************************/
+    /**
+    * get the content-type (if defined)
+    * @return the content-type string
+    */
+    inline const char* getContentType() const { return contentType; };
+
     /**********************************************************************/
     /**
     * get the Request Payload (if it exists)
