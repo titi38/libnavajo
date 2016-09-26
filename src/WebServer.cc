@@ -242,8 +242,9 @@ bool WebServer::accept_request(ClientSockData* client)
   HttpRequestMethod requestMethod;
   size_t requestContentLength=0;
   bool urlencodedForm=false;
-  bool hasJsonPayload=false;
-  std::string jsonPayload;
+
+  std::vector<uint8_t> payload;
+
   char *urlBuffer=NULL;
   char *mutipartContent=NULL;
   size_t nbFileKeepAlive=5;
@@ -374,12 +375,6 @@ bool WebServer::accept_request(ClientSockData* client)
             strcpy(mutipartContent, bufLine+j);
             continue; 
           }
-          else
-            if (strncasecmp(bufLine+j, "Content-Type: application/json", 30) == 0)
-            {
-              hasJsonPayload=true ;
-              continue;
-            }
   
         if (strncasecmp(bufLine+j, "Content-Length: ",16) == 0)
           { j+=16; requestContentLength = atoi(bufLine+j); continue; }
@@ -484,6 +479,34 @@ bool WebServer::accept_request(ClientSockData* client)
       strcpy (urlBuffer + strlen(urlBuffer), "index.html");
     }
 
+    // Interpret '%' character
+    std::string urlString(urlBuffer);
+    size_t start = 0, end = 0;
+
+    while ((end = urlString.find_first_of('%', start)) != std::string::npos)
+    {
+      size_t len=urlString.length()-end-1;
+      if ( urlString[end]=='%' && len>=1 )
+      {
+        if ( urlString[end+1]=='%' )
+          urlString=urlString.erase(end+1,1);
+        else
+        {
+          if (len>=2)
+          {
+            unsigned int specar;
+            std::string hexChar=urlString.substr(end+1,2);
+            std::stringstream ss; ss << std::hex << hexChar.c_str();
+            ss >> specar;
+            urlString[end] = (char)specar;
+            urlString=urlString.erase(end+1,2);
+          }
+        }
+      }
+      start=end+1;
+    }
+    strcpy (urlBuffer, urlString.c_str());
+
     #ifdef DEBUG_TRACES
     char logBuffer[BUFSIZE];
     snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", urlBuffer, requestMethod, requestParams, requestCookies, httpVers, keepAlive, client->compression );
@@ -494,7 +517,7 @@ bool WebServer::accept_request(ClientSockData* client)
     if (keepAlive==-1) 
       keepAlive = ( strncmp (httpVers,"1.1", 3) >= 0 );
 
-    if (mutipartContent != NULL) // strlen (mutipartContent) == 0
+    if (mutipartContent != NULL)
     {
       try
       {
@@ -514,7 +537,7 @@ bool WebServer::accept_request(ClientSockData* client)
     }
 
     // Read request content
-    if ( requestContentLength && ( hasJsonPayload || urlencodedForm || (mutipartContentParser != NULL) ) )
+    if ( requestContentLength )
     {
       size_t datalen = 0;
 
@@ -553,24 +576,27 @@ bool WebServer::accept_request(ClientSockData* client)
           *(requestParams + datalen + bufLineLen)='\0';
         }
         else
-          if ( mutipartContentParser != NULL && bufLineLen)
-          {
+        {
+          if ( mutipartContentParser != NULL && bufLineLen )
             try
             {
-              mutipartContentParser->AcceptSomeData(buffer, bufLineLen);
+              mutipartContentParser->AcceptSomeData( buffer, bufLineLen );
             }
-            catch (MPFD::Exception e) 
+            catch ( MPFD::Exception e )
             {
-              NVJ_LOG->append(NVJ_DEBUG, "WebServer::accept_request -  MPFD::Exception: "+ e.GetError() );
+              NVJ_LOG->append( NVJ_DEBUG, "WebServer::accept_request -  MPFD::Exception: " + e.GetError() );
               break;
             }
-          } else {
-            if ( hasJsonPayload )
-            {
-              jsonPayload+=buffer ;
-            }
+          else
+          {
+            if (!payload.size())
+              payload.reserve(requestContentLength);
+
+            payload.resize( datalen+bufLineLen );
+            memcpy(&payload[datalen], buffer, bufLineLen);
           }
-            
+        }
+
         datalen+=bufLineLen;
       };
     }
@@ -596,7 +622,7 @@ bool WebServer::accept_request(ClientSockData* client)
         if (! httpSend(client, (const void*) header.c_str(), header.length()) )
           goto FREE_RETURN_TRUE;
 
-        HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, "", mutipartContentParser);
+        HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mutipartContentParser, &payload);
 
         webSocket->newConnectionRequest(request);
 
@@ -630,7 +656,7 @@ bool WebServer::accept_request(ClientSockData* client)
     int sizeZip=0;
     bool zippedFile=false;
 
-    HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, jsonPayload.c_str(), mutipartContentParser);
+    HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mutipartContentParser, &payload);
 
     const char *mime=get_mime_type(urlBuffer); 
     std::string mimeStr; if (mime != NULL) mimeStr=mime;

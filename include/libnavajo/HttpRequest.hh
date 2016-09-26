@@ -53,7 +53,7 @@ class HttpRequest
   HttpRequestParametersMap parameters;
   std::string sessionId;
   MPFD::Parser *mutipartContentParser;
-  std::string jsonPayload ;
+  std::vector<uint8_t> *payload;
 
   /**********************************************************************/
   /**
@@ -67,13 +67,16 @@ class HttpRequest
 
     while ((end = paramstr.find_first_of("%+", start)) != std::string::npos) 
     {
+      size_t len=paramstr.length()-end-1;
       switch (paramstr[end])
       {
         case '%':
-          if (paramstr[end+1]=='%')
+          if ( paramstr[end+1]=='%' && len )
             paramstr=paramstr.erase(end+1,1);
           else
           {
+            if (len < 2) break;
+
             unsigned int specar;
             std::string hexChar=paramstr.substr(end+1,2);
             std::stringstream ss; ss << std::hex << hexChar.c_str();
@@ -365,7 +368,7 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client, const char *json, MPFD::Parser *parser=NULL)
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client, MPFD::Parser *parser=NULL, std::vector<uint8_t>* payload=NULL)
     { 
       this->httpMethod = type;
       this->url = url;
@@ -373,7 +376,7 @@ class HttpRequest
       this->httpAuthUsername=username;
       this->clientSockData=client;
       this->mutipartContentParser=parser;
-      this->jsonPayload=json ;
+      this->payload=payload ;
       
       if (params != NULL && strlen(params))
         decodParams(params);
@@ -399,10 +402,10 @@ class HttpRequest
     
     /**********************************************************************/
     /**
-    * get the MPFD parser
-    * @return a pointer to the MPFDparser instance
+    * get the Request Payload (if it exists)
+    * @return raw byte content
     */
-    inline std::string getJsonPayload() { return jsonPayload; };
+    inline std::vector<uint8_t>& getPayload() { return *payload; };
 
     /**********************************************************************/
     /**

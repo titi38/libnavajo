@@ -50,7 +50,7 @@ function loadUploadedFiles()
       $("#files_list").empty();
       $.each(data.data, function(i, item)
       {
-        $("#files_list").append("<a href=" + item +">" + item + "</a><BR/>");
+        $("#files_list").append("<a href=\"" + item +"\">" + item + "</a><BR/>");
       });
     }).fail(function(msg) {
       alert(JSON.stringify(msg));

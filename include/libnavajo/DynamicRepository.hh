@@ -60,7 +60,7 @@ class DynamicRepository : public WebRepository
     */
     inline void remove(const std::string urlToRemove, bool deleteDynamicPage=false)
     {
-      string url(urlToRemove);
+      std::string url(urlToRemove);
       while (url.size() && url[0]=='/') url.erase(0, 1);
       pthread_mutex_lock( &_mutex );
       IndexMap::const_iterator i = indexMap.find (url);

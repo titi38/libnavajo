@@ -25,6 +25,8 @@ class DynamicPage
 
   public:
     DynamicPage() {};
+    virtual ~DynamicPage() {};
+
     virtual bool getPage(HttpRequest* request, HttpResponse *response) = 0;
     
 

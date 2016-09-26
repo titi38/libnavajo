@@ -13,6 +13,8 @@
 
 #include <signal.h> 
 #include <string.h> 
+#include <sstream>
+#include <iomanip>
 #include "libnavajo/libnavajo.hh"
 #include "libnavajo/LogStdOutput.hh"
 
@@ -25,6 +27,34 @@ LocalRepository *myUploadRepo = NULL;
 void exitFunction( int dummy )
 {
    if (webServer != NULL) webServer->stopService();
+}
+
+/***********************************************************************/
+
+inline std::string escape_json(const std::string &s)
+{
+  std::ostringstream o;
+  for (std::string::const_iterator c = s.cbegin(); c != s.cend(); c++)
+  {
+    switch (*c) {
+      case '"': o << "\\\""; break;
+      case '\\': o << "\\\\"; break;
+      case '\b': o << "\\b"; break;
+      case '\f': o << "\\f"; break;
+      case '\n': o << "\\n"; break;
+      case '\r': o << "\\r"; break;
+      case '\t': o << "\\t"; break;
+      default:
+        if ('\x00' <= *c && *c <= '\x1f')
+        {
+          o << "\\u"
+          << std::hex << std::setw(4) << std::setfill('0') << (int)*c;
+        }
+        else
+          o << *c;
+    }
+  }
+  return o.str();
 }
 
 /***********************************************************************/
@@ -74,12 +104,12 @@ class MyDynamicRepository : public DynamicRepository
     {
       bool getPage(HttpRequest* request, HttpResponse *response)
       {
-	std::string json = "{ \"data\" : [";
-	std::set< std::string >* filenames = myUploadRepo->getFilenames();
+        std::string json = "{ \"data\" : [";
+        std::set< std::string >* filenames = myUploadRepo->getFilenames();
         std::set<std::string>::iterator it = filenames->begin(); 
         while (it != filenames->end())
         {
-          json += std::string("\"") + it->c_str() + '\"';
+          json += std::string("\"") + escape_json(it->c_str()) + '\"';
           if (++it != filenames->end()) 
             json += ", ";
         }
