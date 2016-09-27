@@ -244,7 +244,7 @@ bool WebServer::accept_request(ClientSockData* client)
   bool urlencodedForm=false;
 
   std::vector<uint8_t> payload;
-  char contentType[64]="\0";
+  char mimeType[64]="\0";
 
   char *urlBuffer=NULL;
   char *mutipartContent=NULL;
@@ -377,13 +377,13 @@ bool WebServer::accept_request(ClientSockData* client)
           else
             length = strlen( start );
           if ( length >= 63 ) length = 63;
-          strncpy( contentType, start, length );
-          contentType[ length ] = '\0';
+          strncpy( mimeType, start, length );
+          mimeType[ length ] = '\0';
 
-          if ( strncasecmp( contentType, "application/x-www-form-urlencoded", 33 ) == 0 )
+          if ( strncasecmp( mimeType, "application/x-www-form-urlencoded", 33 ) == 0 )
             urlencodedForm = true;
           else
-            if ( strncasecmp( contentType, "multipart/form-data", 19 ) == 0 )
+            if ( strncasecmp( mimeType, "multipart/form-data", 19 ) == 0 )
             {
               mutipartContent = ( char * ) malloc( ( strlen( bufLine + j ) + 1 ) * sizeof( char ) );
               strcpy( mutipartContent, bufLine + j );
@@ -651,7 +651,7 @@ bool WebServer::accept_request(ClientSockData* client)
         if (! httpSend(client, (const void*) header.c_str(), header.length()) )
           goto FREE_RETURN_TRUE;
 
-        HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, contentType, &payload, mutipartContentParser);
+        HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mimeType, &payload, mutipartContentParser);
 
         webSocket->newConnectionRequest(request);
 
@@ -685,7 +685,7 @@ bool WebServer::accept_request(ClientSockData* client)
     int sizeZip=0;
     bool zippedFile=false;
 
-    HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, contentType, &payload, mutipartContentParser);
+    HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mimeType, &payload, mutipartContentParser);
 
     const char *mime=get_mime_type(urlBuffer); 
     std::string mimeStr; if (mime != NULL) mimeStr=mime;

@@ -53,7 +53,7 @@ class HttpRequest
   HttpRequestParametersMap parameters;
   std::string sessionId;
   MPFD::Parser *mutipartContentParser;
-  const char *contentType;
+  const char *mimeType;
   std::vector<uint8_t> *payload;
 
   /**********************************************************************/
@@ -370,14 +370,14 @@ class HttpRequest
     * @cookies params: raw http cookies string
     */         
     HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client,
-                const char* contentType, std::vector<uint8_t>* payload=NULL, MPFD::Parser *parser=NULL)
+                const char* mimeType, std::vector<uint8_t>* payload=NULL, MPFD::Parser *parser=NULL)
     { 
       this->httpMethod = type;
       this->url = url;
       this->origin = origin;
       this->httpAuthUsername=username;
       this->clientSockData=client;
-      this->contentType=contentType ;
+      this->mimeType=mimeType ;
       this->payload=payload ;
       this->mutipartContentParser=parser;
 
@@ -405,10 +405,10 @@ class HttpRequest
 
     /**********************************************************************/
     /**
-    * get the content-type (if defined)
-    * @return the content-type string
+    * get the MIME content-type (if defined)
+    * @return the MIME content-type string
     */
-    inline const char* getContentType() const { return contentType; };
+    inline const char* getMimeType() const { return mimeType; };
 
     /**********************************************************************/
     /**
