@@ -426,6 +426,13 @@ class HttpRequest
 
     /**********************************************************************/
     /**
+    * set new url
+    * @param name: the attribute name
+    * */
+    inline void setUrl(const char *newUrl) { url=newUrl; };
+
+    /**********************************************************************/
+    /**
     * get request type    
     * @return the Http Request Type ( GET/POST/...)
     */

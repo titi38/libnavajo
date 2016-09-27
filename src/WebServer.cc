@@ -701,6 +701,7 @@ bool WebServer::accept_request(ClientSockData* client)
       {
         urlBuffer = (char*) realloc( urlBuffer, (response.getForwardedUrl().size() + 1) * sizeof(char) ); 
         strcpy( urlBuffer, response.getForwardedUrl().c_str() );
+        request.setUrl(urlBuffer);
         response.forwardTo("");
         repo=webRepositories.begin(); fileFound=false;
       }
