@@ -437,14 +437,21 @@ class HttpRequest
     * @return the Http Request Type ( GET/POST/...)
     */
     inline HttpRequestMethod getRequestType() const { return httpMethod; };
-  
+
     /**********************************************************************/
+    /**
+    * set new Request Type
+    * @param name: the HttpRequestMethod
+    * */
+    inline void setRequestType(HttpRequestMethod newMethod) { httpMethod=newMethod; };
+
+  /**********************************************************************/
     /**
     * get request origin    
     * @return the Http Request Origin
     */
     inline const char* getRequestOrigin() const { return origin; };
-    
+
     /**********************************************************************/
     /**
     * get peer IP address    
