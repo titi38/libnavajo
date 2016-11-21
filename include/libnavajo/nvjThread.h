@@ -41,7 +41,7 @@ extern "C"
 /***********************************************************************/
 
 inline void create_thread(pthread_t *thread_p,
-	 	void *(* thread_rtn)(void *), void *data_p)
+	 	void *(* thread_rtn)(void *), void *data_p, bool joinable=true, size_t stackSize=512*1024 /* Redhat default size is 2*1024*1024 */ )
 {
 	pthread_attr_t  thread_attr;	    /* Thread attributes		 */
 	int		rc;		    /* Return code (error number)	 */
@@ -52,11 +52,11 @@ inline void create_thread(pthread_t *thread_p,
 	if (rc != 0)
 	    fprintf(stderr, "pthread_attr_init(): %s\n", STRERROR(rc));
 
-	rc = pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE);
+	rc = pthread_attr_setdetachstate(&thread_attr, joinable?PTHREAD_CREATE_JOINABLE:PTHREAD_CREATE_DETACHED);
 	if (rc != 0)
 	    fprintf(stderr, "pthread_attr_setdetachstate(): %s\n", STRERROR(rc));
 	    
-	rc = pthread_attr_setstacksize (&thread_attr, 512 * 1024); // par d�fault 2*1024*1024
+	rc = pthread_attr_setstacksize (&thread_attr, stackSize); 
 	if (rc != 0)
 	    fprintf(stderr, "pthread_attr_setstacksize(): %s\n", STRERROR(rc));
 		
