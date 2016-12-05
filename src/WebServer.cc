@@ -272,7 +272,7 @@ bool WebServer::accept_request(ClientSockData* client)
   
   bool authOK = authLoginPwdList.size() == 0;
   char httpVers[4]="";
-  int keepAlive=-1;
+  bool keepAlive=false;
   bool isQueryStr=false;
   
   do
@@ -281,7 +281,7 @@ bool WebServer::accept_request(ClientSockData* client)
     requestMethod=UNKNOWN_METHOD;
     requestContentLength=0;
     username="";
-    keepAlive=-1;
+    keepAlive=false;
     isQueryStr=false;
     
     if (urlBuffer != NULL) { free (urlBuffer); urlBuffer=NULL; };
@@ -728,7 +728,8 @@ bool WebServer::accept_request(ClientSockData* client)
       {
         std::string msg = getNoContentErrorMsg();
         httpSend(client, (const void*) msg.c_str(), msg.length());
-
+	if (webpage != NULL) 
+          (*repo)->freeFile(webpage);
         goto FREE_RETURN_TRUE;
       }
         
@@ -753,6 +754,7 @@ bool WebServer::accept_request(ClientSockData* client)
           NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip decompression failed !");
           std::string msg = getInternalServerErrorMsg();
           httpSend(client, (const void*) msg.c_str(), msg.length());
+          (*repo)->freeFile(gzipWebPage);
           goto FREE_RETURN_TRUE;
         }
       }
@@ -761,6 +763,7 @@ bool WebServer::accept_request(ClientSockData* client)
           NVJ_LOG->append(NVJ_ERROR, "Webserver: nvj_gunzip raised an exception");
           std::string msg = getInternalServerErrorMsg();
           httpSend(client, (const void*) msg.c_str(), msg.length());
+          (*repo)->freeFile(gzipWebPage);
           goto FREE_RETURN_TRUE;
       }
     }
@@ -778,6 +781,7 @@ bool WebServer::accept_request(ClientSockData* client)
             NVJ_LOG->append(NVJ_ERROR, "Webserver: gunzip compression failed !");
             std::string msg = getInternalServerErrorMsg();
             httpSend(client, (const void*) msg.c_str(), msg.length());
+            (*repo)->freeFile(webpage);
             goto FREE_RETURN_TRUE;
           }
           else
@@ -792,6 +796,7 @@ bool WebServer::accept_request(ClientSockData* client)
               NVJ_LOG->append(NVJ_ERROR, "Webserver: nvj_gzip raised an exception");
               std::string msg = getInternalServerErrorMsg();
               httpSend(client, (const void*) msg.c_str(), msg.length());
+              (*repo)->freeFile(webpage);
               goto FREE_RETURN_TRUE;
           }
       }
@@ -804,32 +809,35 @@ bool WebServer::accept_request(ClientSockData* client)
       std::string header = getHttpHeader("200 OK", sizeZip, keepAlive, true, &response);
       if ( !httpSend(client, (const void*) header.c_str(), header.length())
         || !httpSend(client, (const void*) gzipWebPage, sizeZip) )
-        goto FREE_RETURN_TRUE;
+      {
+        NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the zipped page: ") + urlBuffer);
+        keepAlive=false;
+      }
     }
     else
     {
       std::string header = getHttpHeader("200 OK", webpageLen, keepAlive, false, &response);
       if ( !httpSend(client, (const void*) header.c_str(), header.length())
         || !httpSend(client, (const void*) webpage, webpageLen) )
-        goto FREE_RETURN_TRUE;
+      {
+        NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the page: ") + urlBuffer);
+        keepAlive=false;
+      }
     }
 
     if (sizeZip>0 && !zippedFile) // cas compression = double desalloc
     {
       free (gzipWebPage);
       (*repo)->freeFile(webpage); 
-      continue;
     }
-
-    if ((client->compression == NONE) && zippedFile) // cas décompression = double desalloc
-    {
-      free (webpage);
-      (*repo)->freeFile(gzipWebPage);
-      continue;
-    }
-
-    (*repo)->freeFile(webpage); 
-
+    else
+      if ((client->compression == NONE) && zippedFile) // cas décompression = double desalloc
+      {
+        free (webpage);
+        (*repo)->freeFile(gzipWebPage);
+      }
+      else
+        (*repo)->freeFile(webpage); 
   }
   while (keepAlive && !exiting);
   
@@ -863,17 +871,29 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
     {
       if(! BIO_should_retry(client->bio))
       {
-//          NVJ_LOG->append(NVJ_WARNING, "WebServer: BIO_write failed !");
-          return false;
+        // BIO_write failed
+        return false;
       }
       // retry
     }
-
     BIO_flush(client->bio);
     return true;
   }
   else
-    return sendCompat (client->socketId, buf, len, MSG_NOSIGNAL ) == (int)len;
+  {
+    size_t totalSent=0;
+    int sent=0;
+    do
+    {
+      sent = sendCompat (client->socketId, buf, len, MSG_NOSIGNAL );
+      if (sent > 0) totalSent+=(size_t)sent;
+      if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+        { usleep(50); continue; } 
+    }
+    while (sent >= 0 && totalSent != len);
+
+    return totalSent == len;
+  }
 }
 
 /***********************************************************************
@@ -1477,7 +1497,7 @@ void WebServer::threadProcessing()
         NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : An error occurred when attempting to access the socket (accept == -1)");
       else
       {
-        if (!setSocketSndRcvTimeout(client_sock, 1, 0))
+        if (!setSocketSndRcvTimeout(client_sock, 2, 0))
           NVJ_LOG->appendUniq(NVJ_ERROR, std::string("WebServer : setSocketSndRcvTimeout error - ") + strerror(errno) );
         if (!setSocketNoSigpipe(client_sock))
           NVJ_LOG->appendUniq(NVJ_ERROR, std::string("WebServer : setSocketNoSigpipe error - ") + strerror(errno) );

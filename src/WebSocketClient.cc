@@ -83,10 +83,10 @@ void WebSocketClient::receivingThread()
 
   ClientSockData* client = request->getClientSockData();
 
-  struct pollfd pfd;
-  memset(&pfd, 0 , sizeof(pollfd));
-  pfd.fd = client->socketId;
-  pfd.events = POLLIN;
+//  struct pollfd pfd;
+//  memset(&pfd, 0 , sizeof(pollfd));
+//  pfd.fd = client->socketId;
+//  pfd.events = POLLIN;
 
   if (!setSocketSndRcvTimeout(client->socketId, 0, 250))
   {// Reduce socket timeout
