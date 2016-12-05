@@ -71,7 +71,7 @@ bool LocalRepository::loadFilename_dir (const std::string& alias, const std::str
 
       if (stat(filepath.c_str(), &s) == -1) 
       {
-        NVJ_LOG->append(NVJ_ERROR,std::string("LocalRepository - stat error : ")+std::string(strerror(errno)));
+        NVJ_LOG->append(NVJ_ERROR,std::string("LocalRepository - stat error reading file '")+filepath+"': "+std::string(strerror(errno)));
         continue;
       }
 

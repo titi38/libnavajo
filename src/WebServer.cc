@@ -528,7 +528,7 @@ bool WebServer::accept_request(ClientSockData* client)
     #endif
 
     // determine if client support keepAlive
-    if (keepAlive==-1) 
+    if (!keepAlive) 
       keepAlive = ( strncmp (httpVers,"1.1", 3) >= 0 );
 
     if (mutipartContent != NULL)
