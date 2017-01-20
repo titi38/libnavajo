@@ -63,7 +63,7 @@ class DynamicRepository : public WebRepository
       std::string url(urlToRemove);
       while (url.size() && url[0]=='/') url.erase(0, 1);
       pthread_mutex_lock( &_mutex );
-      IndexMap::const_iterator i = indexMap.find (url);
+      IndexMap::iterator i = indexMap.find (url);
       if (i == indexMap.end())
       {
         pthread_mutex_unlock( &_mutex );
@@ -74,7 +74,7 @@ class DynamicRepository : public WebRepository
         pthread_mutex_unlock( &_mutex );
         if (deleteDynamicPage)
           delete i->second;
-        indexMap.erase(i);
+  //      indexMap.erase(i);
         return ;
       }
 
