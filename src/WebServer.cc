@@ -1248,7 +1248,7 @@ int WebServer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
   */
   if (!preverify_ok && (err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT))
   {
-   X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), buf, 256);
+   X509_NAME_oneline(X509_get_issuer_name(err_cert), buf, 256);  
    char buftmp[300]; snprintf(buftmp, 300, "X509_verify_cert error: issuer= %s", buf);
      NVJ_LOG->append(NVJ_DEBUG,buftmp);
   }

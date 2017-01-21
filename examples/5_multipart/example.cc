@@ -34,9 +34,10 @@ void exitFunction( int dummy )
 inline std::string escape_json(const std::string &s)
 {
   std::ostringstream o;
-  for (std::string::const_iterator c = s.cbegin(); c != s.cend(); c++)
+  
+  for (size_t i=0; i < s.length(); i++)
   {
-    switch (*c) {
+    switch (s[i]) {
       case '"': o << "\\\""; break;
       case '\\': o << "\\\\"; break;
       case '\b': o << "\\b"; break;
@@ -45,13 +46,13 @@ inline std::string escape_json(const std::string &s)
       case '\r': o << "\\r"; break;
       case '\t': o << "\\t"; break;
       default:
-        if ('\x00' <= *c && *c <= '\x1f')
+        if ('\x00' <= s[i] && s[i] <= '\x1f')
         {
           o << "\\u"
-          << std::hex << std::setw(4) << std::setfill('0') << (int)*c;
+          << std::hex << std::setw(4) << std::setfill('0') << (int) s[i];
         }
         else
-          o << *c;
+          o << s[i];
     }
   }
   return o.str();
