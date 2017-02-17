@@ -1,12 +1,6 @@
 #!/bin/sh
 LIB_VERSION=1.2
-ARCH_TYPE=`uname -m`
-
-if [ $ARCH_TYPE = "x86_64" ]; then
-  ARCH_SUFFIX=amd64
-else
-  ARCH_SUFFIX=i386
-fi
+ARCH_NAME=`dpkg --print-architecture`
 
 export DPKG_BUILD_ROOT=debianBuild
 rm -rf $DPKG_BUILD_ROOT
@@ -21,10 +15,6 @@ make clean
 make
 doxygen
 make install
-#make install PREFIX=$DPKG_BUILD_ROOT/usr
-
-#mv -f $DPKG_BUILD_ROOT/usr/lib $DPKG_BUILD_ROOT/usr/lib64
-#mv -f $DPKG_BUILD_ROOT/usr/lib64 $DPKG_BUILD_ROOT/usr/lib
 
 find $DPKG_BUILD_ROOT -type f | sed "s/$DPKG_BUILD_ROOT.\(.*\)\/\(.*\)/\2\t\t\1/" > install
 find $DPKG_BUILD_ROOT -type d | sed "s/$DPKG_BUILD_ROOT\///" | grep -v "$DPKG_BUILD_ROOT" > dirs
@@ -38,7 +28,7 @@ Package: libnavajo
 Section: Developpement
 Priority: optional
 Maintainer: Thierry DESCOMBES <thierry.descombes@gmail.com>
-Architecture: amd64 
+Architecture: `echo $ARCH_NAME`
 Depends: openssl, zlib1g-dev
 Version: 1.2
 Description: an implementation of a complete HTTP(S) server, complete, fast and lightweight.
@@ -111,5 +101,5 @@ cat > $DPKG_BUILD_ROOT/DEBIAN/postinst << EOF_POSTINST
 EOF_POSTINST
 chmod 755 $DPKG_BUILD_ROOT/DEBIAN/postinst
 
-dpkg -b $DPKG_BUILD_ROOT libnavajo-$LIB_VERSION.$ARCH_SUFFIX.deb
+dpkg -b $DPKG_BUILD_ROOT libnavajo-$LIB_VERSION.$ARCH_NAME.deb
 
