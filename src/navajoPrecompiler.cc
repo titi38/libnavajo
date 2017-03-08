@@ -67,6 +67,8 @@ typedef struct
 }  ConversionEntry;
 
 std::vector< std::string > filenamesVec;
+std::vector<std::string> listExcludeDir;
+
 
 /**********************************************************************/
 
@@ -97,15 +99,16 @@ bool loadFilename_dir (const std::string& path, const std::string& subpath="")
       }
 
       int type=s.st_mode & S_IFMT;
-      if (type == S_IFREG || type == S_IFLNK)
+      if ( (type == S_IFREG || type == S_IFLNK) 
+          && (std::find(listExcludeDir.begin(), listExcludeDir.end(), spath+entry->d_name) == listExcludeDir.end()) )    
         filenamesVec.push_back(spath+entry->d_name);
 
-      if (type == S_IFDIR)
+      if ( type == S_IFDIR
+          && (std::find(listExcludeDir.begin(), listExcludeDir.end(), spath+entry->d_name) == listExcludeDir.end()) )
         loadFilename_dir(path, spath+entry->d_name);
     }
 
     closedir (dir);
-
     return true;
 }
 
@@ -117,7 +120,7 @@ void parseDirectory( const std::string& dirPath )
   
   if (realpath(dirPath.c_str(), resolved_path) == NULL)
     return ;
-
+  
   if (!loadFilename_dir(resolved_path))
     return ;
 }
@@ -133,21 +136,28 @@ int main (int argc, char *argv[])
 {
   if (argc <= 1)
   {
-    printf("Usage: %s [dir ...]\n", argv[0]);
-//    printf("   ex: %s `find . -type f | cut -c 3-` > PrecompiledRepository.cc\n\n",  argv[0]);
+    printf("Usage: %s htmlRepository [--exclude [file directory ...]] \n", argv[0]);
     fflush(NULL);
     exit(EXIT_FAILURE);
   }
 
-  std::string directory=argv[1];
+  int param = 1; 
+  
+  std::string directory=argv[param];
   while (directory.length() && directory[directory.length()-1] == '/')
     directory = directory.substr(0,directory.length()-1);
+
+  if( strcmp(argv[param], "--exclude") != 0)
+    for (; param < argc; param++)
+      listExcludeDir.push_back(std::string(argv[param]));
+
   parseDirectory(directory); 
+
   if (!filenamesVec.size())
   {
-    fprintf(stderr, "ERROR: The directory '%s' is empty or not found !\n", directory.c_str()); 
+    fprintf(stderr, "ERROR: The directory is empty or not found !\n"); 
     exit(EXIT_FAILURE);
-  }
+  }  
 
   ConversionEntry* conversionTable= (ConversionEntry*) malloc( filenamesVec.size() * sizeof(ConversionEntry));
 
@@ -156,7 +166,6 @@ int main (int argc, char *argv[])
 
   for (size_t i = 0; i < filenamesVec.size(); i++)
   {
-
     FILE * pFile;
     size_t lSize;
     unsigned char * buffer;
@@ -165,7 +174,7 @@ int main (int argc, char *argv[])
 
     pFile = fopen ( filename.c_str() , "rb" );
     if (pFile==NULL)
-    { fprintf(stderr, "ERROR: can't read file: %s\n", filenamesVec[i].c_str()); exit (1); }
+      { fprintf(stderr, "ERROR: can't read file: %s\n", filenamesVec[i].c_str()); exit(EXIT_FAILURE); }
 
     // obtain file size.
     fseek (pFile , 0 , SEEK_END);
@@ -175,14 +184,14 @@ int main (int argc, char *argv[])
     // allocate memory to contain the whole file.
     buffer = (unsigned char*) malloc ((lSize+1)*sizeof(unsigned char));
     if (buffer == NULL)
-      { fprintf(stderr, "ERROR: can't malloc reading file: %s\n", filenamesVec[i].c_str()); fclose(pFile); exit (2); }
+      { fprintf(stderr, "ERROR: can't malloc reading file: %s\n", filenamesVec[i].c_str()); fclose(pFile); exit(EXIT_FAILURE); }
 
     // copy the file into the buffer.
     if (fread (buffer,1,lSize,pFile) != lSize)
     {
       fprintf(stderr,"\nCan't read file %s ... ABORT !\n", filenamesVec[i].c_str() );
       fclose(pFile);
-      exit(1);
+      exit(EXIT_FAILURE);
     };
 
     std::string outFilename = filenamesVec[i];
