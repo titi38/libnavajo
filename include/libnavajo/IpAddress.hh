@@ -153,7 +153,7 @@ class IpAddress
     { // IPv6
       char ipStr[INET6_ADDRSTRLEN];
       if (inet_ntop(AF_INET6, &(ip.v6), ipStr, INET6_ADDRSTRLEN ) == NULL)
-	res+="ERROR !";
+        res+="ERROR !";
       else
         res+=ipStr;
     }
@@ -189,6 +189,55 @@ class IpAddress
     
     return (!error);
   };
+
+
+  inline static IpAddress* fromHostname(const std::string& hostname, bool preferIpv4=true)
+  {
+    int status;
+    struct addrinfo hints, *p;
+    struct addrinfo *servinfo;
+    IpAddress *newIp4 = NULL, *newIp6 = NULL;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags    = AI_PASSIVE;
+
+    if ((status = getaddrinfo(hostname.c_str(), NULL, &hints, &servinfo)) != 0)
+      return NULL;
+
+    for (p=servinfo; p!=NULL; p=p->ai_next) {
+      if (p->ai_family == AF_INET) {
+        struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+        if (newIp4 == NULL)
+          newIp4 = new IpAddress( (in_addr_t) ipv4->sin_addr.s_addr );
+      }
+      else {
+        struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
+        if (newIp6 == NULL)
+          newIp6 = new IpAddress( ipv6->sin6_addr );
+      }
+    }
+
+    freeaddrinfo(servinfo);
+
+    if (newIp4 != NULL && !newIp4->isNull() && preferIpv4)
+    {
+      if (newIp6 != NULL) delete newIp6;
+      return newIp4;
+    }
+
+    if ( newIp6 != NULL && !newIp6->isNull() )
+    {
+      if ( newIp4 != NULL ) delete newIp4;
+      return newIp6;
+    }
+
+    if (newIp6 != NULL) delete newIp6;
+    if (newIp4 != NULL) delete newIp4;
+
+    return NULL;
+  }
 
   inline static IpAddress* fromString(const std::string& value)
   {
