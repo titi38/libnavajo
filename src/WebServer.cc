@@ -431,8 +431,8 @@ bool WebServer::accept_request(ClientSockData* client)
           if (strncmp(bufLine+j, "POST", 4) == 0)
           {  requestMethod=POST_METHOD; isQueryStr=true; j+=5; }
           else
-            if (strncmp(bufLine+j, "PUT", 6) == 0)
-            {  requestMethod=PUT_METHOD; isQueryStr=true; j+=7; }
+            if (strncmp(bufLine+j, "PUT", 3) == 0)
+            {  requestMethod=PUT_METHOD; isQueryStr=true; j+=4; }
             else
             if (strncmp(bufLine+j, "DELETE", 6) == 0)
               {  requestMethod=DELETE_METHOD; isQueryStr=true; j+=7; }
