@@ -810,7 +810,7 @@ bool WebServer::accept_request(ClientSockData* client)
       if ( !httpSend(client, (const void*) header.c_str(), header.length())
         || !httpSend(client, (const void*) gzipWebPage, sizeZip) )
       {
-        NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the zipped page: ") + urlBuffer);
+        NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the zipped page: ") + urlBuffer + std::string("- err: ") + strerror(errno));
         keepAlive=false;
       }
     }
@@ -820,7 +820,7 @@ bool WebServer::accept_request(ClientSockData* client)
       if ( !httpSend(client, (const void*) header.c_str(), header.length())
         || !httpSend(client, (const void*) webpage, webpageLen) )
       {
-        NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the page: ") + urlBuffer);
+        NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the page: ") + urlBuffer + std::string("- err: ") + strerror(errno));
         keepAlive=false;
       }
     }
