@@ -99,6 +99,7 @@ class WebServer
     
     static std::string webServerName;
     bool disableIpV4, disableIpV6;
+    ushort socketTimeoutInSecond;
     ushort tcpPort;
     size_t threadsPoolSize;
     std::string device;
@@ -145,6 +146,12 @@ class WebServer
     * @param p: the port number, from 1 to 65535 (Default value: 8080)
     */     
     inline void setServerPort(const ushort p) { tcpPort = p; };
+
+    /**
+    * Set the socket server timeout in seconds
+    * @param dur: the socket timeout in seconds. 0 for no timeout, or from 1 to 65535 (Default value: 5)
+    */
+    inline void setSocketTimeoutInSecond(const ushort dur) { socketTimeoutInSecond=dur; };
 
     /**
     * Set the device to use (work on linux only). 

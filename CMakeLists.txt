@@ -1,10 +1,10 @@
-###############  CMakeLists for libnavajo build   #####################
-#  Written by Quentin Riffard (riffard@lpsc.in2p3.fr)                  #
-
+###############  CMakeLists for libnavajo build   ######################
+#  Written by T. DESCOMBES (thierry.descombes@gmail.com)               #
+#                                                                      #
 #  To create an Xcode project:                                         #
 #         cmake -G Xcode .                                             #
-
 ###############             cmake version          #####################
+
 cmake_minimum_required(VERSION 2.6)
 
 ###############              Project name          #####################
@@ -12,7 +12,7 @@ project(libnavajo)
 
 ###############            version variables           #####################
 set(LIBNAVAJO_MVERSION "1")
-set(LIBNAVAJO_VERSION "1.2.0")
+set(LIBNAVAJO_VERSION "1.5.0")
 set(LIBNAVAJO_BUILD_DATE `/bin/date +%s`)
 
 ###############            Minimal flags           #####################

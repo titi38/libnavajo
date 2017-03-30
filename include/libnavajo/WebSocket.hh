@@ -23,6 +23,7 @@
 
 // Max latency allowed is fixed to 500ms by default
 #define CLIENTSENDING_MAXLATENCY_DEFAULT 500
+#define DEFAULT_WEBSOCKET_TIMEOUT 750
 
 class WebSocket
 {
@@ -31,10 +32,12 @@ class WebSocket
     bool useCompression;
     bool useNaggleAlgo;
     unsigned short clientSending_maxLatency;
+    ushort websocketTimeoutInMilliSecond;
 
   public:
     WebSocket(bool compression=true): useCompression(compression), useNaggleAlgo(true),
-                                      clientSending_maxLatency(CLIENTSENDING_MAXLATENCY_DEFAULT)
+                                      clientSending_maxLatency(CLIENTSENDING_MAXLATENCY_DEFAULT),
+                                      websocketTimeoutInMilliSecond(DEFAULT_WEBSOCKET_TIMEOUT)
 
     {
       pthread_mutex_init(&webSocketClientList_mutex, NULL);
@@ -299,6 +302,16 @@ class WebSocket
     inline unsigned short getClientSendingMaxLatency()
     {
       return clientSending_maxLatency;
+    }
+
+    /**
+    * Get the websocket timeout value in milliseconds
+    * @return the value in milliseconds
+    */
+
+    inline ushort getWebsocketTimeoutInMilliSecond()
+    {
+      return websocketTimeoutInMilliSecond;
     }
 
     /**

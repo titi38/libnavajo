@@ -35,6 +35,7 @@
 
 #include "MPFDParser/Parser.h"
 
+#define DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT 5
 #define DEFAULT_HTTP_PORT 8080
 #define LOGHIST_EXPIRATION_DELAY 600
 #define BUFSIZE 32768
@@ -76,6 +77,7 @@ WebServer::WebServer()
   
   disableIpV4=false;
   disableIpV6=false;
+  socketTimeoutInSecond=DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT;
   tcpPort=DEFAULT_HTTP_PORT;
   threadsPoolSize=32;
   
@@ -1497,8 +1499,9 @@ void WebServer::threadProcessing()
         NVJ_LOG->appendUniq(NVJ_ERROR, "WebServer : An error occurred when attempting to access the socket (accept == -1)");
       else
       {
-        if (!setSocketSndRcvTimeout(client_sock, 2, 0))
-          NVJ_LOG->appendUniq(NVJ_ERROR, std::string("WebServer : setSocketSndRcvTimeout error - ") + strerror(errno) );
+        if (socketTimeoutInSecond)
+          if (!setSocketSndRcvTimeout(client_sock, socketTimeoutInSecond, 0))
+            NVJ_LOG->appendUniq(NVJ_ERROR, std::string("WebServer : setSocketSndRcvTimeout error - ") + strerror(errno) );
         if (!setSocketNoSigpipe(client_sock))
           NVJ_LOG->appendUniq(NVJ_ERROR, std::string("WebServer : setSocketNoSigpipe error - ") + strerror(errno) );
 
