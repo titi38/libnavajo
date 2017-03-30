@@ -285,11 +285,19 @@ class WebSocket
       useCompression = compression;
     }
 
+    /**
+    * Get if client socket behavior: Naggle Algorithm is used or not
+    * @return true if enabled
+    */
     inline bool isUsingNaggleAlgo()
     {
       return useNaggleAlgo;
     }
 
+    /**
+    * Set if client socket should use the Naggle Algorithm
+    * @param naggle: true if enabled
+    */
     inline void setUseNaggleAlgo(bool naggle)
     {
       useNaggleAlgo=naggle;
@@ -305,22 +313,30 @@ class WebSocket
     }
 
     /**
-    * Get the websocket timeout value in milliseconds
-    * @return the value in milliseconds
-    */
-
-    inline ushort getWebsocketTimeoutInMilliSecond()
-    {
-      return websocketTimeoutInMilliSecond;
-    }
-
-    /**
     * Set the maximum latency allowed to the clients to send data
     * @param ms: the latency in milliseconds
     */
     inline void setClientSendingMaxLatency(unsigned short ms)
     {
       clientSending_maxLatency=ms;
+    }
+
+    /**
+    * Get the websocket timeout value in milliseconds
+    * @return the value in milliseconds
+    */
+    inline ushort getWebsocketTimeoutInMilliSecond()
+    {
+      return websocketTimeoutInMilliSecond;
+    }
+
+    /**
+    * Get the websocket timeout value in milliseconds
+    * @param ms: the value in milliseconds
+    */
+    inline void setWebsocketTimeoutInMilliSecond(unsigned short ms)
+    {
+      websocketTimeoutInMilliSecond=ms;
     }
 
 };

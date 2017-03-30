@@ -64,28 +64,16 @@ time_t HttpSession::sessionLifeTime=20*60;
 
 /*********************************************************************/
 
-WebServer::WebServer()
+WebServer::WebServer(): sslCtx(NULL), s_server_session_id_context(1),
+                        httpdAuth(false), exiting(false), exitedThread(0),
+                        nbServerSock(0), disableIpV4(false), disableIpV6(false),
+                        socketTimeoutInSecond(DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT), tcpPort(DEFAULT_HTTP_PORT),
+                        threadsPoolSize(32), mutipartMaxCollectedDataLength( 20*1024 ),
+                        sslEnabled(false), authPeerSsl(false)
 {
-  sslCtx=NULL;
-  s_server_session_id_context = 1;
 
   webServerName=std::string("Server: libNavajo/")+std::string(LIBNAVAJO_SOFTWARE_VERSION);
-  exiting=false;
-  exitedThread=0;
-  httpdAuth=false;
-  nbServerSock=0;
-  
-  disableIpV4=false;
-  disableIpV6=false;
-  socketTimeoutInSecond=DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT;
-  tcpPort=DEFAULT_HTTP_PORT;
-  threadsPoolSize=32;
-  
-  sslEnabled=false;
-  authPeerSsl=false;
-
-  mutipartTempDirForFileUpload = "/tmp";
-  mutipartMaxCollectedDataLength = 20*1024;   
+  mutipartTempDirForFileUpload="/tmp";
 
   pthread_mutex_init(&clientsQueue_mutex, NULL);
   pthread_cond_init(&clientsQueue_cond, NULL);
