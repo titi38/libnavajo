@@ -1,5 +1,5 @@
 #!/bin/sh
-LIB_VERSION=1.2
+LIB_VERSION=1.5
 ARCH_NAME=`dpkg --print-architecture`
 
 export DPKG_BUILD_ROOT=debianBuild
@@ -30,7 +30,7 @@ Priority: optional
 Maintainer: Thierry DESCOMBES <thierry.descombes@gmail.com>
 Architecture: `echo $ARCH_NAME`
 Depends: openssl, zlib1g-dev
-Version: 1.2
+Version: 1.5
 Description: an implementation of a complete HTTP(S) server, complete, fast and lightweight.
 EOF_CONTROL
 

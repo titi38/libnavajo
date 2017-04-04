@@ -9,7 +9,7 @@
 
 Summary:	Webserver and custom web interfaces integration for C++ applications
 Name:		libnavajo
-Version:	1.2.0
+Version:	1.5.0
 Release:	1
 License:	LGPLv3
 Group:		System/Libraries
@@ -98,6 +98,8 @@ rm -rf %{buildroot}
 %{_bindir}/navajoPrecompiler
 
 %changelog
+* Tue Apr 4 2017 Thierry Descombes <thierry.descombes@gmail.com> 1.5.0-el7
+- new packaged release 1.5.0
 * Fri Apr 15 2016 Thierry Descombes <thierry.descombes@gmail.com> 1.2.0-el7
 - new packaged release 1.2.0
 * Thu Apr 16 2015 Thierry Descombes <thierry.descombes@gmail.com> 1.0.0-el7
