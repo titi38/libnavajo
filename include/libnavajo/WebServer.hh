@@ -137,7 +137,7 @@ class WebServer
     
     /**
     * Set the size of the listener thread pool. 
-    * @param nbThread: the number of thread available (Default value: 5)
+    * @param nbThread: the number of thread available (Default value: 64)
     */ 
     inline void setThreadsPoolSize(const size_t nbThread) { threadsPoolSize = nbThread; };
 
@@ -149,7 +149,7 @@ class WebServer
 
     /**
     * Set the socket server timeout in seconds
-    * @param dur: the socket timeout in seconds. 0 for no timeout, or from 1 to 65535 (Default value: 5)
+    * @param dur: the socket timeout in seconds. 0 for no timeout, or from 1 to 65535 (Default value: 30)
     */
     inline void setSocketTimeoutInSecond(const ushort dur) { socketTimeoutInSecond=dur; };
 

@@ -35,7 +35,7 @@
 
 #include "MPFDParser/Parser.h"
 
-#define DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT 5
+#define DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT 30
 #define DEFAULT_HTTP_PORT 8080
 #define LOGHIST_EXPIRATION_DELAY 600
 #define BUFSIZE 32768
@@ -68,7 +68,7 @@ WebServer::WebServer(): sslCtx(NULL), s_server_session_id_context(1),
                         httpdAuth(false), exiting(false), exitedThread(0),
                         nbServerSock(0), disableIpV4(false), disableIpV6(false),
                         socketTimeoutInSecond(DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT), tcpPort(DEFAULT_HTTP_PORT),
-                        threadsPoolSize(32), mutipartMaxCollectedDataLength( 20*1024 ),
+                        threadsPoolSize(64), mutipartMaxCollectedDataLength( 20*1024 ),
                         sslEnabled(false), authPeerSsl(false)
 {
 
