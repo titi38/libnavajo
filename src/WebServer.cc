@@ -270,6 +270,7 @@ bool WebServer::accept_request(ClientSockData* client)
     // Initialisation /////////
     requestMethod=UNKNOWN_METHOD;
     requestContentLength=0;
+    urlencodedForm=false;
     username="";
     keepAlive=false;
     isQueryStr=false;
@@ -443,7 +444,7 @@ bool WebServer::accept_request(ClientSockData* client)
 
           // Decode GET Parameters
           if ( !urlencodedForm && (bufLine[j] == '?') )
-          { 
+          {
             i=0; j++;
             requestParams = (char*) malloc ( BUFSIZE * sizeof(char) );
             while (!isspace((int)(bufLine[j])) && (i < BUFSIZE - 1) && (j < (unsigned)bufLineLen))
