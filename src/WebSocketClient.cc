@@ -84,8 +84,9 @@ void WebSocketClient::receivingThread()
   ClientSockData* client = request->getClientSockData();
 
 
-  if (!setSocketSndRcvTimeout(client->socketId, 0, websocket->getWebsocketTimeoutInMilliSecond()))
-  {// Reduce socket timeout
+  if ( websocket->getWebsocketTimeoutInMilliSecond()
+     && !setSocketSndRcvTimeout(client->socketId, 0, websocket->getWebsocketTimeoutInMilliSecond()) )
+  { // Reduce socket timeout
     NVJ_LOG->appendUniq(NVJ_ERROR, "WebSocketClient : setSocketSndRcvTimeout error");
     closeRecv();
     return;
