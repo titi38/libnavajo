@@ -99,6 +99,9 @@ class WebSocketClient
 
     ~WebSocketClient()
     {
+      pthread_mutex_lock(&sendingQueueMutex);
+      freeSendingQueue();
+      pthread_mutex_unlock(&sendingQueueMutex);
       nvj_end_stream(&(gzipcontext.strm_deflate));
       pthread_mutex_destroy(&sendingQueueMutex);
       pthread_cond_destroy(&sendingNotification);

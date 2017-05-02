@@ -56,10 +56,7 @@ void WebSocketClient::sendingThread()
     if ( msgLatency > snd_maxLatency || !sendMessage(msg))
     {
       free(msg);
-      pthread_mutex_lock(&sendingQueueMutex);
-      freeSendingQueue();
       closeSend();
-      pthread_mutex_unlock(&sendingQueueMutex);
       return;
     }
     free(msg);
