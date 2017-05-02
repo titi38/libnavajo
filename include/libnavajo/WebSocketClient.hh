@@ -79,6 +79,15 @@ class WebSocketClient
       create_thread( &sendingThreadId,   WebSocketClient::startSendingThread,   static_cast<void *>(this) );
     }
 
+    void freeSendingQueue()
+    {
+      while (!sendingQueue.empty())
+      {
+        free(sendingQueue.front());
+        sendingQueue.pop();
+      }
+    }
+
     unsigned short snd_maxLatency;
 
     void noSessionExpiration(HttpRequest *request);
