@@ -1334,15 +1334,17 @@ void WebServer::poolThreadProcessing()
       ssl=SSL_new(sslCtx);
       SSL_set_bio(ssl, sbio, sbio);
 
+      client->ssl=ssl;
+      client->bio=sbio;
+
       if (SSL_accept(ssl) <= 0)
       { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
         std::string msg="SSL accept error ";
         if (sslmsg != NULL) msg+=": "+std::string(sslmsg);
         NVJ_LOG->append(NVJ_DEBUG,msg);
+        freeClientSockData(client);
+        continue;
       }
-      
-      client->ssl=ssl;
-      client->bio=sbio;
       
       if ( authPeerSsl )
       {
@@ -1537,7 +1539,8 @@ void WebServer::closeSocket(ClientSockData* client)
       SSL_shutdown(client->ssl);
     }
     SSL_free(client->ssl);    
-    BIO_free(client->bio);
+    if (client->bio != NULL)
+      BIO_free(client->bio);
   }
   shutdown (client->socketId, SHUT_RDWR);      
   close(client->socketId);
