@@ -226,7 +226,7 @@ size_t WebServer::recvLine(int client, char *bufLine, size_t nsize)
 * \return true if the socket must to close
 ***********************************************************************/
 
-bool WebServer::accept_request(ClientSockData* client)
+bool WebServer::accept_request(ClientSockData* client, bool authSSL)
 {
   char bufLine[BUFSIZE];
   HttpRequestMethod requestMethod;
@@ -256,6 +256,13 @@ bool WebServer::accept_request(ClientSockData* client)
     ssl_bio=BIO_new(BIO_f_ssl());
     BIO_set_ssl(ssl_bio,client->ssl,BIO_CLOSE);
     BIO_push(client->bio,ssl_bio);
+
+    if (!authSSL)
+    {
+      std::string msg = getHttpHeader( "403 Forbidden Client Certificate Required", 0, false);
+      httpSend(client, (const void*) msg.c_str(), msg.length());
+      goto FREE_RETURN_TRUE;
+    }
   }
 
   unsigned i=0, j=0;
@@ -1347,7 +1354,8 @@ void WebServer::poolThreadProcessing()
       SSL_set_bio(client->ssl, client->bio, client->bio);
 
       if (SSL_accept(client->ssl) <= -1)
-      { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
+      {
+        const char *sslmsg=ERR_reason_error_string(ERR_get_error());
         std::string msg="SSL accept error ";
         if (sslmsg != NULL) msg+=": "+std::string(sslmsg);
         NVJ_LOG->append(NVJ_DEBUG,msg);
@@ -1357,8 +1365,6 @@ void WebServer::poolThreadProcessing()
       
       if ( authPeerSsl )
       {
-        authSSL=false;        
-        
         if ( (peer = SSL_get_peer_certificate(client->ssl)) != NULL )
         {
           if (SSL_get_verify_result(client->ssl) == X509_V_OK)
@@ -1368,9 +1374,11 @@ void WebServer::poolThreadProcessing()
 
             if ((authSSL=isAuthorizedDN(str)) == true)
             {
+              authSSL=true;
               client->peerDN = new std::string(str);
               updatePeerDnHistory(*(client->peerDN));
             }
+
             free (str);                           
             X509_free(peer);
           }
@@ -1380,7 +1388,7 @@ void WebServer::poolThreadProcessing()
         authSSL=true;
     }
 
-    if (accept_request(client))
+    if (accept_request(client, authSSL))
       freeClientSockData(client);
   }
   exitedThread++;

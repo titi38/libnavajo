@@ -53,7 +53,7 @@ class WebServer
     bool isAuthorizedDN(const std::string str);
 
     size_t recvLine(int client, char *bufLine, size_t);
-    bool accept_request(ClientSockData* client);
+    bool accept_request(ClientSockData* client, bool authSSL);
     void fatalError(const char *);
     static std::string getHttpHeader(const char *messageType, const size_t len=0, const bool keepAlive=true, const bool zipped=false, HttpResponse* response=NULL);
     static const char* get_mime_type(const char *name);
