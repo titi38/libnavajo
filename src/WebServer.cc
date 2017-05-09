@@ -1337,7 +1337,13 @@ void WebServer::poolThreadProcessing()
         continue;
       }
 
-      ssl=SSL_new(sslCtx);
+      if ( (ssl=SSL_new(sslCtx)) == NULL )
+      {
+        NVJ_LOG->append(NVJ_DEBUG,"SSL_new failed !");
+        freeClientSockData(client);
+        continue;
+      }
+
       SSL_set_bio(ssl, sbio, sbio);
 
       client->ssl=ssl;
