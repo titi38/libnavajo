@@ -1307,13 +1307,13 @@ bool WebServer::isAuthorizedDN(const std::string str)
   
 void WebServer::poolThreadProcessing()
 {
-  BIO *sbio;
-  SSL *ssl=NULL;
+ // BIO *sbio;
+ // SSL *ssl=NULL;
   X509 *peer=NULL;
   bool authSSL=false;
 
 
-  while( !clientsQueue.empty() || !exiting )
+  while( /*!clientsQueue.empty() ||*/ !exiting )
   {
     pthread_mutex_lock( &clientsQueue_mutex );
 
@@ -1330,26 +1330,23 @@ void WebServer::poolThreadProcessing()
     
     if (sslEnabled)
     {
-      if ( (sbio=BIO_new_socket(client->socketId, BIO_NOCLOSE)) == NULL )
+      if ( (client->bio=BIO_new_socket(client->socketId, BIO_NOCLOSE)) == NULL )
       {
         NVJ_LOG->append(NVJ_DEBUG,"BIO_new_socket failed !");
         freeClientSockData(client);
         continue;
       }
 
-      if ( (ssl=SSL_new(sslCtx)) == NULL )
+      if ( (client->ssl=SSL_new(sslCtx)) == NULL )
       {
         NVJ_LOG->append(NVJ_DEBUG,"SSL_new failed !");
         freeClientSockData(client);
         continue;
       }
 
-      SSL_set_bio(ssl, sbio, sbio);
+      SSL_set_bio(client->ssl, client->bio, client->bio);
 
-      client->ssl=ssl;
-      client->bio=sbio;
-
-      if (SSL_accept(ssl) <= 0)
+      if (SSL_accept(client->ssl) <= -1)
       { const char *sslmsg=ERR_reason_error_string(ERR_get_error());
         std::string msg="SSL accept error ";
         if (sslmsg != NULL) msg+=": "+std::string(sslmsg);
@@ -1362,9 +1359,9 @@ void WebServer::poolThreadProcessing()
       {
         authSSL=false;        
         
-        if ( (peer = SSL_get_peer_certificate(ssl)) != NULL )
+        if ( (peer = SSL_get_peer_certificate(client->ssl)) != NULL )
         {
-          if (SSL_get_verify_result(ssl) == X509_V_OK)
+          if (SSL_get_verify_result(client->ssl) == X509_V_OK)
           {
             // The client sent a certificate which verified OK
             char *str = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);                  
@@ -1553,6 +1550,8 @@ void WebServer::closeSocket(ClientSockData* client)
     SSL_free(client->ssl);    
     if (client->bio != NULL)
       BIO_free(client->bio);
+    client->ssl = NULL;
+    client->bio = NULL;
   }
   shutdown (client->socketId, SHUT_RDWR);      
   close(client->socketId);
