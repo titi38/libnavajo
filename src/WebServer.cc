@@ -1330,7 +1330,13 @@ void WebServer::poolThreadProcessing()
     
     if (sslEnabled)
     {
-      sbio=BIO_new_socket(client->socketId, BIO_NOCLOSE);
+      if ( (sbio=BIO_new_socket(client->socketId, BIO_NOCLOSE)) == NULL )
+      {
+        NVJ_LOG->append(NVJ_DEBUG,"BIO_new_socket failed !");
+        freeClientSockData(client);
+        continue;
+      }
+
       ssl=SSL_new(sslCtx);
       SSL_set_bio(ssl, sbio, sbio);
 
