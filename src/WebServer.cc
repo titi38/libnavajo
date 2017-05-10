@@ -261,7 +261,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
     {
       std::string msg = getHttpHeader( "403 Forbidden Client Certificate Required", 0, false);
       httpSend(client, (const void*) msg.c_str(), msg.length());
-      goto FREE_RETURN_TRUE;
+      return true;
     }
   }
 
@@ -1333,7 +1333,6 @@ void WebServer::poolThreadProcessing()
     ClientSockData* client = clientsQueue.front();
     clientsQueue.pop();
 
-    pthread_mutex_unlock( &clientsQueue_mutex );
     
     if (sslEnabled)
     {
@@ -1387,7 +1386,9 @@ void WebServer::poolThreadProcessing()
       else
         authSSL=true;
     }
-
+ 
+    pthread_mutex_unlock( &clientsQueue_mutex );
+    
     if (accept_request(client, authSSL))
       freeClientSockData(client);
   }
