@@ -35,7 +35,7 @@
 
 #include "MPFDParser/Parser.h"
 
-#define DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT 2
+#define DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT 3
 #define DEFAULT_HTTP_PORT 8080
 #define LOGHIST_EXPIRATION_DELAY 600
 #define BUFSIZE 32768
@@ -238,7 +238,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
 
   char *urlBuffer=NULL;
   char *mutipartContent=NULL;
-//  size_t nbFileKeepAlive=5;
+  size_t nbFileKeepAlive=100;
   MPFD::Parser *mutipartContentParser=NULL;
   char *requestParams=NULL;
   char *requestCookies=NULL;
@@ -791,7 +791,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
       }
     }
 
-//    if (keepAlive && !(--nbFileKeepAlive)) keepAlive=false;
+    if (keepAlive && !(--nbFileKeepAlive)) closing=true;
 
     if (sizeZip>0 && (client->compression == GZIP))
     {  
