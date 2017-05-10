@@ -35,7 +35,7 @@
 
 #include "MPFDParser/Parser.h"
 
-#define DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT 30
+#define DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT 2
 #define DEFAULT_HTTP_PORT 8080
 #define LOGHIST_EXPIRATION_DELAY 600
 #define BUFSIZE 32768
@@ -238,7 +238,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
 
   char *urlBuffer=NULL;
   char *mutipartContent=NULL;
-  size_t nbFileKeepAlive=5;
+//  size_t nbFileKeepAlive=5;
   MPFD::Parser *mutipartContentParser=NULL;
   char *requestParams=NULL;
   char *requestCookies=NULL;
@@ -248,28 +248,13 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
   int webSocketVersion=-1;
   std::string username;
   int bufLineLen=0;
-  BIO *ssl_bio = NULL;
-
-  if (sslEnabled)
-  {
-    client->bio=BIO_new(BIO_f_buffer());
-    ssl_bio=BIO_new(BIO_f_ssl());
-    BIO_set_ssl(ssl_bio,client->ssl,BIO_CLOSE);
-    BIO_push(client->bio,ssl_bio);
-
-    if (!authSSL)
-    {
-      std::string msg = getHttpHeader( "403 Forbidden Client Certificate Required", 0, false);
-      httpSend(client, (const void*) msg.c_str(), msg.length());
-      return true;
-    }
-  }
 
   unsigned i=0, j=0;
   
   bool authOK = authLoginPwdList.size() == 0;
   char httpVers[4]="";
   bool keepAlive=false;
+  bool closing=false;
   bool isQueryStr=false;
   
   do
@@ -280,6 +265,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
     urlencodedForm=false;
     username="";
     keepAlive=false;
+    closing=false;
     isQueryStr=false;
     
     if (urlBuffer != NULL) { free (urlBuffer); urlBuffer=NULL; };
@@ -292,6 +278,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
     
     websocket=false;
     webSocketVersion=-1;
+
     //////////////////////////
 
     while (true)
@@ -351,9 +338,15 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
         if (strncasecmp(bufLine+j, "Connection: ", 12) == 0)
         { 
           j+=12; 
-          if (strstr(bufLine+j,"pgrade") != NULL) websocket=true;
-          if (strstr(bufLine+j,"lose") != NULL) keepAlive=false;
-          else if ((strstr(bufLine+j,"eep-") != NULL) && (strstr(bufLine+j+4,"live") != NULL)) keepAlive=true;
+          if (strstr(bufLine+j,"pgrade") != NULL)
+            websocket=true;
+          else
+          {
+            if ( strstr (bufLine + j, "lose") != NULL )
+              closing = false;
+            else if (( strstr (bufLine + j, "eep-") != NULL ) && ( strstr (bufLine + j + 4, "live") != NULL ))
+              keepAlive = true;
+          }
           continue;
         }
 
@@ -465,6 +458,8 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
             strncpy (httpVers, bufLine+j+5, 3);
             *(httpVers+3)='\0';
             j+=8;
+            // HTTP/1.1 default behavior is to support keepAlive
+            keepAlive = strncmp (httpVers,"1.1", 3) >= 0 ;
           }
         }
       }
@@ -521,13 +516,9 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
 
     #ifdef DEBUG_TRACES
     char logBuffer[BUFSIZE];
-    snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d)\n", urlBuffer, requestMethod, requestParams, requestCookies, httpVers, keepAlive, client->compression );
+    snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d closing=%d)\n", urlBuffer, requestMethod, requestParams, requestCookies, httpVers, keepAlive, client->compression, closing );
     NVJ_LOG->append(NVJ_DEBUG, logBuffer);
     #endif
-
-    // determine if client support keepAlive
-    if (!keepAlive) 
-      keepAlive = ( strncmp (httpVers,"1.1", 3) >= 0 );
 
     if (mutipartContent != NULL)
     {
@@ -800,7 +791,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
       }
     }
 
-    if (keepAlive && !(--nbFileKeepAlive)) keepAlive=false;
+//    if (keepAlive && !(--nbFileKeepAlive)) keepAlive=false;
 
     if (sizeZip>0 && (client->compression == GZIP))
     {  
@@ -809,7 +800,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
         || !httpSend(client, (const void*) gzipWebPage, sizeZip) )
       {
         NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the zipped page: ") + urlBuffer + std::string("- err: ") + strerror(errno));
-        keepAlive=false;
+        closing=true;
       }
     }
     else
@@ -819,7 +810,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
         || !httpSend(client, (const void*) webpage, webpageLen) )
       {
         NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the page: ") + urlBuffer + std::string("- err: ") + strerror(errno));
-        keepAlive=false;
+        closing=true;
       }
     }
 
@@ -837,7 +828,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
       else
         (*repo)->freeFile(webpage); 
   }
-  while (keepAlive && !exiting);
+  while (keepAlive && !closing && !exiting);
   
   /////////////////
   FREE_RETURN_TRUE:
@@ -1386,11 +1377,28 @@ void WebServer::poolThreadProcessing()
       else
         authSSL=true;
     }
- 
+
+    if (sslEnabled)
+    {
+      BIO *ssl_bio = NULL;
+
+      client->bio=BIO_new(BIO_f_buffer());
+      ssl_bio=BIO_new(BIO_f_ssl());
+      BIO_set_ssl(ssl_bio,client->ssl,BIO_CLOSE);
+      BIO_push(client->bio,ssl_bio);
+    }
+
     pthread_mutex_unlock( &clientsQueue_mutex );
-    
-    if (accept_request(client, authSSL))
+
+    if (sslEnabled && authPeerSsl && !authSSL)
+    {
+      std::string msg = getHttpHeader( "403 Forbidden Client Certificate Required", 0, false);
+      httpSend(client, (const void*) msg.c_str(), msg.length());
       freeClientSockData(client);
+    }
+    else
+      if (accept_request(client, authSSL))
+        freeClientSockData(client);
   }
   exitedThread++;
 
