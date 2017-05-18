@@ -829,9 +829,13 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
         (*repo)->freeFile(webpage); 
   }
   while (keepAlive && !closing && !exiting);
-  
+
+  printf("accept_request(): END => close Socket\n"); fflush(NULL);
+
   /////////////////
   FREE_RETURN_TRUE:
+  printf("accept_request(): END (keepAlive=%d, closing=%d, exiting=%d)\n", keepAlive, closing, exiting); fflush(NULL);
+
   if (urlBuffer != NULL) free (urlBuffer);
   if (requestParams != NULL) free (requestParams);
   if (requestCookies != NULL) free (requestCookies);
@@ -839,7 +843,11 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
   if (webSocketClientKey != NULL) free (webSocketClientKey);
   if (mutipartContent != NULL) free (mutipartContent);
   if (mutipartContentParser != NULL) delete mutipartContentParser;
-  
+
+
+  printf("accept_request(): END (keepAlive=%d, closing=%d, exiting=%d) => close Socket\n", keepAlive, closing, exiting); fflush(NULL);
+
+
   return true;
 }
 
@@ -1302,16 +1310,14 @@ bool WebServer::isAuthorizedDN(const std::string str)
 }
 
 /**********************************************************************/
-  
+
 void WebServer::poolThreadProcessing()
 {
- // BIO *sbio;
- // SSL *ssl=NULL;
   X509 *peer=NULL;
   bool authSSL=false;
 
 
-  while( /*!clientsQueue.empty() ||*/ !exiting )
+  while( !exiting )
   {
     pthread_mutex_lock( &clientsQueue_mutex );
 
@@ -1324,13 +1330,15 @@ void WebServer::poolThreadProcessing()
     ClientSockData* client = clientsQueue.front();
     clientsQueue.pop();
 
-    
     if (sslEnabled)
     {
-      if ( (client->bio=BIO_new_socket(client->socketId, BIO_NOCLOSE)) == NULL )
+      BIO *bio = NULL;
+
+      if ( (bio=BIO_new_socket(client->socketId, BIO_NOCLOSE)) == NULL )
       {
         NVJ_LOG->append(NVJ_DEBUG,"BIO_new_socket failed !");
         freeClientSockData(client);
+        pthread_mutex_unlock( &clientsQueue_mutex );
         continue;
       }
 
@@ -1338,10 +1346,11 @@ void WebServer::poolThreadProcessing()
       {
         NVJ_LOG->append(NVJ_DEBUG,"SSL_new failed !");
         freeClientSockData(client);
+        pthread_mutex_unlock( &clientsQueue_mutex );
         continue;
       }
 
-      SSL_set_bio(client->ssl, client->bio, client->bio);
+      SSL_set_bio(client->ssl, bio, bio);
 
       if (SSL_accept(client->ssl) <= -1)
       {
@@ -1350,9 +1359,10 @@ void WebServer::poolThreadProcessing()
         if (sslmsg != NULL) msg+=": "+std::string(sslmsg);
         NVJ_LOG->append(NVJ_DEBUG,msg);
         freeClientSockData(client);
+        pthread_mutex_unlock( &clientsQueue_mutex );
         continue;
       }
-      
+
       if ( authPeerSsl )
       {
         if ( (peer = SSL_get_peer_certificate(client->ssl)) != NULL )
@@ -1376,32 +1386,32 @@ void WebServer::poolThreadProcessing()
       }
       else
         authSSL=true;
-    }
 
-    if (sslEnabled)
-    {
+      //----------------------------------------------------------------------------------------------------------------
+
       BIO *ssl_bio = NULL;
 
       client->bio=BIO_new(BIO_f_buffer());
       ssl_bio=BIO_new(BIO_f_ssl());
       BIO_set_ssl(ssl_bio,client->ssl,BIO_CLOSE);
       BIO_push(client->bio,ssl_bio);
-    }
 
-    pthread_mutex_unlock( &clientsQueue_mutex );
-
-    if (sslEnabled && authPeerSsl && !authSSL)
-    {
-      std::string msg = getHttpHeader( "403 Forbidden Client Certificate Required", 0, false);
-      httpSend(client, (const void*) msg.c_str(), msg.length());
-      freeClientSockData(client);
-    }
-    else
-      if (accept_request(client, authSSL))
+      if (authPeerSsl && !authSSL)
+      {
+        std::string msg = getHttpHeader( "403 Forbidden Client Certificate Required", 0, false);
+        httpSend(client, (const void*) msg.c_str(), msg.length());
         freeClientSockData(client);
+        pthread_mutex_unlock( &clientsQueue_mutex );
+        continue;
+      }
+    }
+
+pthread_mutex_unlock( &clientsQueue_mutex );
+
+    if (accept_request(client, authSSL))
+      freeClientSockData (client);
   }
   exitedThread++;
-
 }
 
 
@@ -1557,7 +1567,7 @@ void WebServer::threadProcessing()
 void WebServer::closeSocket(ClientSockData* client)
 {
   if (client->ssl != NULL)
-  { 
+  {
     int n=SSL_shutdown(client->ssl);
     if(!n)
     {
