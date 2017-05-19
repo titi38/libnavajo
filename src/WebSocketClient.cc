@@ -368,6 +368,9 @@ bool WebSocketClient::sendMessage( const MessageContent *msgContent )
   size_t msgLen=0;
   bool result = true;
 
+  if (client == NULL)
+    return false;
+
   headerBuffer[0]= 0x80 | (msgContent->opcode & 0xf) ; // FIN & OPCODE:0x1
   if (client->compression == ZLIB)
   {

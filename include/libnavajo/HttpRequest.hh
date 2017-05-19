@@ -37,6 +37,7 @@ typedef struct
   SSL *ssl;
   BIO *bio;
   std::string *peerDN;
+//  pthread_mutex_t client_mutex;
 } ClientSockData;
 
 class HttpRequest
@@ -371,7 +372,7 @@ class HttpRequest
     */         
     HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client,
                 const char* mimeType, std::vector<uint8_t>* payload=NULL, MPFD::Parser *parser=NULL)
-    { 
+    {
       this->httpMethod = type;
       this->url = url;
       this->origin = origin;

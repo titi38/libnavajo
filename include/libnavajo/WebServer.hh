@@ -288,13 +288,11 @@ class WebServer
 
     static bool httpSend(ClientSockData *client, const void *buf, size_t len);
 
-    inline static void freeClientSockData(ClientSockData *c)
+    inline static void freeClientSockData(ClientSockData *client)
     {
-      if (c == NULL) return;
-      closeSocket(c);
-      if (c->peerDN != NULL) { delete c->peerDN; c->peerDN=NULL; }
-      free(c);
-      c=NULL;
+      closeSocket(client);
+      if (client->peerDN != NULL) { delete client->peerDN; client->peerDN=NULL; }
+      free(client);
     };
 };
 

@@ -18,6 +18,7 @@
 
 #include <pthread.h>
 #include <ctype.h>
+#include <signal.h>
 
 #include <string.h>
 #include <sys/types.h>
@@ -26,6 +27,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <libnavajo/HttpRequest.hh>
 
 #include "libnavajo/WebServer.hh"
 #include "libnavajo/nvjSocket.h"
@@ -830,11 +832,8 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
   }
   while (keepAlive && !closing && !exiting);
 
-  printf("accept_request(): END => close Socket\n"); fflush(NULL);
-
   /////////////////
   FREE_RETURN_TRUE:
-  printf("accept_request(): END (keepAlive=%d, closing=%d, exiting=%d)\n", keepAlive, closing, exiting); fflush(NULL);
 
   if (urlBuffer != NULL) free (urlBuffer);
   if (requestParams != NULL) free (requestParams);
@@ -843,9 +842,6 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
   if (webSocketClientKey != NULL) free (webSocketClientKey);
   if (mutipartContent != NULL) free (mutipartContent);
   if (mutipartContentParser != NULL) delete mutipartContentParser;
-
-
-  printf("accept_request(): END (keepAlive=%d, closing=%d, exiting=%d) => close Socket\n", keepAlive, closing, exiting); fflush(NULL);
 
 
   return true;
@@ -861,36 +857,52 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
 
 bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
 {
-  if ( /*sslEnabled */
-      client->bio != NULL )
+//  pthread_mutex_lock( &client->client_mutex );
+
+  if ( !client->socketId )
   {
-    while (BIO_write(client->bio, buf, len) <= 0)
+    //pthread_mutex_unlock( &client->client_mutex );
+    return false;
+  }
+
+  bool useSSL = client->bio != NULL;
+  size_t totalSent=0;
+  int sent=0;
+
+  do
+  {
+    if ( useSSL )
+      sent = BIO_write(client->bio, buf, len);
+    else
+      sent = sendCompat (client->socketId, buf, len, MSG_NOSIGNAL );
+
+    if ( sent <= 0 )
     {
-      if(! BIO_should_retry(client->bio))
+      if ( ( sent < 0 ) 
+          || ( errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR )
+          || ( useSSL && !BIO_should_retry(client->bio) ) )
       {
-        // BIO_write failed
+        // write failed
+        //pthread_mutex_unlock (&client->client_mutex);
         return false;
       }
-      // retry
+      else
+      {
+        usleep (50);
+        continue;
+      }
     }
-    BIO_flush(client->bio);
-    return true;
-  }
-  else
-  {
-    size_t totalSent=0;
-    int sent=0;
-    do
-    {
-      sent = sendCompat (client->socketId, buf, len, MSG_NOSIGNAL );
-      if (sent > 0) totalSent+=(size_t)sent;
-      if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
-        { usleep(50); continue; } 
-    }
-    while (sent >= 0 && totalSent != len);
+    if (sent > 0) totalSent+=(size_t)sent;
 
-    return totalSent == len;
   }
+  while (sent >= 0 && totalSent != len);
+
+  if ( useSSL )
+    BIO_flush(client->bio);
+
+//  pthread_mutex_unlock( &client->client_mutex );
+
+  return totalSent == len;
 }
 
 /***********************************************************************
@@ -1316,6 +1328,11 @@ void WebServer::poolThreadProcessing()
   X509 *peer=NULL;
   bool authSSL=false;
 
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGPIPE);
+  sigset_t old_state;
+  sigprocmask(SIG_BLOCK, &set, &old_state);
 
   while( !exiting )
   {
@@ -1406,7 +1423,7 @@ void WebServer::poolThreadProcessing()
       }
     }
 
-pthread_mutex_unlock( &clientsQueue_mutex );
+    pthread_mutex_unlock( &clientsQueue_mutex );
 
     if (accept_request(client, authSSL))
       freeClientSockData (client);
@@ -1455,6 +1472,12 @@ void WebServer::threadProcessing()
 
   struct sockaddr_storage clientAddress;
   socklen_t clientAddressLength = sizeof(clientAddress);
+
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGPIPE);
+  sigset_t old_state;
+  sigprocmask(SIG_BLOCK, &set, &old_state);
 
   ushort port=init();
 
@@ -1539,6 +1562,8 @@ void WebServer::threadProcessing()
         client->ssl=NULL;
         client->bio=NULL;
         client->peerDN=NULL;
+        //pthread_mutex_init ( &client->client_mutex, NULL );
+
         pthread_mutex_lock( &clientsQueue_mutex );
         clientsQueue.push(client);
         pthread_mutex_unlock( &clientsQueue_mutex );
@@ -1582,6 +1607,7 @@ void WebServer::closeSocket(ClientSockData* client)
   }
   shutdown (client->socketId, SHUT_RDWR);      
   close(client->socketId);
+  client->socketId = 0;
 }
 
 /***********************************************************************
@@ -1589,7 +1615,8 @@ void WebServer::closeSocket(ClientSockData* client)
   thanks to  René Nyffenegger rene.nyffenegger@adp-gmbh.ch for his
   public implementation of this algorithm
 *
-************************************************************************/      
+************************************************************************/
+
 std::string WebServer::base64_decode(const std::string& encoded_string)
 {
              
@@ -1684,13 +1711,13 @@ std::string WebServer::base64_encode(unsigned char const* bytes_to_encode, unsig
 ************************************************************************/
 std::string WebServer::SHA1_encode(const std::string& input)
 {
-    std::string hash;
-    SHA_CTX context;
-    SHA1_Init(&context);
-    SHA1_Update(&context, &input[0], input.size());
-    hash.resize(160/8);
-    SHA1_Final((unsigned char*)&hash[0], &context);
-    return hash;
+  std::string hash;
+  SHA_CTX context;
+  SHA1_Init(&context);
+  SHA1_Update(&context, &input[0], input.size());
+  hash.resize(160/8);
+  SHA1_Final((unsigned char*)&hash[0], &context);
+  return hash;
 }
 
 /***********************************************************************
