@@ -41,6 +41,7 @@
 #define DEFAULT_HTTP_PORT 8080
 #define LOGHIST_EXPIRATION_DELAY 600
 #define BUFSIZE 32768
+#define KEEPALIVE_MAX_NB_QUERY 25
 
 const char WebServer::authStr[]="Authorization: Basic ";
 const int WebServer::verify_depth=512;
@@ -240,7 +241,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
 
   char *urlBuffer=NULL;
   char *mutipartContent=NULL;
-  size_t nbFileKeepAlive=100;
+  size_t nbFileKeepAlive=KEEPALIVE_MAX_NB_QUERY;
   MPFD::Parser *mutipartContentParser=NULL;
   char *requestParams=NULL;
   char *requestCookies=NULL;
@@ -793,7 +794,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
       }
     }
 
-    if (keepAlive && !(--nbFileKeepAlive)) closing=true;
+    if (keepAlive && (--nbFileKeepAlive<=0)) closing=true;
 
     if (sizeZip>0 && (client->compression == GZIP))
     {  
@@ -1331,8 +1332,7 @@ void WebServer::poolThreadProcessing()
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGPIPE);
-  sigset_t old_state;
-  sigprocmask(SIG_BLOCK, &set, &old_state);
+  sigprocmask(SIG_BLOCK, &set, NULL);
 
   while( !exiting )
   {
@@ -1369,7 +1369,10 @@ void WebServer::poolThreadProcessing()
 
       SSL_set_bio(client->ssl, bio, bio);
 
-      if (SSL_accept(client->ssl) <= -1)
+      ERR_clear_error();
+
+      //SIGSEGV
+      if (SSL_accept(client->ssl) <= 0)
       {
         const char *sslmsg=ERR_reason_error_string(ERR_get_error());
         std::string msg="SSL accept error ";
@@ -1476,8 +1479,7 @@ void WebServer::threadProcessing()
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGPIPE);
-  sigset_t old_state;
-  sigprocmask(SIG_BLOCK, &set, &old_state);
+  sigprocmask(SIG_BLOCK, &set, NULL);
 
   ushort port=init();
 
