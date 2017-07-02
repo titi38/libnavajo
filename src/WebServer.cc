@@ -720,7 +720,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
       {
         std::string msg = getNoContentErrorMsg();
         httpSend(client, (const void*) msg.c_str(), msg.length());
-	if (webpage != NULL) 
+	      if (webpage != NULL)
           (*repo)->freeFile(webpage);
         goto FREE_RETURN_TRUE;
       }
@@ -797,8 +797,8 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
     if (keepAlive && (--nbFileKeepAlive<=0)) closing=true;
 
     if (sizeZip>0 && (client->compression == GZIP))
-    {  
-      std::string header = getHttpHeader("200 OK", sizeZip, keepAlive, true, &response);
+    {
+      std::string header = getHttpHeader(response.getHttpReturnCodeStr().c_str(), sizeZip, keepAlive, true, &response);
       if ( !httpSend(client, (const void*) header.c_str(), header.length())
         || !httpSend(client, (const void*) gzipWebPage, sizeZip) )
       {
@@ -808,7 +808,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
     }
     else
     {
-      std::string header = getHttpHeader("200 OK", webpageLen, keepAlive, false, &response);
+      std::string header = getHttpHeader(response.getHttpReturnCodeStr().c_str(), webpageLen, keepAlive, false, &response);
       if ( !httpSend(client, (const void*) header.c_str(), header.length())
         || !httpSend(client, (const void*) webpage, webpageLen) )
       {
