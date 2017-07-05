@@ -74,7 +74,7 @@ class DynamicRepository : public WebRepository
         pthread_mutex_unlock( &_mutex );
         if (deleteDynamicPage)
           delete i->second;
-  //      indexMap.erase(i);
+        indexMap.erase(i);
         return ;
       }
 
