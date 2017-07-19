@@ -14,17 +14,15 @@
 #ifndef LOGRECORDER_HH_
 #define LOGRECORDER_HH_
 
-#include <iostream>
-#include <sstream>
-#include <fstream>
+#include <stdio.h>
+#include <stdarg.h>
 #include <string>
 #include <list>
 #include <set>
 #include "libnavajo/LogOutput.hh"
 
 #define NVJ_LOG LogRecorder::getInstance()
-
-
+#define NVJ_printf LogRecorder::getInstance()->printf
 
   /**
   * LogRecorder - generic class to handle log trace
@@ -35,7 +33,8 @@
      pthread_mutex_t log_mutex;
      bool debugMode;
      std::set<std::string> uniqLog; // Only one entry !
-     
+
+
     public:
 
       /**
@@ -63,6 +62,7 @@
       void setDebugMode(bool d=true) { debugMode=d; };
       void addLogOutput(LogOutput *);
       void removeLogOutputs();
+
       void append(const NvjLogSeverity& l, const std::string& msg, const std::string& details="");
       inline void appendUniq(const NvjLogSeverity& l, const std::string& msg, const std::string& details="")
       { 
@@ -74,9 +74,23 @@
 	        append(l, msg, details);
 	      }
       };
-      inline void initUniq() { uniqLog.clear(); } ;
+
+			inline void printf(const NvjLogSeverity severity, const char *fmt, ...)
+			{
+				char buff[512];
+				va_list argptr;
+				va_start(argptr, fmt);
+				snprintf(buff, 512, fmt, argptr);
+				va_end(argptr);
+
+				append(severity, buff);
+			}
+
+			inline void initUniq() { uniqLog.clear(); } ;
+
 
     protected:
+
       LogRecorder();
       ~LogRecorder();
       std::string getDateStr();

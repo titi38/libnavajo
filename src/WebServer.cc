@@ -1601,11 +1601,12 @@ void WebServer::closeSocket(ClientSockData* client)
       shutdown(client->socketId, 1);
       SSL_shutdown(client->ssl);
     }
-    SSL_free(client->ssl);    
+/*    SSL_free(client->ssl);
     if (client->bio != NULL)
       BIO_free(client->bio);
     client->ssl = NULL;
     client->bio = NULL;
+*/
   }
   shutdown (client->socketId, SHUT_RDWR);      
   close(client->socketId);

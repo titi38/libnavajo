@@ -291,7 +291,21 @@ class WebServer
     inline static void freeClientSockData(ClientSockData *client)
     {
       closeSocket(client);
-      if (client->peerDN != NULL) { delete client->peerDN; client->peerDN=NULL; }
+
+      if (client->ssl != NULL)
+      {
+        if ( client->peerDN != NULL )
+        {
+          delete client->peerDN;
+          client->peerDN = NULL;
+        }
+        BIO_free_all(client->bio);
+/*        SSL_free (client->ssl);
+        if ( client->bio != NULL )
+          BIO_free (client->bio);*/
+        client->ssl = NULL;
+        client->bio = NULL;
+      }
       free(client);
     };
 };
