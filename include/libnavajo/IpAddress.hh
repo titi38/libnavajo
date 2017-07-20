@@ -116,10 +116,14 @@ class IpAddress
 
     if (this->ipversion == 4) return this->ip.v4 == ipA.ip.v4;
 
+    if (this->ipversion != 6)
+      return false;
+
     // IPv6
-    int i=INET6_ADDRLEN-1; bool res=true;
-    for (; i>=0 && res; i--) res=ipA.ip.v6.s6_addr[i] == this->ip.v6.s6_addr[i];
-    return (i == -1) && res;
+    bool res=true;
+    for (int i=INET6_ADDRLEN-1; i>=0 && res; i--)
+      res=ipA.ip.v6.s6_addr[i] == this->ip.v6.s6_addr[i];
+    return res;
   };
 
   bool operator<(const IpAddress& A) const
@@ -300,8 +304,6 @@ class IpNetwork
         u_int8_t netmask=0, Anetmask=0;
 
         for (; i<INET6_ADDRLEN-1 && res; i++)
-                ;
-
         {
      	    for (u_int8_t j=i*8; j<(i+1)*8 ; j++)
           {
