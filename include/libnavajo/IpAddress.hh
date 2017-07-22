@@ -120,26 +120,25 @@ class IpAddress
       return false;
 
     // IPv6
-    bool res=true;
-    for (int i=INET6_ADDRLEN-1; i>=0 && res; i--)
-      res=ipA.ip.v6.s6_addr[i] == this->ip.v6.s6_addr[i];
-    return res;
+    int i=INET6_ADDRLEN-1;
+    for (; i>=0 && (ipA.ip.v6.s6_addr[i] == this->ip.v6.s6_addr[i]); i--);
+    return i<0;
   };
 
   bool operator<(const IpAddress& A) const
   {
- 	  bool res=true;
 	  if (ipversion == 4)
-	    res = ip.v4 < A.ip.v4; 
-	  else //IPv6
-	  {
- 	    int i=0;
- 	    for (; i<INET6_ADDRLEN-1 && ( ip.v6.s6_addr[i] == A.ip.v6.s6_addr[i] ); i++);
+	    return ip.v4 < A.ip.v4;
 
-	    res = ip.v6.s6_addr[i] < A.ip.v6.s6_addr[i];
-	  }
+    if (this->ipversion != 6)
+      return false;
 
-	  return res;
+    int i=INET6_ADDRLEN-1;
+    for (; i>=0 && (ip.v6.s6_addr[ i ] == A.ip.v6.s6_addr[ i ]); i--);
+    if (i < 0)
+      return false; // same Ip address
+    else
+	    return ip.v6.s6_addr[ i ] < A.ip.v6.s6_addr[ i ] ;
   };
 
   inline bool isUndef() const { return ipversion == 0; };
@@ -313,7 +312,7 @@ class IpNetwork
 
           res = ( addr.ip.v6.s6_addr[i] & netmask ) == ( A.addr.ip.v6.s6_addr[i] & Anetmask );
         }
-        return ( addr.ip.v6.s6_addr[i] & netmask ) < ( A.addr.ip.v6.s6_addr[i] & Anetmask );
+        return res;
       }
 
       return false;
