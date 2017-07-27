@@ -430,6 +430,12 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
             else
             if (strncmp(bufLine+j, "DELETE", 6) == 0)
               {  requestMethod=DELETE_METHOD; isQueryStr=true; j+=7; }
+              else
+              if (strncmp(bufLine+j, "UPDATE", 6) == 0)
+                {  requestMethod=UPDATE_METHOD; isQueryStr=true; j+=7; }
+                else
+                if (strncmp(bufLine+j, "PATCH", 5) == 0)
+                  {  requestMethod=PATCH_METHOD; isQueryStr=true; j+=6; }
 
         if (isQueryStr)
         {

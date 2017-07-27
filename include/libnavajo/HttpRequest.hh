@@ -27,7 +27,16 @@
 
 //****************************************************************************
 
-typedef enum { UNKNOWN_METHOD = 0, GET_METHOD = 1, POST_METHOD = 2, PUT_METHOD = 3, DELETE_METHOD = 4 } HttpRequestMethod;
+typedef enum {
+  UNKNOWN_METHOD = 0,
+  GET_METHOD = 1,
+  POST_METHOD = 2,
+  PUT_METHOD = 3,
+  DELETE_METHOD = 4,
+  UPDATE_METHOD = 5,
+  PATCH_METHOD = 6,
+} HttpRequestMethod;
+
 typedef enum { GZIP, ZLIB, NONE } CompressionMode;
 typedef struct
 {
