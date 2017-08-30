@@ -81,7 +81,7 @@
 				char buff[512];
 				va_list argptr;
 				va_start(argptr, fmt);
-				snprintf(buff, 512, fmt, argptr);
+				vsnprintf(buff, 512, fmt, argptr);
 				va_end(argptr);
 
 				append(severity, buff);
