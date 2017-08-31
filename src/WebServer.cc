@@ -44,6 +44,7 @@
 #define KEEPALIVE_MAX_NB_QUERY 25
 
 const char WebServer::authStr[]="Authorization: Basic ";
+const char WebServer::authBearerStr[]="Authorization: Bearer ";
 const int WebServer::verify_depth=512;
 char *WebServer::certpass=NULL;
 std::string WebServer::webServerName;
@@ -68,6 +69,8 @@ time_t HttpSession::sessionLifeTime=20*60;
 /*********************************************************************/
 
 WebServer::WebServer(): sslCtx(NULL), s_server_session_id_context(1),
+                        tokDecodeCallback(NULL), authBearTokDecExpirationCb(NULL), authBearTokDecScopesCb(NULL),
+                        authBearerEnabled(false),
                         httpdAuth(false), exiting(false), exitedThread(0),
                         nbServerSock(0), disableIpV4(false), disableIpV6(false),
                         socketTimeoutInSecond(DEFAULT_HTTP_SERVER_SOCKET_TIMEOUT), tcpPort(DEFAULT_HTTP_PORT),
@@ -83,6 +86,7 @@ WebServer::WebServer(): sslCtx(NULL), s_server_session_id_context(1),
 
   pthread_mutex_init(&peerDnHistory_mutex, NULL);
   pthread_mutex_init(&usersAuthHistory_mutex, NULL);
+  pthread_mutex_init(&tokensAuthHistory_mutex, NULL);
 }
 
 /*********************************************************************/
@@ -198,6 +202,109 @@ bool WebServer::isUserAllowed(const std::string &pwdb64, std::string& login)
   return authOK;
 }
 
+/**
+* Http Bearer token authentication
+* @param tokb64: the token string in base64 format
+* @param resourceUrl: the token string in base64 format
+* @param respHeader: headers to add in HTTP response in case of failed authentication, on tail of WWW-Authenticate attribute
+* @return true if token is allowed
+*/
+bool WebServer::isTokenAllowed(const std::string &tokb64,
+                               const std::string &resourceUrl,
+                               std::string &respHeader)
+{
+  std::string logAuth = "WebServer: Authentication passed for token '"+tokb64+"'";
+  NvjLogSeverity logAuthLvl = NVJ_DEBUG;
+  time_t t = time ( NULL );
+  struct tm * timeinfo;
+  bool isTokenExpired = true;
+  bool authOK = false;
+  time_t expiration = 0;
+
+  timeinfo = localtime ( &t );
+  t = mktime ( timeinfo );
+
+  pthread_mutex_lock( &tokensAuthHistory_mutex );
+  std::map<std::string,time_t>::iterator i = tokensAuthHistory.find (tokb64);
+
+  if (i != tokensAuthHistory.end())
+  {
+    NVJ_LOG->append(NVJ_DEBUG, "WebServer: token already authenticated");
+
+    /* get current timeinfo and compare to the one previously stored */
+    isTokenExpired = t > i->second;
+
+    if (isTokenExpired)
+    {
+      /* Remove token from the map to avoid infinite grow of it */
+      tokensAuthHistory.erase(tokb64);
+      NVJ_LOG->append(NVJ_DEBUG, "WebServer: removing outdated token from cache '"+tokb64+"'");
+    }
+
+    pthread_mutex_unlock( &tokensAuthHistory_mutex );
+    return !isTokenExpired;
+  }
+
+  // It's a new token !
+
+  std::string tokDecoded;
+
+  // Use callback configured to decode token
+  if (tokDecodeCallback(tokb64, tokDecodeSecret, tokDecoded))
+  {
+    logAuth = "WebServer: Authentication failed for token '"+tokb64+"'";
+    respHeader = "realm=\"" + authBearerRealm;
+    respHeader += "\",error=\"invalid_token\", error_description=\"invalid signature\"";
+    goto end;
+  }
+
+  // retrieve expiration date
+  expiration = authBearTokDecExpirationCb(tokDecoded);
+
+  if (!expiration)
+  {
+    logAuth = "WebServer: Authentication failed, expiration date not found for token '"+tokb64+"'";
+    respHeader = "realm=\"" + authBearerRealm;
+    respHeader += "\",error=\"invalid_token\", error_description=\"no expiration in token\"";
+    goto end;
+  }
+
+  if (expiration < t)
+  {
+    logAuth = "WebServer: Authentication failed, validity expired for token '"+tokb64+"'";
+    respHeader = "realm=\"" + authBearerRealm;
+    respHeader += "\",error=\"invalid_token\", error_description=\"token expired\"";
+    goto end;
+  }
+
+  // check for extra attribute if any callback was set to that purpose
+  if (authBearTokDecScopesCb)
+  {
+    std::string errDescr;
+
+    if (authBearTokDecScopesCb(tokDecoded, resourceUrl, errDescr))
+    {
+      logAuth = "WebServer: Authentication failed, invalid scope for token '"+tokb64+"'";
+      respHeader = "realm=\"" + authBearerRealm;
+      respHeader += "\",error=\"insufficient_scope\",error_description=\"";
+      respHeader += errDescr +"\"";
+      goto end;
+    }
+  }
+
+  // All checks passed successfully, store the token to speed up processing of next request
+  // proposing same token
+  authOK = true;
+  logAuthLvl = NVJ_INFO;
+  tokensAuthHistory[tokb64] = expiration;
+
+end:
+  pthread_mutex_unlock( &tokensAuthHistory_mutex );
+  NVJ_LOG->append(logAuthLvl, logAuth);
+
+  return authOK;
+}
+
 /***********************************************************************
 * recvLine:  Receive an ascii line from a socket
 * @param c - the socket connected to the client
@@ -259,7 +366,14 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
   bool keepAlive=false;
   bool closing=false;
   bool isQueryStr=false;
-  
+  std::string authRespHeader;
+
+  if (authBearerEnabled)
+  {
+    authOK = false;
+    authRespHeader = "realm=\"Restricted area: please provide valid token\"";
+  }
+
   do
   {
     // Initialisation /////////
@@ -471,12 +585,26 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
             keepAlive = strncmp (httpVers,"1.1", 3) >= 0 ;
           }
         }
+
+        //  authorization through bearer token, RFC 6750
+        if ( strncmp(bufLine+j, authBearerStr, sizeof authBearerStr - 1 ) == 0)
+        {
+            j+=sizeof authStr;
+
+            std::string tokb64="";
+            while ( j < (unsigned)bufLineLen && *(bufLine + j) != 0x0d && *(bufLine + j) != 0x0a)
+                tokb64+=*(bufLine + j++);
+            if (authBearerEnabled)
+                authOK=isTokenAllowed(tokb64, urlBuffer, authRespHeader);
+            continue;
+        }
       }
     }
 
     if (!authOK)
     {
-      std::string msg = getHttpHeader( "401 Authorization Required", 0, false);
+      const char *abh = authRespHeader.empty()? NULL: authRespHeader.c_str();
+      std::string msg = getHttpHeader( "401 Authorization Required", 0, false, abh);
       httpSend(client, (const void*) msg.c_str(), msg.length());
       goto FREE_RETURN_TRUE;
     }
@@ -804,7 +932,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
 
     if (sizeZip>0 && (client->compression == GZIP))
     {
-      std::string header = getHttpHeader(response.getHttpReturnCodeStr().c_str(), sizeZip, keepAlive, true, &response);
+      std::string header = getHttpHeader(response.getHttpReturnCodeStr().c_str(), sizeZip, keepAlive, NULL, true, &response);
       if ( !httpSend(client, (const void*) header.c_str(), header.length())
         || !httpSend(client, (const void*) gzipWebPage, sizeZip) )
       {
@@ -814,7 +942,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
     }
     else
     {
-      std::string header = getHttpHeader(response.getHttpReturnCodeStr().c_str(), webpageLen, keepAlive, false, &response);
+      std::string header = getHttpHeader(response.getHttpReturnCodeStr().c_str(), webpageLen, keepAlive, NULL, false, &response);
       if ( !httpSend(client, (const void*) header.c_str(), header.length())
         || !httpSend(client, (const void*) webpage, webpageLen) )
       {
@@ -977,7 +1105,12 @@ const char* WebServer::get_mime_type(const char *name)
 * \return result of send function (successfull: >=0, otherwise <0)
 ***********************************************************************/
 
-std::string WebServer::getHttpHeader(const char *messageType, const size_t len, const bool keepAlive, const bool zipped, HttpResponse* response)
+std::string WebServer::getHttpHeader(const char *messageType,
+                                     const size_t len,
+                                     const bool keepAlive,
+                                     const char *authBearerAdditionalHeaders,
+                                     const bool zipped,
+                                     HttpResponse* response)
 {
   char timeBuf[200];
   time_t rawtime;
@@ -992,8 +1125,17 @@ std::string WebServer::getHttpHeader(const char *messageType, const size_t len, 
   header+=webServerName+"\r\n";
 
   if (strncmp(messageType, "401", 3) == 0)
-    header+=std::string("WWW-Authenticate: Basic realm=\"Restricted area: please enter Login/Password\"\r\n");
-  
+  {
+    if (authBearerAdditionalHeaders)
+    {
+      header+=std::string("WWW-Authenticate: Bearer ");
+      header+=authBearerAdditionalHeaders;
+      header+="\r\n";
+    }
+    else
+      header+=std::string("WWW-Authenticate: Basic realm=\"Restricted area: please enter Login/Password\"\r\n");
+  }
+
   if (response != NULL)
   {
     if ( response->isCORS() )
