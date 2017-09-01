@@ -86,6 +86,7 @@ WebServer::WebServer(): sslCtx(NULL), s_server_session_id_context(1),
 
   pthread_mutex_init(&peerDnHistory_mutex, NULL);
   pthread_mutex_init(&usersAuthHistory_mutex, NULL);
+  pthread_mutex_init(&tokensAuthHistory_mutex, NULL);
 }
 
 /*********************************************************************/
@@ -295,7 +296,7 @@ bool WebServer::isTokenAllowed(const std::string &tokb64,
   // proposing same token
   authOK = true;
   logAuthLvl = NVJ_INFO;
-  tokensAuthHistory[tokb64] = t;
+  tokensAuthHistory[tokb64] = expiration;
 
 end:
   pthread_mutex_unlock( &tokensAuthHistory_mutex );
@@ -586,7 +587,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
 
             std::string tokb64="";
             while ( j < (unsigned)bufLineLen && *(bufLine + j) != 0x0d && *(bufLine + j) != 0x0a)
-                tokb64+=*(bufLine + j++);;
+                tokb64+=*(bufLine + j++);
             if (authBearerEnabled)
                 authOK=isTokenAllowed(tokb64, urlBuffer, authRespHeader);
             continue;
