@@ -550,6 +550,9 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
                 else
                 if (strncmp(bufLine+j, "PATCH", 5) == 0)
                   {  requestMethod=PATCH_METHOD; isQueryStr=true; j+=6; }
+                else
+                  if (strncmp(bufLine+j, "OPTIONS", 7) == 0)
+                    { requestMethod=OPTIONS_METHOD; isQueryStr=true; j+=7; }
 
         if (isQueryStr)
         {
