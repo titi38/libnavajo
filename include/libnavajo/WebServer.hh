@@ -110,10 +110,10 @@ class WebServer
     void exit();
     
     static std::string webServerName;
-    bool disableIpV4, disableIpV6;
-    ushort socketTimeoutInSecond;
-    ushort tcpPort;
-    size_t threadsPoolSize;
+    volatile bool disableIpV4, disableIpV6;
+    volatile ushort socketTimeoutInSecond;
+    volatile ushort tcpPort;
+    volatile size_t threadsPoolSize;
     std::string device;
     
     std::string mutipartTempDirForFileUpload;

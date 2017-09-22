@@ -1271,7 +1271,6 @@ u_short WebServer::init()
   struct addrinfo  hints;
   struct addrinfo *result, *rp;
 
-  //threadWebServer=0;
   nbServerSock=0;
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */

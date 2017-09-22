@@ -115,11 +115,11 @@ class HttpRequest
       std::string theParam=paramstr.substr(start, end - start);
       
       size_t posEq=0;
-      if ((posEq = theParam.find('=')) == std::string::npos) 
+      if ((posEq = theParam.find('=')) == std::string::npos)
         parameters[theParam]="";
       else
         parameters[theParam.substr(0,posEq)]=theParam.substr(posEq+1);
-       
+
       start = end + 1;
     }
   };
