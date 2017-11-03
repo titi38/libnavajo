@@ -27,6 +27,7 @@ class HttpResponse
   std::string corsDomain;
   unsigned httpReturnCode;
   std::string httpReturnCodeMessage;
+  std::string httpSpecificHeaders;
 
   static const unsigned unsetHttpReturnCodeMessage = 0;
 
@@ -34,7 +35,7 @@ class HttpResponse
 
   public:
     HttpResponse(const std::string mime="") : responseContent (NULL), responseContentLength (0), zippedFile (false), mimeType(mime), forwardToUrl(""), cors(false), corsCred(false), corsDomain(""),
-                                        httpReturnCode(unsetHttpReturnCodeMessage), httpReturnCodeMessage("Unspecified")
+                                        httpReturnCode(unsetHttpReturnCodeMessage), httpReturnCodeMessage("Unspecified"), httpSpecificHeaders("")
     {
       initializeHttpReturnCode();
     }
@@ -348,6 +349,23 @@ class HttpResponse
       httpReturnCodes.insert(std::pair<unsigned, const char*>(510, "Not Extended")); // (RFC 2774)
       httpReturnCodes.insert(std::pair<unsigned, const char*>(511, "Network Authentication Required")); // (RFC 6585)
 
+    }
+
+    void addSpecificHeader(const char* header)
+    {
+        httpSpecificHeaders += header;
+        httpSpecificHeaders += "\r\n";
+    }
+
+    void addSpecificHeader(const std::string& header)
+    {
+        httpSpecificHeaders += header;
+        httpSpecificHeaders += "\r\n";
+    }
+
+    std::string getSpecificHeaders() const
+    {
+        return httpSpecificHeaders;
     }
 };
 

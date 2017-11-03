@@ -1149,6 +1149,8 @@ std::string WebServer::getHttpHeader(const char *messageType,
       else header+="false\r\n";
     } 
 
+    header += response->getSpecificHeaders();
+
     std::vector<std::string>& cookies=response->getCookies();
     for (unsigned i=0; i < cookies.size(); i++)
       header+="Set-Cookie: " + cookies[i] + "\r\n";
