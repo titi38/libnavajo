@@ -855,7 +855,7 @@ bool WebServer::accept_request(ClientSockData* client, bool authSSL)
       
       if ( webpage == NULL || !webpageLen)
       {
-        std::string msg = getNoContentErrorMsg();
+        std::string msg =  getHttpHeader( response.getHttpReturnCodeStr().c_str(), 0, false ); //getNoContentErrorMsg();
         httpSend(client, (const void*) msg.c_str(), msg.length());
 	      if (webpage != NULL)
           (*repo)->freeFile(webpage);

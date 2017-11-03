@@ -28,10 +28,13 @@ class HttpResponse
   unsigned httpReturnCode;
   std::string httpReturnCodeMessage;
 
+  static const unsigned unsetHttpReturnCodeMessage = 0;
+
   static std::map<unsigned, const char*> httpReturnCodes;
 
   public:
-    HttpResponse(std::string mime="") : responseContent (NULL), responseContentLength (0), zippedFile (false), mimeType(mime), forwardToUrl(""), cors(false), corsCred(false), corsDomain("")
+    HttpResponse(const std::string mime="") : responseContent (NULL), responseContentLength (0), zippedFile (false), mimeType(mime), forwardToUrl(""), cors(false), corsCred(false), corsDomain(""),
+                                        httpReturnCode(unsetHttpReturnCodeMessage), httpReturnCodeMessage("Unspecified")
     {
       initializeHttpReturnCode();
     }
@@ -42,10 +45,18 @@ class HttpResponse
     * @param content: The content's buffer
     * @param length: The content's length
     */  
-    inline void setContent(unsigned char *content, size_t length)
+    inline void setContent( unsigned char * const content, const size_t length )
     {
       responseContent = content;
       responseContentLength = length;
+
+      if ( httpReturnCode  == unsetHttpReturnCodeMessage )
+      {
+        if (length)
+          setHttpReturnCode(200);
+        else
+          setHttpReturnCode(204);
+      }
     }
     
     /************************************************************************/
@@ -56,7 +67,7 @@ class HttpResponse
     * @param cookies: The cookies entries
     * @param zip: set to true if the content is compressed (else: false)
     */    
-    inline void getContent(unsigned char **content, size_t *length, bool *zip)
+    inline void getContent(unsigned char **content, size_t *length, bool *zip) const
     {
       *content = responseContent;
       *length = responseContentLength;
@@ -176,7 +187,7 @@ class HttpResponse
     * get the new url
     * @return the new url
     */    
-    std::string getForwardedUrl()
+    std::string getForwardedUrl() const
     {
       return forwardToUrl;
     }
@@ -219,7 +230,7 @@ class HttpResponse
     * @param value: the http return code
     */
 
-    void setHttpReturnCode(unsigned value)
+    void setHttpReturnCode(const unsigned value)
     {
       httpReturnCode = value;
       std::map<unsigned, const char*>::iterator it;
@@ -236,7 +247,7 @@ class HttpResponse
     * @param value: the http return code
     * @param message: the http return code message
     */
-    void setHttpReturnCode(unsigned value, const std::string message)
+    void setHttpReturnCode(const unsigned value, const std::string message)
     {
       httpReturnCode = value;
       httpReturnCodeMessage = message;
@@ -248,6 +259,9 @@ class HttpResponse
     */
     std::string getHttpReturnCodeStr()
     {
+      if ( httpReturnCode  == unsetHttpReturnCodeMessage )
+        setHttpReturnCode(204);
+
       std::ostringstream httpRetCodeSS;   // stream used for the conversion
       httpRetCodeSS << httpReturnCode;
       return httpRetCodeSS.str()+" "+httpReturnCodeMessage;
@@ -258,12 +272,8 @@ class HttpResponse
     * initialize standart Http Return Codes
     * @param value: the http return code
     */
-    void initializeHttpReturnCode()
+    void initializeHttpReturnCode() const
     {
-      // default http return code
-      httpReturnCode = 200;
-      httpReturnCodeMessage = "OK";
-
       if (httpReturnCodes.size())
         return;
 
