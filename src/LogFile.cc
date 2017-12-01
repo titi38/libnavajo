@@ -68,7 +68,7 @@
     if (file!=NULL)
     {
       file->close();
-      	delete file;
+      delete file;
     }
   }
 
