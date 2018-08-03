@@ -1079,6 +1079,8 @@ const char* WebServer::get_mime_type(const char *name)
   if (strcmp(extLowerCase, ".png") == 0) return "image/png";
   if (strcmp(extLowerCase, ".css") == 0) return "text/css";
   if (strcmp(extLowerCase, ".txt") == 0) return "text/plain";
+  if (strcmp(extLowerCase, ".svg") == 0) return "image/svg+xml";
+  if (strcmp(extLowerCase, ".svgz") == 0) return "image/svg+xml";
   if (strcmp(extLowerCase, ".au") == 0) return "audio/basic";
   if (strcmp(extLowerCase, ".wav") == 0) return "audio/wav";
   if (strcmp(extLowerCase, ".avi") == 0) return "video/x-msvideo";
