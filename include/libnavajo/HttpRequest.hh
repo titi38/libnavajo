@@ -118,8 +118,21 @@ class HttpRequest
       size_t posEq=0;
       if ((posEq = theParam.find('=')) == std::string::npos)
         parameters[theParam]="";
-      else
-        parameters[theParam.substr(0,posEq)]=theParam.substr(posEq+1);
+      else {
+        auto key        = theParam.substr(0,posEq);
+        auto value      = theParam.substr(posEq+1);
+        if( parameters.count( key ) == 0 ) {
+          parameters[key] = value;
+        } else {
+          auto arrayKey = key + "[]";
+          if( parameters.count( arrayKey ) == 1 ) {
+            parameters[arrayKey] += "|" + value;
+          } else {
+            parameters[arrayKey] = parameters[key] + "|" + value;
+          }
+          parameters[key] = value;
+        }
+      }
 
       start = end + 1;
     }
