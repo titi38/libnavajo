@@ -145,7 +145,7 @@ std::string MPFD::Field::GetTextTypeContent() {
 	    if (FieldContent.empty()) {
                 return std::string();
             } else {
-                return std::string(&FieldContent[0]);
+                return std::string( FieldContent.begin(), FieldContent.end() );
             }
         }
     }
