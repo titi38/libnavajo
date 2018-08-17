@@ -405,8 +405,7 @@ class HttpRequest
       this->payload=payload ;
       this->mutipartContentParser=parser;
 
-      if (params != NULL && strlen(params))
-        decodParams(params);
+      setParams( params );
       
       if (cookies != NULL && strlen(cookies))
         decodCookies(cookies);        
@@ -454,6 +453,13 @@ class HttpRequest
     * @param name: the attribute name
     * */
     inline void setUrl(const char *newUrl) { url=newUrl; };
+
+    // GLSR: torna pública a configuração de parâmetros permitindo realizar forwardTo com novos parâmetros
+    inline void setParams( const char*params ) {
+      if (params != NULL && strlen(params)) {
+        decodParams(params);
+      }
+    }
 
     /**********************************************************************/
     /**
