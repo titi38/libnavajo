@@ -1,0 +1,66 @@
+<html>
+<head>
+
+<title>Upload libnavajo</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/4.3.0/min/dropzone.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/4.3.0/min/dropzone.min.js"></script>
+<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+<style>
+
+h1, h2, h3, table th, table th .header { font-size: 1.8rem; color: #0087F7; -webkit-font-smoothing: antialiased; line-height: 2.2rem; }
+h1, h2, h3 { margin-top: 2.8rem; margin-bottom: 1.4rem; }
+
+.dropzone { border: 2px dashed #0087F7; border-radius: 5px; background: white; }
+.dropzone .dz-message { font-weight: 400; }
+.dropzone .dz-message .note { font-size: 0.8em; font-weight: 200; display: block; margin-top: 1.4rem; }
+
+</style>
+</head>
+
+<body>
+
+<section>
+  <h1>Upload Example</h1>
+
+  <div id="dropzone"><form action="/uploader" class="dropzone needsclick dz-clickable" id="demo-upload">
+
+  <div class="dz-message needsclick">
+    Drop files here or click to upload.<br>
+    <span class="note needsclick">(This is just a demo dropzone. Selected files are <strong>not</strong> actually uploaded.)</span>
+  </div>
+  <div class="fallback">
+    <input name="file" type="file" multiple />
+  </div>
+</form></div>
+
+  <h1>File List</h1>
+  <div id="files_list"></div>
+</section>
+</body>
+
+<script>
+
+function loadUploadedFiles()
+{
+  var request = $.ajax( { url:  "getListUploadedFiles.txt", dataType: 'json'})
+    .done(function(data)
+    {
+
+      $("#files_list").empty();
+      $.each(data.data, function(i, item)
+      {
+        $("#files_list").append("<a href=\"" + item +"\">" + item + "</a><BR/>");
+      });
+    }).fail(function(msg) {
+      alert(JSON.stringify(msg));
+    });
+}
+
+loadUploadedFiles();
+
+setInterval( function(){ loadUploadedFiles() }, 5000 );
+
+</script>
+
+</html>
