@@ -66,6 +66,8 @@ clean:
 	@rm -f $(EXAMPLE_NAME) 
 	@for i in $(EXAMPLE_OBJS); do  rm -f $$i ; done
 
+run: $(EXAMPLE_NAME)
+	LD_LIBRARY_PATH=../build/lib/:$LD_LIBRARY_PATH ./$(EXAMPLE_NAME)
 
 
 
