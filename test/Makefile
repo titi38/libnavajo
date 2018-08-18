@@ -37,8 +37,8 @@ endif
 
 CPPFLAGS	= -I. \
             -I$(LIBSSL_DIR)/include \
-            -I../include         \
-            -I../../MPFDParser-1.1.1
+            -I../include
+#            -I../../MPFDParser-1.1.1
 
 LD = g++
 LDFLAGS        =  -Wall -Wno-unused -O3
@@ -55,7 +55,7 @@ EXAMPLE_OBJS = \
 %.o: %.cc
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
 
-all: $(EXAMPLE_NAME)
+all: $(EXAMPLE_NAME) test_mpfd_01
 
 $(EXAMPLE_NAME): $(EXAMPLE_OBJS) $(LIB_STATIC_NAME)
 	rm -f $@
@@ -66,9 +66,15 @@ clean:
 	@rm -f $(EXAMPLE_NAME) 
 	@for i in $(EXAMPLE_OBJS); do  rm -f $$i ; done
 
-run: $(EXAMPLE_NAME)
-	LD_LIBRARY_PATH=../build/lib/:$LD_LIBRARY_PATH ./$(EXAMPLE_NAME)
+test2:
+	$(CXX) test_mpfd_01.cpp -o test_mpfd_01 $(CXXFLAGS) $(CPPFLAGS) $(DEFS) 
+	./test_mpfd_01 < curl/form1.multipart
 
+run: clean $(EXAMPLE_NAME)
+	LD_LIBRARY_PATH=../build/lib/:$LD_LIBRARY_PATH ./$(EXAMPLE_NAME) | tee log
+
+rebuild:
+	make -C ../build clean all
 
 
 
