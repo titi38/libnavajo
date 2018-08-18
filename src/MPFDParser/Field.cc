@@ -10,11 +10,18 @@ pthread_mutex_t fileCreation_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 MPFD::Field::Field()
 {
-  type = 0;
+  type         = 0;
+  FieldContent = NULL;
+
+  FieldContentLength = 0;
 }
 
 MPFD::Field::~Field()
 {
+
+  if( FieldContent ) {
+    delete FieldContent;
+  }
 
   if( type == FileType ) {
     if( file.is_open() ) {
@@ -47,13 +54,17 @@ int MPFD::Field::GetType()
 void MPFD::Field::AcceptSomeData( char *data, long length )
 {
   if( type == TextType ) {
-    const size_t FieldContentLength    = FieldContent.size();
-    const size_t newFieldContentLength = FieldContentLength + length + 1;
-    FieldContent.resize( newFieldContentLength );
+    if( FieldContent == NULL ) {
+      FieldContent = new char[length + 1];
+    }
+    else {
+      FieldContent = (char *)realloc( FieldContent, FieldContentLength + length + 1 );
+    }
 
-    memcpy( &FieldContent[0] + FieldContentLength, data, length );
+    memcpy( FieldContent + FieldContentLength, data, length );
+    FieldContentLength += length;
 
-    FieldContent[newFieldContentLength - 1] = 0;
+    FieldContent[FieldContentLength] = 0;
   }
   else if( type == FileType ) {
     if( WhereToStoreUploadedFiles == Parser::StoreUploadedFilesInFilesystem ) {
@@ -96,10 +107,14 @@ void MPFD::Field::AcceptSomeData( char *data, long length )
       }
     }
     else { // If files are stored in memory
-      const size_t FieldContentLength    = FieldContent.size();
-      const size_t newFieldContentLength = FieldContentLength + length;
-      FieldContent.resize( newFieldContentLength );
-      memcpy( &FieldContent[0] + FieldContentLength, data, length );
+      if( FieldContent == NULL ) {
+        FieldContent = new char[length];
+      }
+      else {
+        FieldContent = (char *)realloc( FieldContent, FieldContentLength + length );
+      }
+      memcpy( FieldContent + FieldContentLength, data, length );
+      FieldContentLength += length;
     }
   }
   else {
@@ -120,7 +135,7 @@ unsigned long MPFD::Field::GetFileContentSize()
   else {
     if( type == FileType ) {
       if( WhereToStoreUploadedFiles == Parser::StoreUploadedFilesInMemory ) {
-        return FieldContent.size();
+        return FieldContentLength;
       }
       else {
         throw MPFD::Exception( "Trying to get file content size, but uploaded files are stored in filesystem." );
@@ -140,7 +155,7 @@ char *MPFD::Field::GetFileContent()
   else {
     if( type == FileType ) {
       if( WhereToStoreUploadedFiles == Parser::StoreUploadedFilesInMemory ) {
-        return &FieldContent[0];
+        return FieldContent;
       }
       else {
         throw MPFD::Exception( "Trying to get file content, but uploaded files are stored in filesystem." );
@@ -162,11 +177,11 @@ std::string MPFD::Field::GetTextTypeContent()
       throw MPFD::Exception( "Trying to get content of the field, but the type is not text." );
     }
     else {
-      if( FieldContent.empty() ) {
+      if( FieldContent == NULL ) {
         return std::string();
       }
       else {
-        return std::string( FieldContent.begin(), FieldContent.end() );
+        return std::string( FieldContent );
       }
     }
   }

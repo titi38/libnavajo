@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-#include <vector>
 
 namespace MPFD {
 
@@ -33,10 +32,6 @@ public:
 
   void SetMaxCollectedDataLength( long max );
   void SetTempDirForFileUpload( std::string dir );
-  inline std::string GetTempDirForFileUpload()
-  {
-    return TempDirForFileUpload;
-  };
   void SetUploadedFilesStorage( int where );
 
   std::map<std::string, Field *> GetFieldsMap();
@@ -55,13 +50,14 @@ private:
   static int const Status_ProcessingHeaders           = 2;
   static int const Status_ProcessingContentOfTheField = 3;
 
-  std::string       Boundary;
-  std::string       ProcessingFieldName;
-  bool              _HeadersOfTheFieldAreProcessed;
-  std::vector<char> DataCollector;
-  long              MaxDataCollectorLength;
-  bool              FindStartingBoundaryAndTruncData();
-  void              _ProcessData();
+  std::string Boundary;
+  std::string ProcessingFieldName;
+  bool        _HeadersOfTheFieldAreProcessed;
+  long        ContentLength;
+  char *      DataCollector;
+  long        DataCollectorLength, MaxDataCollectorLength;
+  bool        FindStartingBoundaryAndTruncData();
+  void        _ProcessData();
   void _ParseHeaders( std::string headers );
   bool WaitForHeadersEndAndParseThem();
   void TruncateDataCollectorFromTheBeginning( long n );

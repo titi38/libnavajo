@@ -13,7 +13,6 @@
 #include <sstream>
 #include <stdlib.h>
 #include <string.h>
-#include <vector>
 
 namespace MPFD {
 
@@ -50,14 +49,16 @@ public:
 
 
 private:
+  unsigned long FieldContentLength;
+
   int WhereToStoreUploadedFiles;
 
   std::string TempDir, TempFile;
   std::string FileContentType, FileName;
 
-  int               type;
-  std::vector<char> FieldContent;
-  std::ofstream     file;
+  int           type;
+  char *        FieldContent;
+  std::ofstream file;
 };
 }
 #endif /* _FIELD_H */

@@ -3,6 +3,8 @@
 //
 // Contacts and other info are on the WEB page:  grigory.info/MPFDParser
 
+// ---- ORIGINAL -----
+
 #include "MPFDParser/Parser.h"
 
 std::map<std::string, MPFD::Field *> MPFD::Parser::GetFieldsMap()
@@ -12,9 +14,8 @@ std::map<std::string, MPFD::Field *> MPFD::Parser::GetFieldsMap()
 
 MPFD::Field *MPFD::Parser::GetField( std::string Name )
 {
-  std::map<std::string, Field *>::iterator it = Fields.find( Name );
-  if( it != Fields.end() ) {
-    return it->second;
+  if( Fields.count( Name ) ) {
+    return Fields[Name];
   }
   else {
     return NULL;
@@ -23,6 +24,8 @@ MPFD::Field *MPFD::Parser::GetField( std::string Name )
 
 MPFD::Parser::Parser()
 {
+  DataCollector                  = NULL;
+  DataCollectorLength            = 0;
   _HeadersOfTheFieldAreProcessed = false;
   CurrentStatus                  = Status_LookingForStartingBoundary;
 
@@ -37,6 +40,11 @@ MPFD::Parser::~Parser()
   for( it = Fields.begin(); it != Fields.end(); ++it ) {
     delete it->second;
   }
+
+  // GLSR
+  if( DataCollector ) {
+    delete DataCollector;
+  }
 }
 
 void MPFD::Parser::SetContentType( const std::string type )
@@ -47,28 +55,34 @@ void MPFD::Parser::SetContentType( const std::string type )
   }
 
 
-  size_t bp = type.find( "boundary=" );
+  int bp = type.find( "boundary=" );
 
   if( bp == std::string::npos ) {
     throw MPFD::Exception( std::string( "Cannot find boundary in Content-type: \"" ) + type + std::string( "\"" ) );
   }
 
-  Boundary = std::string( "--" ) + type.substr( bp + 9, type.length() - bp );
+  // GLSR
+  Boundary = std::string( "--" ) + type.substr( bp + 9 );
 }
 
 void MPFD::Parser::AcceptSomeData( const char *data, const long length )
 {
   if( Boundary.length() > 0 ) {
     // Append data to existing accumulator
-    long DataCollectorLength    = DataCollector.size();
-    long newDataCollectorLength = DataCollectorLength + length;
-
-    if( newDataCollectorLength > MaxDataCollectorLength ) {
-      throw Exception( "Maximum data collector length reached." );
+    if( DataCollector == NULL ) {
+      DataCollector = new char[length];
+      memcpy( DataCollector, data, length );
+      DataCollectorLength = length;
+    }
+    else {
+      DataCollector = (char *)realloc( DataCollector, DataCollectorLength + length );
+      memcpy( DataCollector + DataCollectorLength, data, length );
+      DataCollectorLength += length;
     }
 
-    DataCollector.resize( newDataCollectorLength );
-    memcpy( &DataCollector[0] + DataCollectorLength, data, length );
+    if( DataCollectorLength > MaxDataCollectorLength ) {
+      throw Exception( "Maximum data collector length reached." );
+    }
 
     _ProcessData();
   }
@@ -120,11 +134,11 @@ bool MPFD::Parser::ProcessContentOfTheField()
   }
   else {
     // We need to save +2 chars for \r\n chars before boundary
-    DataLengthToSendToField = DataCollector.size() - ( Boundary.length() + 2 );
+    DataLengthToSendToField = DataCollectorLength - ( Boundary.length() + 2 );
   }
 
   if( DataLengthToSendToField > 0 ) {
-    Fields[ProcessingFieldName]->AcceptSomeData( &DataCollector[0], DataLengthToSendToField );
+    Fields[ProcessingFieldName]->AcceptSomeData( DataCollector, DataLengthToSendToField );
     TruncateDataCollectorFromTheBeginning( DataLengthToSendToField );
   }
 
@@ -139,17 +153,19 @@ bool MPFD::Parser::ProcessContentOfTheField()
 
 bool MPFD::Parser::WaitForHeadersEndAndParseThem()
 {
-  const int DataCollectorLength = DataCollector.size();
   for( int i = 0; i < DataCollectorLength - 3; i++ ) {
     if( ( DataCollector[i] == 13 ) && ( DataCollector[i + 1] == 10 ) && ( DataCollector[i + 2] == 13 )
         && ( DataCollector[i + 3] == 10 ) ) {
-      long              headers_length = i;
-      std::vector<char> headers( headers_length + 1, 0 );
-      memcpy( &headers[0], &DataCollector[0], headers_length );
+      long  headers_length = i;
+      char *headers        = new char[headers_length + 1];
+      memset( headers, 0, headers_length + 1 );
+      memcpy( headers, DataCollector, headers_length );
 
-      _ParseHeaders( std::string( &headers[0] ) );
+      _ParseHeaders( std::string( headers ) );
 
       TruncateDataCollectorFromTheBeginning( i + 4 );
+
+      delete headers;
 
       return true;
     }
@@ -179,14 +195,14 @@ void MPFD::Parser::_ParseHeaders( std::string headers )
   }
 
   // Find name
-  size_t name_pos = headers.find( "name=\"" );
+  long name_pos = headers.find( "name=\"" );
   if( name_pos == std::string::npos ) {
     throw Exception(
         std::string( "Accepted headers of field does not contain \"name=\".\nThe headers are: \"" ) + headers
         + std::string( "\"" ) );
   }
   else {
-    size_t name_end_pos = headers.find( "\"", name_pos + 6 );
+    long name_end_pos = headers.find( "\"", name_pos + 6 );
     if( name_end_pos == std::string::npos ) {
       throw Exception(
           std::string( "Cannot find closing quote of \"name=\" attribute.\nThe headers are: \"" ) + headers
@@ -199,7 +215,7 @@ void MPFD::Parser::_ParseHeaders( std::string headers )
 
 
     // find filename if exists
-    size_t filename_pos = headers.find( "filename=\"" );
+    long filename_pos = headers.find( "filename=\"" );
     if( filename_pos == std::string::npos ) {
       Fields[ProcessingFieldName]->SetType( Field::TextType );
     }
@@ -208,7 +224,7 @@ void MPFD::Parser::_ParseHeaders( std::string headers )
       Fields[ProcessingFieldName]->SetTempDir( TempDirForFileUpload );
       Fields[ProcessingFieldName]->SetUploadedFilesStorage( WhereToStoreUploadedFiles );
 
-      size_t filename_end_pos = headers.find( "\"", filename_pos + 10 );
+      long filename_end_pos = headers.find( "\"", filename_pos + 10 );
       if( filename_end_pos == std::string::npos ) {
         throw Exception(
             std::string( "Cannot find closing quote of \"filename=\" attribute.\nThe headers are: \"" ) + headers
@@ -220,10 +236,10 @@ void MPFD::Parser::_ParseHeaders( std::string headers )
       }
 
       // find Content-Type if exists
-      size_t content_type_pos = headers.find( "Content-Type: " );
+      long content_type_pos = headers.find( "Content-Type: " );
       if( content_type_pos != std::string::npos ) {
         long content_type_end_pos = 0;
-        for( size_t i = content_type_pos + 14; ( i < headers.length() ) && ( !content_type_end_pos ); i++ ) {
+        for( int i = content_type_pos + 14; ( i < headers.length() ) && ( !content_type_end_pos ); i++ ) {
           if( ( headers[i] == ' ' ) || ( headers[i] == 10 ) || ( headers[i] == 13 ) ) {
             content_type_end_pos = i - 1;
           }
@@ -243,20 +259,24 @@ void MPFD::Parser::SetMaxCollectedDataLength( long max )
 
 void MPFD::Parser::TruncateDataCollectorFromTheBeginning( long n )
 {
-  const size_t DataCollectorLength = DataCollector.size();
-  for( size_t i = n; i < DataCollectorLength; ++i ) {
-    DataCollector[i - n] = DataCollector[i];
-  }
-  DataCollector.resize( DataCollectorLength - n );
+  long TruncatedDataCollectorLength = DataCollectorLength - n;
+
+  char *tmp = DataCollector;
+
+  DataCollector = new char[TruncatedDataCollectorLength];
+  memcpy( DataCollector, tmp + n, TruncatedDataCollectorLength );
+
+  DataCollectorLength = TruncatedDataCollectorLength;
+
+  delete tmp;
 }
 
 long MPFD::Parser::BoundaryPositionInDataCollector()
 {
-  int       bl                  = Boundary.length();
-  const int DataCollectorLength = DataCollector.size();
+  const char *b  = Boundary.c_str();
+  int         bl = Boundary.length();
   if( DataCollectorLength >= bl ) {
-    const char *b     = Boundary.c_str();
-    bool        found = false;
+    bool found = false;
     for( int i = 0; ( i <= DataCollectorLength - bl ) && ( !found ); i++ ) {
       found = true;
       for( int j = 0; ( j < bl ) && ( found ); j++ ) {
