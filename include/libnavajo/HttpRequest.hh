@@ -118,8 +118,21 @@ class HttpRequest
       size_t posEq=0;
       if ((posEq = theParam.find('=')) == std::string::npos)
         parameters[theParam]="";
-      else
-        parameters[theParam.substr(0,posEq)]=theParam.substr(posEq+1);
+      else {
+        auto key        = theParam.substr(0,posEq);
+        auto value      = theParam.substr(posEq+1);
+        if( parameters.count( key ) == 0 ) {
+          parameters[key] = value;
+        } else {
+          auto arrayKey = key + "[]";
+          if( parameters.count( arrayKey ) == 1 ) {
+            parameters[arrayKey] += "|" + value;
+          } else {
+            parameters[arrayKey] = parameters[key] + "|" + value;
+          }
+          parameters[key] = value;
+        }
+      }
 
       start = end + 1;
     }
@@ -392,8 +405,7 @@ class HttpRequest
       this->payload=payload ;
       this->mutipartContentParser=parser;
 
-      if (params != NULL && strlen(params))
-        decodParams(params);
+      setParams( params );
       
       if (cookies != NULL && strlen(cookies))
         decodCookies(cookies);        
@@ -441,6 +453,13 @@ class HttpRequest
     * @param name: the attribute name
     * */
     inline void setUrl(const char *newUrl) { url=newUrl; };
+
+    // GLSR: torna pública a configuração de parâmetros permitindo realizar forwardTo com novos parâmetros
+    inline void setParams( const char*params ) {
+      if (params != NULL && strlen(params)) {
+        decodParams(params);
+      }
+    }
 
     /**********************************************************************/
     /**

@@ -6,18 +6,21 @@
 
 #include "MPFDParser/Exception.h"
 
-MPFD::Exception::Exception(std::string error) {
-    Error = error;
+MPFD::Exception::Exception( std::string error )
+{
+  Error = error;
 }
 
-MPFD::Exception::Exception(const MPFD::Exception& orig) {
-    Error = orig.Error;
+MPFD::Exception::Exception( const MPFD::Exception &orig )
+{
+  Error = orig.Error;
 }
 
-MPFD::Exception::~Exception() {
-
+MPFD::Exception::~Exception()
+{
 }
 
-std::string MPFD::Exception::GetError() {
-    return Error;
+std::string MPFD::Exception::GetError()
+{
+  return Error;
 }
