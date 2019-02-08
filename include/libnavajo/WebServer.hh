@@ -42,6 +42,12 @@ class WebServer
     int s_server_session_id_context;
     static char *certpass;
 
+    int (*tokDecodeCallback) (const std::string& tokb64, std::string& secret, std::string& decoded);
+    time_t (*authBearTokDecExpirationCb) (std::string& tokenDecoded);
+    int (*authBearTokDecScopesCb) (const std::string& tokenDecoded, const std::string& resourceUrl, std::string& errDescr);
+    std::string authBearerRealm;
+    bool authBearerEnabled;
+    std::string tokDecodeSecret;
     std::queue<ClientSockData *> clientsQueue;
     pthread_cond_t clientsQueue_cond;
     pthread_mutex_t clientsQueue_mutex;
@@ -50,12 +56,15 @@ class WebServer
     static int password_cb(char *buf, int num, int rwflag, void *userdata);
 
     bool isUserAllowed(const std::string &logpassb64, std::string &username);
+    bool isTokenAllowed(const std::string &tokb64,
+                        const std::string &resourceUrl,
+                        std::string &respHeader);
     bool isAuthorizedDN(const std::string str);
 
     size_t recvLine(int client, char *bufLine, size_t);
     bool accept_request(ClientSockData* client, bool authSSL);
     void fatalError(const char *);
-    static std::string getHttpHeader(const char *messageType, const size_t len=0, const bool keepAlive=true, const bool zipped=false, HttpResponse* response=NULL);
+    static std::string getHttpHeader(const char *messageType, const size_t len=0, const bool keepAlive=true, const char *authBearerAdditionalHeaders=NULL, const bool zipped=false, HttpResponse* response=NULL);
     static const char* get_mime_type(const char *name);
     u_short init();
 
@@ -82,9 +91,12 @@ class WebServer
     volatile size_t nbServerSock;
     
     const static char authStr[];
+    const static char authBearerStr[];
 
     std::map<std::string,time_t> usersAuthHistory;
     pthread_mutex_t usersAuthHistory_mutex;
+    std::map<std::string,time_t> tokensAuthHistory;
+    pthread_mutex_t tokensAuthHistory_mutex;
     std::map<IpAddress,time_t> peerIpHistory;
     std::map<std::string,time_t> peerDnHistory;
     pthread_mutex_t peerDnHistory_mutex;
@@ -98,10 +110,10 @@ class WebServer
     void exit();
     
     static std::string webServerName;
-    bool disableIpV4, disableIpV6;
-    ushort socketTimeoutInSecond;
-    ushort tcpPort;
-    size_t threadsPoolSize;
+    volatile bool disableIpV4, disableIpV6;
+    volatile ushort socketTimeoutInSecond;
+    volatile ushort tcpPort;
+    volatile size_t threadsPoolSize;
     std::string device;
     
     std::string mutipartTempDirForFileUpload;
@@ -191,6 +203,32 @@ class WebServer
     * @param pass : user password
     */ 
     inline void addLoginPass(const char* login, const char* pass) { authLoginPwdList.push_back(std::string(login)+':'+std::string(pass)); };
+
+    /**
+    * Set http Bearer token decode callback function
+    * @param realm: realm attribute defining scope of resources being accessed
+    * @param decodeCallback: function callback for decoding base64 token and verify signature,
+    * tokb64 is the base64 encoded token, secret is the key used for verify token signature, decoded is the token base64 decoded
+    * without the signature part, returns 0 on success, any other value on fail
+    * @param secret: key used for checking token authentication
+    * @param expirationCallback: function callback for retriving token expiration date, MUST be provided, returns numbers of
+    * seconds since epoch
+    * @param scopesCheckCallback: function callback for checking any extra field present in token, optionnal and can be set to NULL,
+    * if provided, tokenDecoded is the token base64 decoded as provided by decodeCallback, resourceUrl is the url of the resource being accessed (some scopes may require different value to get access to specific resources), errDescr will be updated with a description of the error to insert in HTTP header error code insufficient_scope, return true on sucess
+    */
+    inline void setAuthBearerDecodeCallbacks(std::string& realm,
+                                             int (*decodeCallback) (const std::string& tokb64, std::string& secret, std::string& decoded),
+                                             std::string secret,
+                                             time_t (*expirationCallback) (std::string& tokenDecoded),
+                                             int (*scopesCheckCallback) (const std::string& tokenDecoded, const std::string& resourceUrl, std::string& errDescr))
+    {
+      authBearerRealm = realm;
+      tokDecodeCallback = decodeCallback;
+      tokDecodeSecret = secret;
+      authBearTokDecExpirationCb = expirationCallback;
+      authBearTokDecScopesCb = scopesCheckCallback;
+      authBearerEnabled = true;
+    };
 
     /**
     * Set the path to store uploaded files on disk. Used to set the MPFD function.

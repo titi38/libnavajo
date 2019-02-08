@@ -1,0 +1,12 @@
+#!/bin/bash
+
+curl -X POST \
+-F 'tripId=7601e0be-8eca-450a-82a1-9efde3ce6c6f' \
+-F 'busSeatIdList=|ae871414-e617-4699-9f39-439b27ec00d9--30|ae871414-e617-4699-9f39-439b27ec00d9--31|ae871414-e617-4699-9f39-439b27ec00d9--32|ae871414-e617-4699-9f39-439b27ec00d9--33|ae871414-e617-4699-9f39-439b27ec00d9--34' \
+-F 'busSeatPriceIdList=|1582c658-14f0-446b-a5eb-62dbd5e5f0f8|1582c658-14f0-446b-a5eb-62dbd5e5f0f8|1582c658-14f0-446b-a5eb-62dbd5e5f0f8|1582c658-14f0-446b-a5eb-62dbd5e5f0f8|1582c658-14f0-446b-a5eb-62dbd5e5f0f8' \
+-F 'clientFullName=' \
+-F 'displayOnlyTripDestiny_disabled=Poços de Caldas - MG' \
+-F 'displayOnlyTripDestiny=Poços de Caldas - MG' \
+-F 'displayOnlyBusSeats_disabled=30; 31; 32; 33; 34' \
+-F 'displayOnlyBusSeats=30; 31; 32; 33; 34' \
+http://localhost:8080/testForm01

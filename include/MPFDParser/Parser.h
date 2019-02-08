@@ -4,70 +4,66 @@
 // Contacts and other info are on the WEB page:  grigory.info/MPFDParser
 
 
-
 #ifndef _PARSER_H
-#define	_PARSER_H
+#define _PARSER_H
 
-#include <iostream>
-#include <string>
-#include <map>
-#include <vector>
 #include "Exception.h"
 #include "Field.h"
-#include <string.h>
+#include <iostream>
+#include <map>
 #include <stdlib.h>
+#include <string.h>
+#include <string>
 
 namespace MPFD {
 
-    class Parser {
-    public:
-        static const int StoreUploadedFilesInFilesystem = 1, StoreUploadedFilesInMemory = 2;
+class Parser {
+public:
+  static const int StoreUploadedFilesInFilesystem = 1, StoreUploadedFilesInMemory = 2;
 
 
-        Parser();
-        ~Parser();
+  Parser();
+  ~Parser();
 
-        void SetContentType(const std::string type);
+  void SetContentType( const std::string type );
 
-        void AcceptSomeData(const char *data, const long length);
+  void AcceptSomeData( const char *data, const long length );
 
 
+  void SetMaxCollectedDataLength( long max );
+  void SetTempDirForFileUpload( std::string dir );
+  void SetUploadedFilesStorage( int where );
 
-        void SetMaxCollectedDataLength(long max);
-        void SetTempDirForFileUpload(std::string dir);
-	inline std::string GetTempDirForFileUpload() { return TempDirForFileUpload; };
-        void SetUploadedFilesStorage(int where);
+  std::map<std::string, Field *> GetFieldsMap();
+  Field *GetField( std::string Name );
 
-        std::map<std::string, Field *> GetFieldsMap();
-        Field * GetField(std::string Name);
+private:
+  int WhereToStoreUploadedFiles;
 
-    private:
-        int WhereToStoreUploadedFiles;
+  std::map<std::string, Field *> Fields;
 
-        std::map<std::string, Field *> Fields;
+  std::string TempDirForFileUpload;
+  int         CurrentStatus;
 
-        std::string TempDirForFileUpload;
-        int CurrentStatus;
+  // Work statuses
+  static int const Status_LookingForStartingBoundary  = 1;
+  static int const Status_ProcessingHeaders           = 2;
+  static int const Status_ProcessingContentOfTheField = 3;
 
-        // Work statuses
-        static int const Status_LookingForStartingBoundary = 1;
-        static int const Status_ProcessingHeaders = 2;
-        static int const Status_ProcessingContentOfTheField = 3;
-
-        std::string Boundary;
-        std::string ProcessingFieldName;
-        bool _HeadersOfTheFieldAreProcessed;
-	std::vector<char> DataCollector;
-        long MaxDataCollectorLength;
-        bool FindStartingBoundaryAndTruncData();
-        void _ProcessData();
-        void _ParseHeaders(std::string headers);
-        bool WaitForHeadersEndAndParseThem();
-        void TruncateDataCollectorFromTheBeginning(long n);
-        long BoundaryPositionInDataCollector();
-        bool ProcessContentOfTheField();
-    };
+  std::string Boundary;
+  std::string ProcessingFieldName;
+  bool        _HeadersOfTheFieldAreProcessed;
+  long        ContentLength;
+  char *      DataCollector;
+  long        DataCollectorLength, MaxDataCollectorLength;
+  bool        FindStartingBoundaryAndTruncData();
+  void        _ProcessData();
+  void _ParseHeaders( std::string headers );
+  bool WaitForHeadersEndAndParseThem();
+  void TruncateDataCollectorFromTheBeginning( long n );
+  long BoundaryPositionInDataCollector();
+  bool ProcessContentOfTheField();
+};
 }
 
-#endif	/* _PARSER_H */
-
+#endif /* _PARSER_H */

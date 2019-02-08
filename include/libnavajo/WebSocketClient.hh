@@ -83,7 +83,9 @@ class WebSocketClient
     {
       while (!sendingQueue.empty())
       {
-        free(sendingQueue.front());
+        MessageContent *msg = sendingQueue.front();
+        free(msg->message);
+        free(msg);
         sendingQueue.pop();
       }
     }

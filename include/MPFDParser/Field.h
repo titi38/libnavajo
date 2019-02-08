@@ -5,64 +5,60 @@
 
 
 #ifndef _FIELD_H
-#define	_FIELD_H
+#define _FIELD_H
 
 #include "Exception.h"
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <sstream>
 #include <stdlib.h>
 #include <string.h>
-#include <sstream>
-#include <vector>
 
 namespace MPFD {
 
-    class Field {
-    public:
-        static const int TextType = 1, FileType = 2;
+class Field {
+public:
+  static const int TextType = 1, FileType = 2;
 
-        Field();
-        virtual ~Field();
+  Field();
+  virtual ~Field();
 
-        void SetType(int type);
-        int GetType();
+  void SetType( int type );
+  int GetType();
 
-        void AcceptSomeData(char *data, long length);
-
-
-        // File functions
-        void SetUploadedFilesStorage(int where);
-        void SetTempDir(std::string dir);
-
-        void SetFileName(std::string name);
-        std::string GetFileName();
-
-        void SetFileContentType(std::string type);
-        std::string GetFileMimeType();
-
-        char * GetFileContent();
-        unsigned long GetFileContentSize();
-
-        std::string GetTempFileName();
-
-        // Text field operations
-        std::string GetTextTypeContent();
+  void AcceptSomeData( char *data, long length );
 
 
+  // File functions
+  void SetUploadedFilesStorage( int where );
+  void SetTempDir( std::string dir );
+
+  void SetFileName( std::string name );
+  std::string GetFileName();
+
+  void SetFileContentType( std::string type );
+  std::string GetFileMimeType();
+
+  char *        GetFileContent();
+  unsigned long GetFileContentSize();
+
+  std::string GetTempFileName();
+
+  // Text field operations
+  std::string GetTextTypeContent();
 
 
-    private:
+private:
+  unsigned long FieldContentLength;
 
-        int WhereToStoreUploadedFiles;
+  int WhereToStoreUploadedFiles;
 
-        std::string TempDir, TempFile;
-        std::string FileContentType, FileName;
+  std::string TempDir, TempFile;
+  std::string FileContentType, FileName;
 
-        int type;
-	std::vector<char> FieldContent;
-        std::ofstream file;
-
-    };
+  int           type;
+  char *        FieldContent;
+  std::ofstream file;
+};
 }
-#endif	/* _FIELD_H */
-
+#endif /* _FIELD_H */

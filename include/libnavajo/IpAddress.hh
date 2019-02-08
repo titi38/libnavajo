@@ -127,10 +127,13 @@ class IpAddress
 
   bool operator<(const IpAddress& A) const
   {
-	  if (ipversion == 4)
-	    return ip.v4 < A.ip.v4;
+    if (A.ipversion != ipversion)
+      return ipversion < A.ipversion;
 
-    if (this->ipversion != 6)
+    if (ipversion == 4)
+      return ip.v4 < A.ip.v4;
+
+    if (ipversion != 6)
       return false;
 
     int i=INET6_ADDRLEN-1;
@@ -279,6 +282,9 @@ class IpNetwork
 
     inline bool operator<(const IpNetwork& A) const
     {
+      if (A.addr.ipversion != addr.ipversion)
+        return addr.ipversion < A.addr.ipversion;
+
       if (A.addr.ipversion == 4)
       {
         if (addr.ipversion != 4) return false; // IpV6 > IpV4

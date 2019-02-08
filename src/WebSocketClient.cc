@@ -55,10 +55,12 @@ void WebSocketClient::sendingThread()
     long long msgLatency = (long long)( t.time - msg->date.time )*1000 + (long long)( t.millitm - msg->date.millitm );
     if ( msgLatency > snd_maxLatency || !sendMessage(msg))
     {
+      free(msg->message);
       free(msg);
       closeSend();
       return;
     }
+    free(msg->message);
     free(msg);
     pthread_mutex_lock(&sendingQueueMutex);
   }

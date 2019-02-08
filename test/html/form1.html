@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Test Form 01</title>
+  </head>
+
+  <body>
+
+    <form id="sellTicketFrm03" name="sellTicketFrm03" autocomplete="off" method="POST" action="/testForm01" enctype="multipart/form-data" accept-charset="UTF-8" novalidate="novalidate">
+      <input id="tripId" type="hidden" name="tripId" value="7601e0be-8eca-450a-82a1-9efde3ce6c6f">
+      <input id="busSeatIdList" type="hidden" name="busSeatIdList" value="|ae871414-e617-4699-9f39-439b27ec00d9--30|ae871414-e617-4699-9f39-439b27ec00d9--31|ae871414-e617-4699-9f39-439b27ec00d9--32|ae871414-e617-4699-9f39-439b27ec00d9--33|ae871414-e617-4699-9f39-439b27ec00d9--34">
+      <input id="busSeatPriceIdList" type="hidden" name="busSeatPriceIdList" value="|1582c658-14f0-446b-a5eb-62dbd5e5f0f8|1582c658-14f0-446b-a5eb-62dbd5e5f0f8|1582c658-14f0-446b-a5eb-62dbd5e5f0f8|1582c658-14f0-446b-a5eb-62dbd5e5f0f8|1582c658-14f0-446b-a5eb-62dbd5e5f0f8">
+      <div class="row">
+        <!-- addField (begin) -->
+        <!-- openDivFormGroup -->
+        <div id="div-clientFullName" class="input-field col s12">
+          <input type="text" name="clientFullName" id="clientFullName" class="typetext clientFullName required validate input-field" value="" accesskey="Escolha o cliente" required="">
+          <label id="lbl-clientFullName" for="clientFullName" class="required validate" accesskey="Escolha o cliente">Contratante</label>
+          <ul id="clientFullNameDropdown" class="dropdown-content gr-ac-dropdown ac-dropdown ac-appender"></ul>
+          <!-- closeDivFormGroup -->
+          <input type="hidden" class="validate" name="clientId" required="required"></div>
+        <!-- addField (end) -->
+        <!-- addField (begin) -->
+        <!-- openDivFormGroup -->
+        <div id="div-displayOnlyTripDestiny_disabled" class="input-field col s12">
+          <input type="text" name="displayOnlyTripDestiny_disabled" id="displayOnlyTripDestiny_disabled" class="typetext displayOnlyTripDestiny_disabled required validate input-field" value="Poços de Caldas - MG" required="" readonly="" disabled="">
+          <label id="lbl-displayOnlyTripDestiny_disabled" for="displayOnlyTripDestiny_disabled" class="required validate active">Destino</label>
+          <!-- closeDivFormGroup -->
+        </div>
+        <!-- addField (end) -->
+        <input id="displayOnlyTripDestiny" type="hidden" name="displayOnlyTripDestiny" value="Poços de Caldas - MG">
+        <!-- addField (begin) -->
+        <!-- openDivFormGroup -->
+        <div id="div-displayOnlyBusSeats_disabled" class="input-field col s12">
+          <input type="text" name="displayOnlyBusSeats_disabled" id="displayOnlyBusSeats_disabled" class="typetext displayOnlyBusSeats_disabled required validate input-field" value="30; 31; 32; 33; 34" required="" readonly="" disabled="">
+          <label id="lbl-displayOnlyBusSeats_disabled" for="displayOnlyBusSeats_disabled" class="required validate active">Poltronas selecionadas</label>
+          <!-- closeDivFormGroup -->
+        </div>
+        <!-- addField (end) -->
+        <input id="displayOnlyBusSeats" type="hidden" name="displayOnlyBusSeats" value="30; 31; 32; 33; 34">
+      </div><div class="gr-html-form-buttons-bar"><button class="GrHtmlButton defaultTheme gr-button-primary ok" type="submit" id="sellTicketFrm03Submit" tabindex="0" title="Continuar"><span class="utfButtonIcon"></span>Continuar</button>
+      </div>
+    </form>
+
+  </body>
+</html>
