@@ -119,12 +119,12 @@ class HttpRequest
       if ((posEq = theParam.find('=')) == std::string::npos)
         parameters[theParam]="";
       else {
-        auto key        = theParam.substr(0,posEq);
-        auto value      = theParam.substr(posEq+1);
+	std::string key        = theParam.substr(0,posEq);
+	std::string value      = theParam.substr(posEq+1);
         if( parameters.count( key ) == 0 ) {
           parameters[key] = value;
         } else {
-          auto arrayKey = key + "[]";
+	  std::string arrayKey = key + "[]";
           if( parameters.count( arrayKey ) == 1 ) {
             parameters[arrayKey] += "|" + value;
           } else {
