@@ -20,7 +20,7 @@ public:
   Exception( const Exception &orig );
   virtual ~Exception();
 
-  std::string GetError();
+  std::string GetError() const;
 
 private:
   std::string Error;
