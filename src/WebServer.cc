@@ -671,7 +671,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
         mutipartContentParser->SetMaxCollectedDataLength( mutipartMaxCollectedDataLength );
         mutipartContentParser->SetContentType( mutipartContent );
       }
-      catch (MPFD::Exception e) 
+      catch (const MPFD::Exception& e)
       {
         NVJ_LOG->append(NVJ_DEBUG, "WebServer::accept_request -  MPFD::Exception: "+ e.GetError() );
         delete mutipartContentParser;
@@ -730,7 +730,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
             {
               mutipartContentParser->AcceptSomeData( buffer, bufLineLen );
             }
-            catch ( MPFD::Exception e )
+            catch ( const MPFD::Exception& e )
             {
               NVJ_LOG->append( NVJ_DEBUG, "WebServer::accept_request -  MPFD::Exception: " + e.GetError() );
               break;

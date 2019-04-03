@@ -20,7 +20,7 @@ MPFD::Exception::~Exception()
 {
 }
 
-std::string MPFD::Exception::GetError()
+std::string MPFD::Exception::GetError() const
 {
   return Error;
 }
