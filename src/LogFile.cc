@@ -22,7 +22,7 @@
   * \param l - type of entry
   * \param m - message
   */
-  void LogFile::append(const NvjLogSeverity& l, const std::string& message, const std::string& details)
+  void LogFile::append(const NvjLogSeverity& /*l*/, const std::string& message, const std::string& /*details*/)
   {
     if (file!=NULL)
       (*file) << message << std::endl;

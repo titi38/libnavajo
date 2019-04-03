@@ -23,7 +23,7 @@
   * \param l - LogSeverity
   * \param m - message
   */
-  void LogSyslog::append(const NvjLogSeverity& l, const std::string& message, const std::string& details)
+  void LogSyslog::append(const NvjLogSeverity& l, const std::string& message, const std::string& /*details*/)
   {
 
     int type;

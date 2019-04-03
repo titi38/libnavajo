@@ -336,7 +336,7 @@ size_t WebServer::recvLine(int client, char *bufLine, size_t nsize)
 * \return true if the socket must to close
 ***********************************************************************/
 
-bool WebServer::accept_request(ClientSockData* client, bool authSSL)
+bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
 {
   char bufLine[BUFSIZE];
   HttpRequestMethod requestMethod;
@@ -1366,7 +1366,7 @@ void WebServer::exit()
 * password_cb
 ************************************************************************/
 
-int WebServer::password_cb(char *buf, int num, int rwflag, void *userdata)
+int WebServer::password_cb(char *buf, int num, int /*rwflag*/, void */*userdata*/)
 {
   if((size_t)num<strlen(certpass)+1)
     return(0);

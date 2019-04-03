@@ -74,6 +74,8 @@ inline bool setSocketNoSigpipe(int socket, bool nosigpipe = true)
   int set = nosigpipe ? 1 : 0;
   return setsockoptCompat( socket, SOL_SOCKET, SO_NOSIGPIPE, (void *) &set, sizeof(int) ) == 0;
 #else
+  (void)socket;
+  (void)nosigpipe;
   return true;
 #endif
 }
