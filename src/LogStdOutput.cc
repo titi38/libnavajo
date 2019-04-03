@@ -30,7 +30,7 @@
   * \param l - LogSeverity
   * \param m - message
   */
-  void LogStdOutput::append(const NvjLogSeverity& l, const std::string& message, const std::string& details)
+  void LogStdOutput::append(const NvjLogSeverity& l, const std::string& message, const std::string& /*details*/)
   {
    
     switch (l)

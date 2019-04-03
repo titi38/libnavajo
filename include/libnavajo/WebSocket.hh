@@ -53,13 +53,13 @@ class WebSocket
     * Callback on new websocket client connection
     * @param request: the http request object
     */
-    virtual bool onOpening(HttpRequest* request) { return true; };
+    virtual bool onOpening(HttpRequest* /*request*/) { return true; };
 
     /**
     * Callback before closing websocket client connection
     * @param request: the http request object
     */
-    virtual void onClosing(WebSocketClient* client) { };
+    virtual void onClosing(WebSocketClient* /*client*/) { };
 
     /**
     * Callback on new text message
@@ -67,7 +67,7 @@ class WebSocket
     * @param message: the message
     * @param fin: is the current message finished ?
     */ 
-    virtual void onTextMessage(WebSocketClient* client, const std::string &message, const bool fin)
+    virtual void onTextMessage(WebSocketClient* /*client*/, const std::string &/*message*/, const bool /*fin*/)
     { };
 
     /**
@@ -77,7 +77,7 @@ class WebSocket
     * @param len: the message length
     * @param fin: is the current message finished ?
     */ 
-    virtual void onBinaryMessage(WebSocketClient* client, const unsigned char* message, size_t len, const bool fin)
+    virtual void onBinaryMessage(WebSocketClient* /*client*/, const unsigned char* /*message*/, size_t /*len*/, const bool /*fin*/)
     { };
     
     /**
@@ -86,7 +86,7 @@ class WebSocket
     * @param message: the message
     * @param len: the message length
     */     
-    virtual void onPongCtrlFrame(WebSocketClient* client, const unsigned char* message, size_t len)
+    virtual void onPongCtrlFrame(WebSocketClient* /*client*/, const unsigned char* /*message*/, size_t /*len*/)
     { /* should check application data received is the same than in the ping message */ };
 
     /**
@@ -96,7 +96,7 @@ class WebSocket
     * @param len: the message length
     * @return true to send an automatic pong reply message
     */     
-    virtual bool onPingCtrlFrame(WebSocketClient* client, const unsigned char* message, size_t len)
+    virtual bool onPingCtrlFrame(WebSocketClient* /*client*/, const unsigned char* /*message*/, size_t /*len*/)
     { return true; };
     
     /**
@@ -104,7 +104,7 @@ class WebSocket
     * @param request: the http request object
     * @return true to send an automatic close reply message
     */ 
-    virtual bool onCloseCtrlFrame(WebSocketClient* client, const unsigned char* message, size_t len)
+    virtual bool onCloseCtrlFrame(WebSocketClient* /*client*/, const unsigned char* /*message*/, size_t /*len*/)
     { return true; };
 
 
