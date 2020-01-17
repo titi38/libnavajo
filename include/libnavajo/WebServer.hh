@@ -252,14 +252,26 @@ class WebServer
     * Add a web repository (containing web pages)
     * @param repo : a pointer to a WebRepository instance
     */  
-    void addRepository(WebRepository* repo) { webRepositories.push_back(repo); };
+    void addRepository(WebRepository* repo) 
+    {
+      if (repo != NULL) 
+        webRepositories.push_back(repo);
+      else
+	fatalError ("addRepository Failed: try to add a NULL pointer repository"); 
+    };
 
     /**
     * Add a websocket
     * @param endpoint : websocket endpoint
     * @param websocket : WebSocket instance
     */  
-    void addWebSocket(const std::string endPoint, WebSocket* websocket) { webSocketEndPoints[endPoint]=websocket; };
+    void addWebSocket(const std::string endPoint, WebSocket* websocket) 
+    { 
+      if (websocket != NULL) 
+	      webSocketEndPoints[endPoint]=websocket; 
+      else
+        fatalError ("addWebSocket Failed: try to add a NULL pointer websocket");
+    };
     
     /**
     * IpV4 hosts only
