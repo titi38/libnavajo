@@ -52,7 +52,7 @@ char * str_replace_first(char * buffer, const char * s, const char * by)
     }
 
     /* rempacer s par by */
-    strncpy(p, by, len_by);
+    memcpy(p, by, len_by);
     ret = buffer;
   }
 

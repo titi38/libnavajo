@@ -271,8 +271,9 @@ class IpNetwork
     u_int8_t mask;
 
     IpNetwork() { };
-    IpNetwork(const IpAddress &A): addr(A)
-      { if (A.ipversion == 4) mask=32; else mask=128; };
+    IpNetwork(const IpAddress &A)
+    { addr = A;
+      if (A.ipversion == 4) mask=32; else mask=128; };
     IpNetwork(const IpAddress &a,const u_int8_t &m) 
       { addr = a; mask=m;  };
 

@@ -15,7 +15,7 @@
 #define WEBSOCKETCLIENT_HH_
 
 #include <queue>
-#include <sys/timeb.h>
+#include <chrono>
 #include "libnavajo/HttpRequest.hh"
 #include "libnavajo/nvjThread.h"
 #include "libnavajo/nvjGzip.h"
@@ -29,7 +29,7 @@ class WebSocketClient
       unsigned char* message;
       size_t length;
       bool fin;
-      timeb date;
+      unsigned long long date_ms;
     } MessageContent;
 
     typedef struct

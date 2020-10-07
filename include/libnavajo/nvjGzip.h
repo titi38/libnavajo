@@ -49,7 +49,7 @@ inline size_t nvj_gzip( unsigned char** dst, const unsigned char* src, const siz
   strm.avail_in = sizeSrc;
   strm.next_in = (Bytef*)src;
 
-  int i=0;
+  unsigned i=0;
   
   do 
   {
@@ -164,7 +164,7 @@ inline size_t nvj_gunzip( unsigned char** dst, const unsigned char* src, const s
   inline size_t nvj_gzip_websocket_v2( unsigned char** dst, const unsigned char* src, const size_t sizeSrc, z_stream* pstream=NULL, const unsigned int sizeChunk = CHUNK)
   {
 
-    size_t sizeDst = 0;
+    unsigned sizeDst = 0;
 
     int rmndr = sizeSrc % sizeChunk;
     int iterations = (rmndr == 0 ? sizeSrc / sizeChunk : sizeSrc / sizeChunk + 1) ;

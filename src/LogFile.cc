@@ -53,7 +53,8 @@
   
   LogFile::LogFile(const char *f)
   {
-    strncpy (filename, f, 30);
+    strncpy (filename, f, 29);
+    filename[29]='\0';
     file=NULL;
     //setWithEndline(true);
   }

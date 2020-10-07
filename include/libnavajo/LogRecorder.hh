@@ -78,7 +78,7 @@
 
 			inline void printf(const NvjLogSeverity severity, const char *fmt, ...)
 			{
-				char buff[512];
+				char buff[4096];
 				va_list argptr;
 				va_start(argptr, fmt);
 				vsnprintf(buff, 512, fmt, argptr);
