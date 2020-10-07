@@ -7,9 +7,9 @@
 %define libname libnavajo
 %define develname libnavajo-devel
 
-Summary:	Webserver and custom web interfaces integration for C++ applications
+Summary:	C++ framework for Web and RESTfull API development, including a complete, fast and multithreaded HTTP(S) server
 Name:		libnavajo
-Version:	1.5.0
+Version:	1.6.0
 Release:	1
 License:	LGPLv3
 Group:		System/Libraries
@@ -98,6 +98,8 @@ rm -rf %{buildroot}
 %{_bindir}/navajoPrecompiler
 
 %changelog
+* Wed Oct 7 2020 Thierry Descombes <thierry.descombes@gmail.com> 1.6.0-el7
+- new packaged release 1.6.0
 * Tue Apr 4 2017 Thierry Descombes <thierry.descombes@gmail.com> 1.5.0-el7
 - new packaged release 1.5.0
 * Fri Apr 15 2016 Thierry Descombes <thierry.descombes@gmail.com> 1.2.0-el7
