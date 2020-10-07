@@ -30,7 +30,7 @@ Priority: optional
 Maintainer: Thierry DESCOMBES <thierry.descombes@gmail.com>
 Architecture: `echo $ARCH_NAME`
 Depends: openssl, zlib1g-dev
-Version: 1.5
+Version: 1.6
 Description: an implementation of a complete HTTP(S) server, complete, fast and lightweight.
 EOF_CONTROL
 
