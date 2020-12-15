@@ -1585,7 +1585,9 @@ void WebServer::poolThreadProcessing()
     if (accept_request(client, authSSL))
       freeClientSockData (client);
   }
+  pthread_mutex_lock( &clientsQueue_mutex );
   exitedThread++;
+  pthread_mutex_unlock( &clientsQueue_mutex );
 }
 
 
