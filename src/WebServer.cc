@@ -1006,13 +1006,14 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
   bool useSSL = client->bio != NULL;
   size_t totalSent=0;
   int sent=0;
+  unsigned char* buffer_left = (unsigned char*) buf;
 
   do
   {
     if ( useSSL )
-      sent = BIO_write(client->bio, buf, len);
+      sent = BIO_write(client->bio, buffer_left, len - totalSent);
     else
-      sent = sendCompat (client->socketId, buf, len, MSG_NOSIGNAL );
+      sent = sendCompat (client->socketId, buffer_left, len - totalSent, MSG_NOSIGNAL);
 
     if ( sent <= 0 )
     {
@@ -1030,8 +1031,11 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
         continue;
       }
     }
-    if (sent > 0) totalSent+=(size_t)sent;
-
+    else
+    {
+      totalSent+=(size_t)sent;
+      buffer_left += sent;
+    }
   }
   while (sent >= 0 && totalSent != len);
 
