@@ -18,6 +18,9 @@ set(LIBNAVAJO_BUILD_DATE `/bin/date +%s`)
 ###############            Minimal flags           #####################
 IF(${UNIX})
   set (CMAKE_CXX_FLAGS " -Wall -O3 -g -DLINUX -Wextra -Wno-unused -fexceptions -fPIC -D_REENTRANT -DLIBNAVAJO_SOFTWARE_VERSION=\"\\\"${LIBNAVAJO_VERSION}\\\"\" -DDEBUG_TRACES")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.8 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+    add_definitions(-std=c++11)
+  endif()
 ENDIF(${UNIX})
 
 IF(${APPLE})
