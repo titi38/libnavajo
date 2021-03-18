@@ -1008,6 +1008,14 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
   int sent=0;
   unsigned char* buffer_left = (unsigned char*) buf;
 
+  fd_set writeset;
+  FD_ZERO(&writeset);
+  FD_SET(client->socketId, &writeset);
+  struct timeval tv;
+  tv.tv_sec = 10;
+  tv.tv_usec = 0;
+  int result;
+
   do
   {
     if ( useSSL )
@@ -1017,13 +1025,46 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
 
     if ( sent <= 0 )
     {
-      if ( ( sent < 0 ) 
-          || ( errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR )
-          || ( useSSL && !BIO_should_retry(client->bio) ) )
+      if ( sent < 0 )
       {
-        // write failed
-        //pthread_mutex_unlock (&client->client_mutex);
-        return false;
+        if ( errno == EAGAIN || errno == EWOULDBLOCK
+          || ( useSSL && BIO_should_retry(client->bio) ) )
+        {
+          NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: send buffer full, retrying in 1 second"));
+          sleep (1);
+
+          /* retry to send data a second time before returning a failure to caller */
+          if ( useSSL )
+            sent = BIO_write(client->bio, buffer_left, len - totalSent);
+          else
+          {
+            result = select(client->socketId + 1, NULL, &writeset, NULL, &tv);
+
+            if ( (result <= 0) || (!FD_ISSET(client->socketId, &writeset)) )
+              return false;
+
+            sent = sendCompat (client->socketId, buffer_left, len - totalSent, MSG_NOSIGNAL);
+          }
+
+          if ( sent < 0 )
+          {
+            /* this is the second time it failed, no need to be more stubborn */
+            return false;
+          }
+          else
+          {
+            /* retry succeeded, don't forget to update counters and buffer left to send */
+            totalSent+=(size_t)sent;
+            buffer_left += sent;
+          }
+        }
+        else if (( errno == EINTR )
+              || ( useSSL && !BIO_should_retry(client->bio) ) )
+        {
+          // write failed
+          //pthread_mutex_unlock (&client->client_mutex);
+          return false;
+        }
       }
       else
       {
