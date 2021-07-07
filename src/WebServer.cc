@@ -1405,6 +1405,9 @@ void WebServer::exit()
     close (server_sock[ nbServerSock ]);
   }
   pthread_mutex_unlock( &clientsQueue_mutex );
+
+  if (sslEnabled)
+    SSL_CTX_free(sslCtx);
 }
 
 /***********************************************************************
@@ -1545,6 +1548,8 @@ void WebServer::poolThreadProcessing()
     // clientsQueue is not empty
     ClientSockData* client = clientsQueue.front();
     clientsQueue.pop();
+    client->bio = NULL;
+    client->ssl = NULL;
 
     if (sslEnabled)
     {
@@ -1561,6 +1566,7 @@ void WebServer::poolThreadProcessing()
       if ( (client->ssl=SSL_new(sslCtx)) == NULL )
       {
         NVJ_LOG->append(NVJ_DEBUG,"SSL_new failed !");
+        BIO_free(bio);
         freeClientSockData(client);
         pthread_mutex_unlock( &clientsQueue_mutex );
         continue;
