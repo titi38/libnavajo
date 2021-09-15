@@ -50,6 +50,8 @@ typedef struct
 //  pthread_mutex_t client_mutex;
 } ClientSockData;
 
+typedef std::map <std::string, std::string> HttpRequestHeadersMap;
+
 class HttpRequest
 {
   typedef std::map <std::string, std::string> HttpRequestParametersMap;
@@ -62,6 +64,7 @@ class HttpRequest
   HttpRequestMethod httpMethod;
   HttpRequestCookiesMap cookies;
   HttpRequestParametersMap parameters;
+  HttpRequestHeadersMap extraHeaders;
   std::string sessionId;
   MPFD::Parser *mutipartContentParser;
   const char *mimeType;
@@ -222,6 +225,27 @@ class HttpRequest
       for(HttpRequestCookiesMap::const_iterator iter=cookies.begin(); iter!=cookies.end(); ++iter)
        res.push_back(iter->first);
       return res;
+    }
+
+    /**********************************************************************/
+    /**
+    * get header value
+    * @param name: the header name
+    * @param value: the header value
+    * @return true is the header exists
+    */
+    inline bool getExtraHeader( const std::string& name, std::string &value ) const
+    {
+      if(!extraHeaders.empty())
+      {
+        HttpRequestHeadersMap::const_iterator it;
+        if((it = extraHeaders.find(name)) != extraHeaders.end())
+        {
+          value=it->second;
+          return true;
+        }
+      }
+      return false;
     }
 
     /**********************************************************************/
@@ -393,7 +417,8 @@ class HttpRequest
     * @param params:  raw http parameters string
     * @cookies params: raw http cookies string
     */         
-    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies, const char *origin, const std::string &username, ClientSockData *client,
+    HttpRequest(const HttpRequestMethod type, const char *url, const char *params, const char *cookies,
+                HttpRequestHeadersMap& hMap, const char *origin, const std::string &username, ClientSockData *client,
                 const char* mimeType, std::vector<uint8_t>* payload=NULL, MPFD::Parser *parser=NULL)
     {
       this->httpMethod = type;
@@ -404,6 +429,7 @@ class HttpRequest
       this->mimeType=mimeType ;
       this->payload=payload ;
       this->mutipartContentParser=parser;
+      this->extraHeaders = hMap;
 
       setParams( params );
       

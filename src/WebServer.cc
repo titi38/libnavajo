@@ -27,6 +27,10 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <functional>
+#include <cctype>
+#include <locale>
+
 #include <libnavajo/HttpRequest.hh>
 
 #include "libnavajo/WebServer.hh"
@@ -329,6 +333,49 @@ size_t WebServer::recvLine(int client, char *bufLine, size_t nsize)
   return bufLineLen;
 }
 
+/**********************************************************************/
+/**
+* trim from start, thanks to https://stackoverflow.com/a/217605
+*/
+static inline std::string &ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
+}
+
+/**********************************************************************/
+/**
+* trim from end, thanks to https://stackoverflow.com/a/217605
+*/
+static inline std::string &rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
+}
+
+/**********************************************************************/
+/**
+* trim from both ends, thanks to https://stackoverflow.com/a/217605
+*/
+static inline std::string &trim(std::string &s) {
+    return ltrim(rtrim(s));
+}
+
+/**********************************************************************/
+/**
+* fill extra http headers Map
+* @param c: raw string containing a header line made of "Header: Value"
+*/
+static void addExtraHeader(const char* l, HttpRequestHeadersMap& m)
+{
+  std::stringstream ss(l);
+  std::string header;
+  std::string val;
+  if (std::getline(ss, header, ':') && std::getline(ss, val, ':'))
+  {
+    m[header] = trim(val);
+  }
+};
 
 /***********************************************************************
 * accept_request:  Process a request
@@ -353,6 +400,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
   char *requestParams=NULL;
   char *requestCookies=NULL;
   char *requestOrigin=NULL;
+  HttpRequestHeadersMap requestExtraHeaders;
   char *webSocketClientKey=NULL;
   bool websocket=false;
   int webSocketVersion=-1;
@@ -532,6 +580,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Version: ", 23) == 0)
           { j+=23; webSocketVersion = atoi(bufLine+j); continue; }
 
+        addExtraHeader(bufLine+j, requestExtraHeaders);
         isQueryStr=false;
         if (strncmp(bufLine+j, "GET", 3) == 0)
         {  requestMethod=GET_METHOD; isQueryStr=true; j+=4; }
@@ -780,7 +829,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
         if (! httpSend(client, (const void*) header.c_str(), header.length()) )
           goto FREE_RETURN_TRUE;
 
-        HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mimeType, &payload, mutipartContentParser);
+        HttpRequest* request=new HttpRequest(requestMethod, urlBuffer, requestParams, requestCookies, requestExtraHeaders, requestOrigin, username, client, mimeType, &payload, mutipartContentParser);
 
         webSocket->newConnectionRequest(request);
 
@@ -814,7 +863,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
     int sizeZip=0;
     bool zippedFile=false;
 
-    HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestOrigin, username, client, mimeType, &payload, mutipartContentParser);
+    HttpRequest request(requestMethod, urlBuffer, requestParams, requestCookies, requestExtraHeaders, requestOrigin, username, client, mimeType, &payload, mutipartContentParser);
 
     const char *mime=get_mime_type(urlBuffer); 
     std::string mimeStr; if (mime != NULL) mimeStr=mime;
