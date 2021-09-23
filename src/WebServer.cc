@@ -1456,7 +1456,10 @@ void WebServer::exit()
   pthread_mutex_unlock( &clientsQueue_mutex );
 
   if (sslEnabled)
+  {
     SSL_CTX_free(sslCtx);
+    sslCtx = NULL;
+  }
 }
 
 /***********************************************************************
@@ -1525,8 +1528,11 @@ int WebServer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 void WebServer::initialize_ctx(const char *certfile, const char *cafile, const char *password)
 {
   /* Global system initialization*/
-  SSL_library_init();
-  SSL_load_error_strings();
+  if (!sslCtx)
+  {
+    SSL_library_init();
+    SSL_load_error_strings();
+  }
 
   /* Create our context*/
   sslCtx=SSL_CTX_new(SSLv23_method());
