@@ -349,10 +349,11 @@ class WebServer
           delete client->peerDN;
           client->peerDN = NULL;
         }
+
+        if ( client->bio == NULL )
+          SSL_free (client->ssl);
+
         BIO_free_all(client->bio);
-/*        SSL_free (client->ssl);
-        if ( client->bio != NULL )
-          BIO_free (client->bio);*/
         client->ssl = NULL;
         client->bio = NULL;
       }
