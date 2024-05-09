@@ -14,6 +14,7 @@
 
 
 #include <time.h>
+#include <stdexcept>
 #include "libnavajo/LogRecorder.hh"
 
 
@@ -74,6 +75,8 @@
     
     pthread_mutex_unlock( &log_mutex );
 
+    if ( l == NVJ_FATAL )
+          throw std::runtime_error(m);
   }
 
   /***********************************************************************/

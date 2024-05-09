@@ -31,6 +31,9 @@
 #include <cctype>
 #include <locale>
 
+#include <openssl/evp.h>
+#include <openssl/sha.h>
+
 #include <libnavajo/HttpRequest.hh>
 
 #include "libnavajo/WebServer.hh"
@@ -1967,13 +1970,47 @@ std::string WebServer::base64_encode(unsigned char const* bytes_to_encode, unsig
 ************************************************************************/
 std::string WebServer::SHA1_encode(const std::string& input)
 {
-  std::string hash;
-  SHA_CTX context;
-  SHA1_Init(&context);
-  SHA1_Update(&context, &input[0], input.size());
-  hash.resize(160/8);
-  SHA1_Final((unsigned char*)&hash[0], &context);
-  return hash;
+    // Buffer pour stocker le résultat du hash
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    unsigned int lengthOfHash = 0;
+
+    // Contexte pour le hashing
+    EVP_MD_CTX* context = EVP_MD_CTX_new();
+    
+    if(context == nullptr) {
+      NVJ_LOG->append(NVJ_FATAL, "WebServer::SHA1_encode - Failed to create EVP_MD_CTX");
+    }
+
+    // Initialisation du contexte pour SHA1
+    if(!EVP_DigestInit_ex(context, EVP_sha1(), nullptr)) {
+        EVP_MD_CTX_free(context);
+        NVJ_LOG->append(NVJ_FATAL, "WebServer::SHA1_encode - Failed to initialize EVP digest context");
+    }
+
+    // Mise à jour du contexte avec les données
+    if(!EVP_DigestUpdate(context, input.data(), input.size())) {
+        EVP_MD_CTX_free(context);
+        NVJ_LOG->append(NVJ_FATAL, "WebServer::SHA1_encode - Failed to update digest");
+    }
+
+    // Finalisation du hash
+    if(!EVP_DigestFinal_ex(context, hash, &lengthOfHash)) {
+        EVP_MD_CTX_free(context);
+        NVJ_LOG->append(NVJ_FATAL, "WebServer::SHA1_encode - Failed to finalize digest");
+    }
+
+    // Nettoyage
+    EVP_MD_CTX_free(context);
+
+    // Conversion du résultat du hash en string hexadécimal
+    std::string result;
+    char buf[3];
+    for(unsigned int i = 0; i < lengthOfHash; i++) {
+        snprintf(buf, sizeof(buf), "%02x", hash[i]);
+        result.append(buf);
+    }
+
+    return result;
 }
 
 /***********************************************************************

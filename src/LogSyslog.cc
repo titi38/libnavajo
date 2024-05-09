@@ -72,7 +72,7 @@
   
   LogSyslog::LogSyslog(const char *id)
   {
-    strncpy (ident, id, 30);
+    strncpy (ident, id, MAX_SYSLOG_ID_SIZE-1);
   }
 
   /***********************************************************************/
