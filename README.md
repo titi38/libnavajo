@@ -1,4 +1,4 @@
-**libnavajo : Web Interfaces and REST APIs for C++ Projects**
+# libnavajo : Web Interfaces and REST APIs for C++ Projects #
 
 ### **Brief Description:**
 
