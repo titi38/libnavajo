@@ -92,9 +92,10 @@ Three types of output are available. These inherit from the abstract class `LogO
 
 `LogRecorder` is implemented as a singleton. It is accessed via the method `getInstance()`, which returns the unique instance of the object, creating it if it does not already exist.
 
-*![][image1]*
+*![Class Diagram of the Log Management System](img/fig1.png)*
 
 *Fig. : Class Diagram of the Log Management System*
+
 
 A macro `NVJ_LOG` simplifies logging calls by acting as a shortcut for `LogRecorder::getInstance()`. To initialize the log system, simply add instances of objects derived from `LogOutput`.
 
@@ -161,7 +162,7 @@ In the case of our sample application, the code **"200 OK"** is returned, follow
 
 As a picture is worth a thousand words, I invite you to refer to this **figure**:
 
-![][image2]
+*![Sequence Diagram of a libnavajo Application](img/fig2.png)*
 
 *Fig.: Sequence Diagram of a libnavajo Application*
 
@@ -272,7 +273,8 @@ As shown in next **figure**, in the current version of libnavajo, there are thre
 2. **PrecompiledRepository**: For pre-compiled resources.  
 3. **DynamicRepository**: For dynamically generated content.
 
-*![][image3]*  
+*![The Three Types of WebRepository](img/fig3.png)*
+
 *Fig. : The Three Types of WebRepository*
 
 *✍️ When a requested URL ends with a `/`, the web server will attempt to return the `index.html` file.*  
@@ -347,9 +349,9 @@ Each request received by our `WebServer` instance generates two objects:
 
 These objects are then passed to the `WebRepository` through calls to the `getFile()` method. The `DynamicRepository`, which handles dynamic pages, is queried. If it contains the requested resource, it passes references to the `HttpRequest` and `HttpResponse` objects to the `DynamicPage` object, which uses them to dynamically generate the response.
 
-![][image4]
+*![Sequence Diagram of Dynamic Page Access](img/fig4.png)*
 
-*Fig.: Sequence Diagram of Dynamic Page Access*
+*Fig. : Sequence Diagram of Dynamic Page Access*
 
 #### **4.2 Creating Dynamic Pages**
 
@@ -476,8 +478,9 @@ I’ve developed a gauge to monitor the server’s CPU usage. For rendering, I u
 
 Below is the sequence diagram illustrating how the application functions.
 
-![][image5]  
-*Fig.: Sequence Diagram of the Application*
+*![Sequence Diagram of the Application](img/fig5.png)*
+
+*Fig. : Sequence Diagram of the Application*
 
 ###  **Front-End Code (JavaScript)**
 
