@@ -50,34 +50,46 @@ The packages `zlib-devel`, `openssl-devel`, `pam-devel`, `doxygen`, and `graphvi
 
 Next, let's retrieve the source code:
 
-`$ git clone https://github.com/titi38/libnavajo.git`
+```bash
+$ git clone https://github.com/titi38/libnavajo.git
+```
 
 Then, let's compile using the provided Makefile:
 
-`$ make`
+```bash
+$ make`
+```
 
 Generate the Doxygen documentation:
 
-`$ make docs`
+```bash
+$ make docs
+```
 
 Compile the examples:
 
-`$ make examples`
+```bash
+$ make examples
+```
 
 Finally, install the framework:
 
-`$ sudo make install`
+```bash
+$ sudo make install
+```
 
 The scripts `dpkgBuild.sh` and `rpmbuild/libnavajo.el6.spec` are available to build packages for Debian- and RedHat-based distributions.
 
 Running an example file allows you to verify that everything is working:
 
-`$ cd examples/1_basic`
+```bash
+$ cd examples/1_basic
 
-`$ ./example`  
-`[2015-05-07 06:57:49] >  WebServer: Service is starting!`  
-`[2015-05-07 06:57:49] >  WebServer: Listening on port 8080`  
-`[2015-05-07 06:58:09] >  WebServer: Connection from IP: ::1`
+$ ./example
+[2015-05-07 06:57:49] >  WebServer: Service is starting!
+[2015-05-07 06:57:49] >  WebServer: Listening on port 8080  
+[2015-05-07 06:58:09] >  WebServer: Connection from IP: ::1
+```
 
 At this point, you can connect to the server using your preferred browser by entering the URL:  
 `http://localhost:8080`,  
@@ -105,13 +117,13 @@ NVJ_LOG->addLogOutput(new LogStdOutput);
 ```
 
 For writing logs to the file `navajo.log`:  
-```C++`
+```C++
 NVJ_LOG->addLogOutput(new LogFile("navajo.log"));
 ```
 
 To add entries to the syslog with the identifier `navajo`:  
 ```C++
-NVJ_LOG->addLogOutput(new LogSyslog("navajo"));`
+NVJ_LOG->addLogOutput(new LogSyslog("navajo"));
 ```
 
 To write a message to all the added outputs, use the `append()` method, which takes two parameters: the message and a severity level.
@@ -121,13 +133,19 @@ There are six levels:
 
 **Example usage:**
 
-`NVJ_LOG->append(NVJ_INFO, "This is an info log message");`
+```C++
+NVJ_LOG->append(NVJ_INFO, "This is an info log message");
+```
 
 By default, `NVJ_DEBUG` messages are ignored. If you want to display them, set your `LogRecorder` to "debug" mode:  
+```C++
 `NVJ_LOG->setDebugMode(true);`
+```
 
-To release all resources, simply use:  
-`LogRecorder::freeInstance();`
+To release all resources, simply use:
+```C++
+LogRecorder::freeInstance();
+```
 
 ## **2\. The Web Server**
 
@@ -147,6 +165,7 @@ For example, when my browser (Firefox) attempts to connect to the page
 
 the generated HTTP request is as follows:
 
+```plaintext
 GET /dynpage.html?param1=34 HTTP/1.1  
 Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,\*/\*;q=0.8  
 Accept-Encoding:gzip, deflate, sdch  
@@ -155,7 +174,7 @@ Cache-Control:max-age=0
 Connection:keep-alive  
 Host:localhost:8080  
 ...
-
+```
 ### When a client (browser) makes a request, the server must generate a response based on the metadata contained in the request headers.
 
 For example, `Accept-Encoding: gzip` will be interpreted by the server, which will automatically compress the content of responses if they are large enough. Connections will use the keep-alive mechanism, which is the default mode in HTTP 1.1. The `WebServer` will therefore use persistent TCP connections, allowing it to respond to multiple requests using the same socket. Otherwise, the connection would have been closed after each response.
@@ -183,11 +202,13 @@ When the service is stopped, the server processes any pending requests before sh
 #### **2.3.1 Creation**
 
 Implementing a Navajo web server within an application only requires a few lines of code:  
-`// Include all the prototypes and predicates from libnavajo`  
-`#include "libnavajo/libnavajo.hh"`
+```C++
+// Include all the prototypes and predicates from libnavajo
+#include "libnavajo/libnavajo.hh"
 
-`// Create an instance of WebServer`  
-`auto webServer = std::make_unique<WebServer>();`
+// Create an instance of WebServer
+auto webServer = std::make_unique<WebServer>();
+```
 
 And that's it\! We have created our first web server that listens on port 8080\!
 
@@ -201,13 +222,15 @@ webServer->listenTo(8443);
 *✍️ Creating a socket on a TCP port \< 1024 is reserved for the root user on Unix systems.*
 
 To start the server in HTTPS mode, you will need a key/certificate pair. If you do not have one for your machine, you can generate a self-signed pair. To do this, use the following Unix `openssl` commands:  
-`$ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.pem -out mycert.pem`
-
+```bash
+$ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.pem -out mycert.pem
+```
 ⚠️ This certificate is not signed by a recognized certificate authority, so your browser will display a warning message.
 
 We need to concatenate the key and certificate:  
-`$ cat mykey.pem >> mycert.pem`
-
+```bash
+$ cat mykey.pem >> mycert.pem
+```
 To enable SSL mode on our web server, simply add:  
 ```C++
 webServer->setUseSSL(true, "mycert.pem");
@@ -863,9 +886,11 @@ Libnavajo is a C++ web server that also supports WebSockets. It can manage web p
 
 To get started, download and install libnavajo:
 
-`$ git clone https://github.com/titi38/libnavajo.git`  
-`$ make`  
-`$ sudo make install`
+```bash
+$ git clone https://github.com/titi38/libnavajo.git
+$ make
+$ sudo make install
+```
 
 #### **Handling WebSocket Connections**
 
@@ -925,7 +950,7 @@ Let’s create a chat application with authentication. The project is split into
 ##### **JavaScript Client Code for Authentication**
 
 ```javascript
-`function connect() {  
+function connect() {  
     `$.ajax({
         `type: "POST",
         `url: "connect.txt",  
@@ -1024,16 +1049,20 @@ The server accepts WebSocket connections, manages sessions, and broadcasts chat 
 
 ### **8.1 Apache Configuration for WebSocket**  To deploy a libnavajo WebSocket application behind an Apache proxy:
 
-`# Enable necessary Apache modules`  
-`$ sudo a2enmod proxy`  
-`$ sudo a2enmod proxy_http`  
-`$ sudo a2enmod proxy_wstunnel`
+# Enable necessary Apache modules`  
+
+```bash
+$ sudo a2enmod proxy`  
+$ sudo a2enmod proxy_http`  
+$ sudo a2enmod proxy_wstunnel`
+```
 
 In the Apache configuration:
-
-`ProxyPass "/chat/wschat" "ws://localhost:8080/wschat"`  
-`ProxyPass /chat http://localhost:8080/`  
-`ProxyPassReverse /chat http://localhost:8080/`
+```plaintext
+ProxyPass "/chat/wschat" "ws://localhost:8080/wschat"
+ProxyPass /chat http://localhost:8080/
+ProxyPassReverse /chat http://localhost:8080/
+```
 
 Ensure the order of directives to avoid conflicts between WebSocket and HTTP connections.
 
@@ -1041,40 +1070,42 @@ Ensure the order of directives to avoid conflicts between WebSocket and HTTP con
 
 Edit the Nginx configuration file (usually located at `/etc/nginx/sites-available/default` or `/etc/nginx/nginx.conf`) to include the following configuration:
 
-`# Nginx configuration for WebSocket and HTTP traffic`  
-`server {`  
-    `listen 80;`  
-    `server_name your-domain.com;`
+```plaintext
+# Nginx configuration for WebSocket and HTTP traffic  
+server {  
+    listen 80;  
+    server_name your-domain.com;
 
-    `# Proxy WebSocket connections`  
-    `location /wschat {`  
-        `proxy_pass http://localhost:8080/wschat;`  
-        `proxy_http_version 1.1;`  
-        `proxy_set_header Upgrade $http_upgrade;`  
-        `proxy_set_header Connection "Upgrade";`  
-        `proxy_set_header Host $host;`  
-        `proxy_set_header X-Real-IP $remote_addr;`  
-        `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`  
-        `proxy_set_header X-Forwarded-Proto $scheme;`  
-    `}`
+    # Proxy WebSocket connections  
+    location /wschat {  
+        proxy_pass http://localhost:8080/wschat;  
+        proxy_http_version 1.1;  
+        proxy_set_header Upgrade $http_upgrade;  
+        proxy_set_header Connection "Upgrade";  
+        proxy_set_header Host $host;  
+        proxy_set_header X-Real-IP $remote_addr;  
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  
+        proxy_set_header X-Forwarded-Proto $scheme;  
+    }
 
-    `# Proxy regular HTTP connections`  
-    `location /chat {`  
-        `proxy_pass http://localhost:8080/;`  
-        `proxy_set_header Host $host;`  
-        `proxy_set_header X-Real-IP $remote_addr;`  
-        `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`  
-        `proxy_set_header X-Forwarded-Proto $scheme;`  
-    `}`
+    # Proxy regular HTTP connections  
+    location /chat {  
+        proxy_pass http://localhost:8080/;  
+        proxy_set_header Host $host;  
+        proxy_set_header X-Real-IP $remote_addr;  
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  
+        proxy_set_header X-Forwarded-Proto $scheme;  
+    }
 
-    `# Redirect HTTP to HTTPS (optional)`  
-    `listen 443 ssl;`  
-    `ssl_certificate /etc/ssl/certs/your-cert.pem;`  
-    `ssl_certificate_key /etc/ssl/private/your-key.pem;`
+    # Redirect HTTP to HTTPS (optional)  
+    listen 443 ssl;  
+    ssl_certificate /etc/ssl/certs/your-cert.pem;  
+    ssl_certificate_key /etc/ssl/private/your-key.pem;
 
-    `ssl_protocols TLSv1.2 TLSv1.3;`  
-    `ssl_ciphers HIGH:!aNULL:!MD5;`  
-`}`
+    ssl_protocols TLSv1.2 TLSv1.3;  
+    ssl_ciphers HIGH:!aNULL:!MD5;  
+}
+```
 
 ### **8.3 Explanation of Configuration:**
 
