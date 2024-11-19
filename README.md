@@ -40,9 +40,9 @@ There is undeniable value in developing web interfaces. Indeed, they are scalabl
 
 Web interfaces are multi-user, and they have reliable and mature authentication mechanisms. They are easily accessible\! No more configuring VNC, or users fighting over mouse control\! Today, they have become powerful, efficient, and even responsive design, meaning they can adapt their appearance depending on the device used (computer, tablet, smartphone…).
 
-It was with this in mind that I developed the libnavajo project \[1\]. The idea was to offer C/C++ developers, the real ones ;-), a complete framework that includes a fast and efficient web server, with its web repositories, dynamically generated pages, and all the mechanisms to handle sessions, cookies, parameter passing (post and get), content compression, various mime types, keep-alive, SSL encryption (https), X509 authentication, etc… and the ability to generate dynamic content directly by accessing the application objects without any additional layer. Of course, nothing prevents the use of additional middleware (CORBA \[2\], web services, or others…).
+It was with this in mind that I developed the libnavajo project. The idea was to offer C/C++ developers, the real ones ;-), a complete framework that includes a fast and efficient web server, with its web repositories, dynamically generated pages, and all the mechanisms to handle sessions, cookies, parameter passing (post and get), content compression, various mime types, keep-alive, SSL encryption (https), X509 authentication, etc… and the ability to generate dynamic content directly by accessing the application objects without any additional layer. Of course, nothing prevents the use of additional middleware (CORBA, web services, or others…).
 
-Since then, we have been using this framework regularly in our developments. It has been enriched and debugged over time. The current version is stable and mature. It has few dependencies and is relatively portable. It is distributed via GitHub under the LGPLv3 license \[3\].
+Since then, we have been using this framework regularly in our developments. It has been enriched and debugged over time. The current version is stable and mature. It has few dependencies and is relatively portable. It is distributed via GitHub under the LGPLv3 license.
 
 #### **1.2 Compilation and Installation**
 
@@ -151,7 +151,7 @@ LogRecorder::freeInstance();
 
 ### **2.1 Basic Principle**
 
-A web server implements the HTTP 1.1 protocol as defined in the RFC 2616 specifications \[4\]. Its role is to respond to resource requests from clients, which are addressed using a URL (Uniform Resource Locator).
+A web server implements the HTTP 1.1 protocol as defined in the RFC 2616 specifications. Its role is to respond to resource requests from clients, which are addressed using a URL (Uniform Resource Locator).
 
 The `WebServer` object in libnavajo fully manages the operation of one or more HTTP servers.  
 The `WebServer` creates listening sockets—one per IP protocol (i.e., two for IPv4 and IPv6)—and manages the lifecycle of connections.
