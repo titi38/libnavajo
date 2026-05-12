@@ -1,0 +1,1 @@
+libnavajo.el9.spec
