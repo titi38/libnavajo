@@ -338,27 +338,37 @@ size_t WebServer::recvLine(int client, char *bufLine, size_t nsize)
 
 /**********************************************************************/
 /**
-* trim from start, thanks to https://stackoverflow.com/a/217605
+* trim from start
 */
+
 static inline std::string &ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-            std::not1(std::ptr_fun<int, int>(std::isspace))));
+    s.erase(
+        s.begin(),
+        std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        })
+    );
     return s;
 }
 
 /**********************************************************************/
 /**
-* trim from end, thanks to https://stackoverflow.com/a/217605
+* trim from end
 */
+
 static inline std::string &rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    s.erase(
+        std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }).base(),
+        s.end()
+    );
     return s;
 }
 
 /**********************************************************************/
 /**
-* trim from both ends, thanks to https://stackoverflow.com/a/217605
+* trim from both ends
 */
 static inline std::string &trim(std::string &s) {
     return ltrim(rtrim(s));
@@ -374,9 +384,12 @@ static void addExtraHeader(const char* l, HttpRequestHeadersMap& m)
   std::stringstream ss(l);
   std::string header;
   std::string val;
-  if (std::getline(ss, header, ':') && std::getline(ss, val, ':'))
+
+  // Keep the full value after the first ':'; header values such as
+  // "Host: localhost:8080" or URLs may contain additional colons.
+  if (std::getline(ss, header, ':') && std::getline(ss, val))
   {
-    m[header] = trim(val);
+    m[trim(header)] = trim(val);
   }
 };
 
@@ -435,6 +448,10 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
     keepAlive=false;
     closing=false;
     isQueryStr=false;
+    payload.clear();
+    requestExtraHeaders.clear();
+    mimeType[0]='\0';
+    client->compression=NONE;
     
     if (urlBuffer != NULL) { free (urlBuffer); urlBuffer=NULL; };
     if (requestParams != NULL) { free (requestParams);  requestParams=NULL; };
@@ -511,7 +528,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
           else
           {
             if ( strstr (bufLine + j, "lose") != NULL )
-              closing = false;
+              closing = true;
             else if (( strstr (bufLine + j, "eep-") != NULL ) && ( strstr (bufLine + j + 4, "live") != NULL ))
               keepAlive = true;
           }
@@ -578,7 +595,12 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
         }
 
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Extensions: ", 26) == 0)
-          { j+=26; if (strstr(bufLine+j, "permessage-deflate")  != NULL) client->compression=ZLIB; continue; }
+        {
+          // Do not negotiate permessage-deflate for now. The current
+          // websocket deflate implementation is not safe with fragmented
+          // messages; silently ignore the client offer.
+          continue;
+        }
         
         if (strncasecmp(bufLine+j, "Sec-WebSocket-Version: ", 23) == 0)
           { j+=23; webSocketVersion = atoi(bufLine+j); continue; }
@@ -644,7 +666,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
         //  authorization through bearer token, RFC 6750
         if ( strncmp(bufLine+j, authBearerStr, sizeof authBearerStr - 1 ) == 0)
         {
-            j+=sizeof authStr;
+            j+=sizeof authBearerStr - 1;
 
             std::string tokb64="";
             while ( j < (unsigned)bufLineLen && *(bufLine + j) != 0x0d && *(bufLine + j) != 0x0a)
@@ -669,6 +691,17 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
       std::string msg = getNotImplementedErrorMsg();
       httpSend(client, (const void*) msg.c_str(), msg.length());
       goto FREE_RETURN_TRUE;
+    }
+
+    if (websocket)
+    {
+      if (requestMethod != GET_METHOD || webSocketClientKey == NULL || webSocketVersion != 13)
+      {
+        NVJ_LOG->append(NVJ_WARNING, "WebServer: invalid WebSocket handshake");
+        std::string msg = getHttpHeader("400 Bad Request", 0, false);
+        httpSend(client, (const void*) msg.c_str(), msg.length());
+        goto FREE_RETURN_TRUE;
+      }
     }
 
     // update URL to load the default index.html page
@@ -2018,11 +2051,19 @@ std::string WebServer::SHA1_encode(const std::string& input)
 * @param webSocketKey - the websocket client key.
 * \return the websocket server key
 ************************************************************************/
+
 std::string WebServer::generateWebSocketServerKey(std::string webSocketKey)
 {
-  std::string sha1Key=SHA1_encode(webSocketKey+webSocketMagicString);
-  return base64_encode(reinterpret_cast<const unsigned char*>(sha1Key.c_str()), sha1Key.length());
+    std::string input = webSocketKey + webSocketMagicString;
+
+    unsigned char hash[SHA_DIGEST_LENGTH]; // 20 bytes
+    SHA1(reinterpret_cast<const unsigned char*>(input.c_str()),
+         input.size(),
+         hash);
+
+    return base64_encode(hash, SHA_DIGEST_LENGTH);
 }
+
 
 /***********************************************************************
 * getHttpWebSocketHeader: generate HTTP header

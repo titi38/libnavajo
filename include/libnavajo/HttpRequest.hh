@@ -14,6 +14,10 @@
 #ifndef HTTPREQUEST_HH_
 #define HTTPREQUEST_HH_
 
+#include <cctype>
+#include <cstdint>
+#include <cstring>
+#include <cstdlib>
 #include <map>
 #include <vector>
 #include <string>
@@ -86,18 +90,23 @@ class HttpRequest
       switch (paramstr[end])
       {
         case '%':
-          if ( paramstr[end+1]=='%' && len )
-            paramstr=paramstr.erase(end+1,1);
+          if (len >= 1 && paramstr[end+1] == '%')
+          {
+            paramstr.erase(end+1, 1);
+          }
           else
           {
-            if (len < 2) break;
+            if (len < 2) { start = end + 1; continue; }
 
-            unsigned int specar;
-            std::string hexChar=paramstr.substr(end+1,2);
-            std::stringstream ss; ss << std::hex << hexChar.c_str();
+            unsigned int specar = 0;
+            std::string hexChar = paramstr.substr(end+1, 2);
+            std::stringstream ss;
+            ss << std::hex << hexChar;
             ss >> specar;
-            paramstr[end] = (char)specar;
-            paramstr=paramstr.erase(end+1,2);
+            if (ss.fail()) { start = end + 1; continue; }
+
+            paramstr[end] = static_cast<char>(specar);
+            paramstr.erase(end+1, 2);
           }
           break;
 
@@ -155,9 +164,11 @@ class HttpRequest
       size_t posEq=0;
       if ((posEq = theCookie.find('=')) != std::string::npos)
       {
-        size_t firstC=0; while (!iswgraph(theCookie[firstC]) && firstC < posEq) { firstC++; };
+        size_t firstC = 0;
+        while (firstC < posEq && !std::isgraph(static_cast<unsigned char>(theCookie[firstC]))) { firstC++; }
 
-        if (posEq-firstC > 0 && theCookie.length()-posEq > 0) cookies[theCookie.substr(firstC,posEq-firstC)]=theCookie.substr(posEq+1, theCookie.length()-posEq);
+        if (posEq > firstC && theCookie.length() > posEq + 1)
+          cookies[theCookie.substr(firstC, posEq-firstC)] = theCookie.substr(posEq+1);
       }
     }
   };
@@ -464,7 +475,13 @@ class HttpRequest
     * get the Request Payload (if it exists)
     * @return raw byte content
     */
-    inline std::vector<uint8_t>& getPayload() { return *payload; };
+    inline bool hasPayload() const { return payload != NULL; };
+
+    inline std::vector<uint8_t>& getPayload()
+    {
+      static std::vector<uint8_t> emptyPayload;
+      return payload != NULL ? *payload : emptyPayload;
+    };
 
     /**********************************************************************/
     /**
@@ -535,7 +552,8 @@ class HttpRequest
     */   
     inline std::string& getX509PeerDN()
     {
-      return *(clientSockData->peerDN);
+      static std::string emptyDN;
+      return (clientSockData != NULL && clientSockData->peerDN != NULL) ? *(clientSockData->peerDN) : emptyDN;
     };
 
     /**********************************************************************/
@@ -544,7 +562,7 @@ class HttpRequest
     * @return true if x509 auth
     */
     inline bool isX509auth()
-    { return clientSockData->peerDN != NULL; }
+    { return clientSockData != NULL && clientSockData->peerDN != NULL; }
 
     /**********************************************************************/
     /**

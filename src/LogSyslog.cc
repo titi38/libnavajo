@@ -73,6 +73,7 @@
   LogSyslog::LogSyslog(const char *id)
   {
     strncpy (ident, id, MAX_SYSLOG_ID_SIZE-1);
+    ident[MAX_SYSLOG_ID_SIZE-1]='\0';
   }
 
   /***********************************************************************/

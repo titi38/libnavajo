@@ -194,7 +194,8 @@ inline bool setSocketTcpAckTimeout(int socket, int seconds, int milliseconds)
 
 inline bool setSocketNagleAlgo(int socket, bool naggle = false)
 {
-  int flag = naggle ? 1 : 0;
+  // TCP_NODELAY=1 disables Nagle. The public parameter expresses the opposite.
+  int flag = naggle ? 0 : 1;
   return setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char *)&flag,sizeof(flag)) == 0;
 }
 

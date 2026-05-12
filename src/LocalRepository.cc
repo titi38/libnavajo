@@ -19,9 +19,12 @@
 #include <fstream>
 #include <streambuf>
 #include <sstream>
+#include <cstdio>
 #include "libnavajo/LogRecorder.hh"
 #include "libnavajo/LocalRepository.hh"
 
+// max file size fixed to 100MB
+#define LOCAL_REPOSITORY_MAX_FILE_SIZE (100 * 1024 * 1024)
 
 /**********************************************************************/
 
@@ -69,14 +72,14 @@ bool LocalRepository::loadFilename_dir (const std::string& alias, const std::str
 
       std::string filepath=fullPath+'/'+entry->d_name;
 
-      if (stat(filepath.c_str(), &s) == -1) 
+      if (lstat(filepath.c_str(), &s) == -1) 
       {
         NVJ_LOG->append(NVJ_ERROR,std::string("LocalRepository - stat error reading file '")+filepath+"': "+std::string(strerror(errno)));
         continue;
       }
 
       int type=s.st_mode & S_IFMT;
-      if (type == S_IFREG || type == S_IFLNK)
+      if (type == S_IFREG)
       {
         std::string filename=alias+subpath+"/"+entry->d_name;
         while (filename.size() && filename[0]=='/')
@@ -97,7 +100,10 @@ bool LocalRepository::loadFilename_dir (const std::string& alias, const std::str
 
 bool LocalRepository::fileExist(const std::string& url)
 {
-  return filenamesSet.find(url) != filenamesSet.end();
+  pthread_mutex_lock(&_mutex);
+  bool exists = filenamesSet.find(url) != filenamesSet.end();
+  pthread_mutex_unlock(&_mutex);
+  return exists;
 }
 
 /**********************************************************************/
@@ -109,10 +115,13 @@ bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
   unsigned char *webpage;
   pthread_mutex_lock( &_mutex );
 
-  if ( url.compare(0, aliasName.size(), aliasName) || !fileExist(url) )
-    { pthread_mutex_unlock( &_mutex); return false; };
-    
+  bool exists = (url.compare(0, aliasName.size(), aliasName) == 0) &&
+                (filenamesSet.find(url) != filenamesSet.end());
+
   pthread_mutex_unlock( &_mutex);
+
+  if (!exists)
+    return false;
 
   std::string resultat, filename=url;
 
@@ -131,18 +140,51 @@ bool LocalRepository::getFile(HttpRequest* request, HttpResponse *response)
   }
 
   // obtain file size.
-  fseek (pFile , 0 , SEEK_END);
-  webpageLen = ftell (pFile);
-  rewind (pFile);
-
-  if ( (webpage = (unsigned char *)malloc( webpageLen+1 * sizeof(char))) == NULL )
+  if (fseek(pFile, 0, SEEK_END) != 0)
+  {
+    char logBuffer[150];
+    snprintf(logBuffer, 150, "Webserver : Error seeking file '%s'", filename.c_str() );
+    NVJ_LOG->append(NVJ_ERROR, logBuffer);
+    fclose(pFile);
     return false;
+  }
+
+  long fileSize = ftell(pFile);
+  if (fileSize < 0)
+  {
+    char logBuffer[150];
+    snprintf(logBuffer, 150, "Webserver : Error getting size of file '%s'", filename.c_str() );
+    NVJ_LOG->append(NVJ_ERROR, logBuffer);
+    fclose(pFile);
+    return false;
+  }
+
+  webpageLen = static_cast<size_t>(fileSize);
+  if (webpageLen > LOCAL_REPOSITORY_MAX_FILE_SIZE)
+  {
+    char logBuffer[150];
+    snprintf(logBuffer, 150, "Webserver : File too large '%s'", filename.c_str() );
+    NVJ_LOG->append(NVJ_ERROR, logBuffer);
+    fclose(pFile);
+    return false;
+  }
+
+  rewind(pFile);
+
+  if ( (webpage = (unsigned char *)malloc((webpageLen + 1) * sizeof(unsigned char))) == NULL )
+  {
+    fclose(pFile);
+    return false;
+  }
+
   size_t nb=fread (webpage,1,webpageLen,pFile);
   if (nb != webpageLen)
   {
     char logBuffer[150];
     snprintf(logBuffer, 150, "Webserver : Error accessing file '%s'", filename.c_str() );
     NVJ_LOG->append(NVJ_ERROR, logBuffer);
+    free(webpage);
+    fclose(pFile);
     return false;
   }
   

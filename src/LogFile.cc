@@ -36,12 +36,14 @@
   void LogFile::initialize()
   {
     file=new std::ofstream;
-    file->open(filename, std::ios::out | std::ios::app);
+    file->open(filename.c_str(), std::ios::out | std::ios::app);
 
     if (file->fail())
     {
         std::cerr <<"Can't open " << filename << std::endl;
-      	exit(1);
+        delete file;
+        file=NULL;
+        return;
     }
   }
 
@@ -53,8 +55,7 @@
   
   LogFile::LogFile(const char *f)
   {
-    strncpy (filename, f, 29);
-    filename[29]='\0';
+    filename = (f != NULL) ? f : "";
     file=NULL;
     //setWithEndline(true);
   }

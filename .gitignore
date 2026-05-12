@@ -1,8 +1,16 @@
-*.o
-*.swp
-build
-examples/1_basic/PrecompiledRepository.cc
-examples/3_websocket/PrecompiledRepository.cc
-examples/3_websocket/example
-test/example
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+install_manifest.txt
 
+debianBuild/
+
+examples/*/example
+examples/*/PrecompiledRepository.cc
+
+*.o
+*.a
+*.so
+*.so.*
+a.out

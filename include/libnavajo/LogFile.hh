@@ -35,7 +35,7 @@
       void initialize();
   
     private:
-      char filename[30];
+      std::string filename;
       std::ofstream *file;
   
   };

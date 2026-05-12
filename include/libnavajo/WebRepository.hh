@@ -23,6 +23,8 @@ class WebRepository
 
   public:
 
+    virtual ~WebRepository() {};
+
     /**
     * Try to resolve an http request by requesting the webrepository
     * called from WebServer::accept_request() method

@@ -83,6 +83,10 @@ void WebSocketClient::receivingThread()
 
   ClientSockData* client = request->getClientSockData();
 
+  // Fragmented message
+  bool fragmented = false;
+  unsigned char fragmentedOpcode = 0;
+  std::vector<unsigned char> fragmentedPayload;
 
   if ( websocket->getWebsocketTimeoutInMilliSecond()
      && !setSocketSndRcvTimeout(client->socketId, 0, websocket->getWebsocketTimeoutInMilliSecond()) )
@@ -170,13 +174,13 @@ void WebSocketClient::receivingThread()
           }
 
           msgLength =  bufferRecv[0] & 0x7f;
-          if (!msgLength)
+          if (msgLength == 0)
           {
-            NVJ_LOG->append(NVJ_WARNING, "Websocket: Message length is null. Closing socket.");
-            msgLength=0;
-            msgContent=NULL;
-            step=CONTENT;
-            continue;
+            msgContent = NULL;
+            msgContentIt = 0;
+            step = CONTENT;
+            readLength = 0;
+            break;
           }
           if (msgLength == 126) { readLength=2; break; }
           if (msgLength == 127) { readLength=8; break; }
@@ -249,16 +253,76 @@ void WebSocketClient::receivingThread()
             }
           }
 
+          if ((opcode == 0x8 || opcode == 0x9 || opcode == 0xa) && (!fin || msgLength > 125)) {
+            NVJ_LOG->append(NVJ_WARNING, "WebSocket: invalid control frame");
+            closeRecv();
+            return;
+          }
+
           switch(opcode)
           {
-            case 0x1:
-              if (msgLength)
-                websocket->onTextMessage(this, std::string((char*)msgContent, msgLength), fin);
-              else websocket->onTextMessage(this, "", fin);
-              break;
-            case 0x2:
-              websocket->onBinaryMessage(this, msgContent, msgLength, fin);
-              break;
+            case 0x1: // text
+            case 0x2: // binary
+            {
+                if (fragmented) {
+                    NVJ_LOG->append(NVJ_WARNING, "WebSocket: new data frame while fragmented message is pending");
+                    closeRecv();
+                    return;
+                }
+            
+                if (!fin) {
+                    fragmented = true;
+                    fragmentedOpcode = opcode;
+                    fragmentedPayload.clear();
+                    if (msgLength > 0 && msgContent != NULL)
+                      fragmentedPayload.assign(msgContent, msgContent + msgLength);
+                } else {
+                    if (opcode == 0x1)
+                        websocket->onTextMessage(this, std::string((char*)msgContent, msgLength), true);
+                    else
+                        websocket->onBinaryMessage(this, msgContent, msgLength, true);
+                }
+                break;
+            }
+            case 0x0: // continuation
+            {
+                if (!fragmented) {
+                    NVJ_LOG->append(NVJ_WARNING, "WebSocket: unexpected continuation frame");
+                    closeRecv();
+                    return;
+                }
+
+                if (msgLength > 0 && msgContent != NULL) {
+                  fragmentedPayload.insert(
+                    fragmentedPayload.end(),
+                    msgContent,
+                    msgContent + msgLength
+                );
+}
+
+                if (fin) {
+                    if (fragmentedOpcode == 0x1) {
+                        websocket->onTextMessage(
+                            this,
+                            std::string((char*)fragmentedPayload.data(), fragmentedPayload.size()),
+                            true
+                        );
+                    } else if (fragmentedOpcode == 0x2) {
+                        websocket->onBinaryMessage(
+                            this,
+                            fragmentedPayload.data(),
+                            fragmentedPayload.size(),
+                            true
+                        );
+                    }
+
+                    fragmented = false;
+                    fragmentedOpcode = 0;
+                    fragmentedPayload.clear();
+                }
+
+                break;
+}
             case 0x8:
               if (websocket->onCloseCtrlFrame(this, msgContent, msgLength))
               {
@@ -280,16 +344,18 @@ void WebSocketClient::receivingThread()
               break;
           }
 
-          if ((client->compression == ZLIB) && (rsv & 4) && msgLength)
-            free (msgContent);
-
           fin=false; rsv=0;
           opcode=0;
           msgLength=0;
           msgContentIt=0;
           msgMask=false;
           memset( msgKeys, 0, 4*sizeof(unsigned char) );
-          msgContent=NULL;
+        
+          if (msgContent != NULL) {
+              free(msgContent);
+              msgContent=NULL;
+            }
+            
           readLength=1;
           step=FIRSTBYTE;
         }
@@ -372,7 +438,7 @@ bool WebSocketClient::sendMessage( const MessageContent *msgContent )
   if (client == NULL)
     return false;
 
-  headerBuffer[0]= 0x80 | (msgContent->opcode & 0xf) ; // FIN & OPCODE:0x1
+  headerBuffer[0] = (msgContent->fin ? 0x80 : 0x00) | (msgContent->opcode & 0x0f); // FIN & OPCODE:0x1
   if (client->compression == ZLIB)
   {
     headerBuffer[0] |= 0x40; // Set RSV1
@@ -397,7 +463,7 @@ bool WebSocketClient::sendMessage( const MessageContent *msgContent )
     headerBuffer[1]=msgLen;
   else
   {
-    if (msgLen < 0xFFFF)
+    if (msgLen <= 0xFFFF)
     {
       headerBuffer[1]=126;
       *(u_int16_t*)(headerBuffer+2)=htons((u_int16_t)msgLen);
@@ -488,7 +554,7 @@ void WebSocketClient::sendPongCtrlFrame(const unsigned char* message, size_t len
   msgContent->message = (unsigned char*) malloc ( length * sizeof (unsigned char) );
   memcpy(msgContent->message, message, length);
   msgContent->length=length;
-  msgContent->fin = false;
+  msgContent->fin = true;
   msgContent->date_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
   addSendingQueue(msgContent);

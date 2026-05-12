@@ -87,7 +87,10 @@
   void LogRecorder::addLogOutput(LogOutput *output)
   {
     output->initialize();
+
+    pthread_mutex_lock(&log_mutex);
     logOutputsList_.push_back(output);
+    pthread_mutex_unlock(&log_mutex);
   }
 
   /***********************************************************************/
@@ -96,12 +99,16 @@
   */
   void LogRecorder::removeLogOutputs()
   {
-    for( std::list<LogOutput *>::iterator it=logOutputsList_.begin(); 
-           it!=logOutputsList_.end(); 
+    pthread_mutex_lock(&log_mutex);
+
+    for( std::list<LogOutput *>::iterator it=logOutputsList_.begin();
+           it!=logOutputsList_.end();
      it++ )
       delete *it;
 
     logOutputsList_.clear();
+
+    pthread_mutex_unlock(&log_mutex);
   }
 
   /***********************************************************************/
@@ -122,6 +129,7 @@
   LogRecorder::~LogRecorder()
   {
     removeLogOutputs();
+    pthread_mutex_destroy(&log_mutex);
   }
 
   /***********************************************************************/

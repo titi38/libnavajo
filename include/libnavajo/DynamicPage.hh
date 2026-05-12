@@ -14,11 +14,13 @@
 #ifndef DYNAMICPAGE_HH_
 #define DYNAMICPAGE_HH_
 
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
+#include <sstream>
 #include <string>
 #include <typeinfo>
-#include <ctype.h>
-#include <string>
-#include <algorithm>
 
 class DynamicPage
 {
@@ -50,7 +52,7 @@ class DynamicPage
 
     static inline bool isNotPrintable (char c)
     {
-      return !isprint( static_cast<unsigned char>( c ) );
+      return !std::isprint( static_cast<unsigned char>( c ) );
     }
 
     static inline void stripUnprintableChar(std::string &str)
@@ -70,12 +72,15 @@ class DynamicPage
     
     inline bool fromString( const std::string& resultat, HttpResponse *response )
     {
-      size_t webpageLen;
-      unsigned char *webpage;
-      if ( (webpage = (unsigned char *)malloc( resultat.size()+1 * sizeof(char))) == NULL )
+      size_t webpageLen = resultat.size();
+      unsigned char *webpage = (unsigned char *)malloc((webpageLen + 1) * sizeof(unsigned char));
+      if (webpage == NULL)
           return false;
-      webpageLen=resultat.size();
-      strcpy ((char *)webpage, resultat.c_str());
+
+      if (webpageLen > 0)
+        memcpy(webpage, resultat.data(), webpageLen);
+      webpage[webpageLen] = '\0';
+
       response->setContent (webpage, webpageLen);
       return true;
     }

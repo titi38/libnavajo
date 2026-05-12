@@ -44,9 +44,12 @@
       */   
       inline static LogRecorder *getInstance()
       {
-	      if (theLogRecorder == NULL)
-		      theLogRecorder = new LogRecorder;
-	      return theLogRecorder;
+        static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
+        pthread_mutex_lock(&init_mutex);
+        if (theLogRecorder == NULL)
+          theLogRecorder = new LogRecorder;
+        pthread_mutex_unlock(&init_mutex);
+        return theLogRecorder;
       };
 
       /**
@@ -66,14 +69,20 @@
 
       void append(const NvjLogSeverity& l, const std::string& msg, const std::string& details="");
       inline void appendUniq(const NvjLogSeverity& l, const std::string& msg, const std::string& details="")
-      { 
-	      std::set<std::string>::iterator it;
-	      it=uniqLog.find(msg+details);
-	      if (it==uniqLog.end())
-	      {
-	        uniqLog.insert(msg+details);
-	        append(l, msg, details);
-	      }
+      {
+        bool shouldAppend = false;
+        const std::string key = msg + details;
+
+        pthread_mutex_lock(&log_mutex);
+        if (uniqLog.find(key) == uniqLog.end())
+        {
+          uniqLog.insert(key);
+          shouldAppend = true;
+        }
+        pthread_mutex_unlock(&log_mutex);
+
+        if (shouldAppend)
+          append(l, msg, details);
       };
 
 			inline void printf(const NvjLogSeverity severity, const char *fmt, ...)
@@ -81,13 +90,18 @@
 				char buff[4096];
 				va_list argptr;
 				va_start(argptr, fmt);
-				vsnprintf(buff, 512, fmt, argptr);
+				vsnprintf(buff, sizeof(buff), fmt, argptr);
 				va_end(argptr);
 
 				append(severity, buff);
 			}
 
-			inline void initUniq() { uniqLog.clear(); } ;
+			inline void initUniq()
+      {
+        pthread_mutex_lock(&log_mutex);
+        uniqLog.clear();
+        pthread_mutex_unlock(&log_mutex);
+      } ;
 
 
     protected:

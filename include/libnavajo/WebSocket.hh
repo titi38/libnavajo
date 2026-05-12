@@ -43,10 +43,11 @@ class WebSocket
       pthread_mutex_init(&webSocketClientList_mutex, NULL);
     }
 
-    ~WebSocket()
+    virtual ~WebSocket()
     {
       // Free all request, close all sockets
       removeAllClients();
+      pthread_mutex_destroy(&webSocketClientList_mutex);
     }
 
     /**

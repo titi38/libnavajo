@@ -14,6 +14,13 @@
 #ifndef HTTPRESPONSE_HH_
 #define HTTPRESPONSE_HH_
 
+#include <ctime>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "libnavajo/HttpSession.hh"
 
 class HttpResponse
 {
