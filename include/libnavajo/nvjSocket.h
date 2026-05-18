@@ -186,17 +186,48 @@ inline bool setSocketTcpAckTimeout(int socket, int seconds, int milliseconds)
 }
 
 /***********************************************************************
-* setSocketNagleAlgo:
-* @param socket  - socket descriptor
-* @param enabled - use Nagle Algorithm
-* \return true is successful, otherwise false
-***********************************************************************/
+ * setSocketTcpNoDelay:
+ *
+ * Enable or disable the TCP_NODELAY option on a socket.
+ *
+ * TCP_NODELAY controls the Nagle algorithm:
+ *   - When enabled (TCP_NODELAY = 1), the Nagle algorithm is disabled,
+ *     and data is sent immediately without waiting for packet aggregation.
+ *   - When disabled (TCP_NODELAY = 0), the Nagle algorithm is enabled,
+ *     allowing the system to coalesce small packets for efficiency.
+ *
+ * Disabling Nagle (enabled = true) is recommended for:
+ *   - Low-latency applications
+ *   - Interactive protocols (HTTP small responses, WebSocket, RPC, etc.)
+ *
+ * @param socket   Socket descriptor
+ * @param enabled  If true, disables Nagle algorithm (TCP_NODELAY = 1)
+ *                 If false, enables Nagle algorithm (TCP_NODELAY = 0)
+ *
+ * @return true if the operation succeeded, false otherwise
+ ***********************************************************************/
 
-inline bool setSocketNagleAlgo(int socket, bool naggle = false)
+inline bool setSocketTcpNoDelay(int socket, bool enabled = true)
 {
-  // TCP_NODELAY=1 disables Nagle. The public parameter expresses the opposite.
-  int flag = naggle ? 0 : 1;
-  return setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char *)&flag,sizeof(flag)) == 0;
+    int flag = enabled ? 1 : 0;
+    return setsockopt(socket, IPPROTO_TCP, TCP_NODELAY,
+                      (char *)&flag, sizeof(flag)) == 0;
+}
+
+/***********************************************************************
+ * setSocketNagleAlgo:
+ *
+ * Backward-compatible wrapper around setSocketTcpNoDelay().
+ *
+ * @param socket   Socket descriptor
+ * @param enabled  If true, enables Nagle algorithm
+ *                 If false, disables Nagle algorithm
+ *
+ * @return true if the operation succeeded, false otherwise
+ ***********************************************************************/
+inline bool setSocketNagleAlgo(int socket, bool enabled = true)
+{
+    return setSocketTcpNoDelay(socket, !enabled);
 }
 
 #endif

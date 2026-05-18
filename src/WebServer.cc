@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <errno.h> 
 #include <stdlib.h>
 #include <sstream>
@@ -30,6 +31,7 @@
 #include <functional>
 #include <cctype>
 #include <locale>
+#include <unordered_map>
 
 #include <openssl/evp.h>
 #include <openssl/sha.h>
@@ -71,6 +73,12 @@ time_t HttpSession::sessionLifeTime=20*60;
 #ifndef MSG_NOSIGNAL
   #define MSG_NOSIGNAL 0
 #endif
+
+namespace
+{
+  constexpr size_t HTTP_RECV_BUFFER_SIZE = 8192;
+  thread_local std::unordered_map<int, std::string> httpRecvBuffers;
+}
 
 
 /*********************************************************************/
@@ -313,27 +321,118 @@ end:
 }
 
 /***********************************************************************
-* recvLine:  Receive an ascii line from a socket
-* @param c - the socket connected to the client
-* \return always NULL
+* recvLine:  Receive an ASCII line from a socket using a per-thread,
+*            per-socket read-ahead buffer.
+* @param client - socket connected to the client
+* @param bufLine - destination buffer
+* @param nsize - destination buffer size
+* \return number of bytes copied to bufLine, excluding the final NUL byte
 ***********************************************************************/
 
 size_t WebServer::recvLine(int client, char *bufLine, size_t nsize)
 {
-  size_t bufLineLen=0;
-  char c;
-  int n;
-  do
+  if (bufLine == NULL || nsize == 0)
+    return 0;
+
+  std::string& inbuf = httpRecvBuffers[client];
+
+  for (;;)
   {
-    n = recv(client, &c, 1, 0);
+    size_t pos = inbuf.find('\n');
 
-    if (n > 0)
-      bufLine[bufLineLen++] = c;
-  } 
-  while ((bufLineLen + 1 < nsize ) && (c != '\n') && ( n > 0 ));
-  bufLine[bufLineLen] = '\0';
+    if (pos != std::string::npos)
+    {
+      size_t count = std::min(pos + 1, nsize - 1);
+      memcpy(bufLine, inbuf.data(), count);
+      bufLine[count] = '\0';
+      inbuf.erase(0, count);
+      return count;
+    }
 
-  return bufLineLen;
+    if (inbuf.size() >= nsize - 1)
+    {
+      size_t count = nsize - 1;
+      memcpy(bufLine, inbuf.data(), count);
+      bufLine[count] = '\0';
+      inbuf.erase(0, count);
+      return count;
+    }
+
+    char tmp[HTTP_RECV_BUFFER_SIZE];
+    ssize_t n = recv(client, tmp, sizeof(tmp), 0);
+
+    if (n <= 0)
+    {
+      if (!inbuf.empty())
+      {
+        size_t count = std::min(inbuf.size(), nsize - 1);
+        memcpy(bufLine, inbuf.data(), count);
+        bufLine[count] = '\0';
+        inbuf.erase(0, count);
+        return count;
+      }
+
+      bufLine[0] = '\0';
+      httpRecvBuffers.erase(client);
+      return 0;
+    }
+
+    inbuf.append(tmp, static_cast<size_t>(n));
+  }
+}
+
+/***********************************************************************
+* recvBytes: Receive exactly requestedLength bytes from a socket using
+*            the same read-ahead buffer as recvLine(). This prevents
+*            losing body bytes already read while parsing HTTP headers.
+* @param client - socket connected to the client
+* @param buffer - destination buffer
+* @param requestedLength - number of bytes to read
+* \return number of bytes copied to buffer
+***********************************************************************/
+
+size_t WebServer::recvBytes(int client, char *buffer, size_t requestedLength)
+{
+  if (buffer == NULL || requestedLength == 0)
+    return 0;
+
+  std::string& inbuf = httpRecvBuffers[client];
+  size_t copied = 0;
+
+  if (!inbuf.empty())
+  {
+    size_t count = std::min(inbuf.size(), requestedLength);
+    memcpy(buffer, inbuf.data(), count);
+    inbuf.erase(0, count);
+    copied += count;
+  }
+
+  while (copied < requestedLength)
+  {
+    ssize_t n = recv(client, buffer + copied, requestedLength - copied, 0);
+
+    if (n <= 0)
+    {
+      if (copied == 0)
+        httpRecvBuffers.erase(client);
+      return copied;
+    }
+
+    copied += static_cast<size_t>(n);
+  }
+
+  return copied;
+}
+
+/***********************************************************************
+* clearRecvBuffer: Clear the per-thread read-ahead buffer associated
+*                  with a socket. Must be called before closing/reusing
+*                  the socket descriptor.
+***********************************************************************/
+
+void WebServer::clearRecvBuffer(int client)
+{
+  httpRecvBuffers.erase(client);
 }
 
 /**********************************************************************/
@@ -744,6 +843,49 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
     snprintf(logBuffer, BUFSIZE, "Request : url='%s'  reqType='%d'  param='%s'  requestCookies='%s'  (httpVers=%s keepAlive=%d zipSupport=%d closing=%d)\n", urlBuffer, requestMethod, requestParams, requestCookies, httpVers, keepAlive, client->compression, closing );
     NVJ_LOG->append(NVJ_DEBUG, logBuffer);
     #endif
+    
+        /* *******************************
+     * Fast path for plaintext benchmark
+     *
+     * This bypasses the normal repository/request/response stack in order
+     * to measure the raw HTTP parser + socket send path. It is intentionally
+     * limited to GET /plaintext.
+     * *******************************/
+
+if (requestMethod == GET_METHOD && strcmp(urlBuffer, "plaintext") == 0)
+{
+  static const char body[] = "Hello, World!";
+
+  if (keepAlive && (--nbFileKeepAlive <= 0))
+  {
+    keepAlive = false;
+    closing = true;
+  }
+
+  const char* connection = keepAlive ? "Keep-Alive" : "close";
+
+  char response[512];
+  int len = snprintf(response, sizeof(response),
+      "HTTP/1.1 200 OK\r\n"
+      "Server: libNavajo/1.6.0\r\n"
+      "Connection: %s\r\n"
+      "Content-Type: text/plain\r\n"
+      "Content-Length: 13\r\n"
+      "\r\n"
+      "%s",
+      connection,
+      body);
+
+  if (len <= 0 || !httpSend(client, response, (size_t)len))
+    goto FREE_RETURN_TRUE;
+
+  if (closing)
+    goto FREE_RETURN_TRUE;
+
+  continue;
+}
+    
+    //*****************************
 
     if (mutipartContent != NULL)
     {
@@ -791,7 +933,10 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
           }
         }
         else
-          bufLineLen=recvLine(client->socketId, buffer, requestedLength);
+          bufLineLen=recvBytes(client->socketId, buffer, requestedLength);
+
+        if (bufLineLen == 0)
+          goto FREE_RETURN_TRUE;
 
         if ( urlencodedForm )
         {
@@ -843,6 +988,8 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
         datalen+=bufLineLen;
       };
     }
+
+
       
     /* *************************
     /  * processing WebSockets *
@@ -1016,13 +1163,18 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
       }
     }
 
-    if (keepAlive && (--nbFileKeepAlive<=0)) closing=true;
+    if (keepAlive && (--nbFileKeepAlive <= 0))
+    {
+      keepAlive = false;
+      closing = true;
+    }
 
     if (sizeZip>0 && (client->compression == GZIP))
     {
       std::string header = getHttpHeader(response.getHttpReturnCodeStr().c_str(), sizeZip, keepAlive, NULL, true, &response);
-      if ( !httpSend(client, (const void*) header.c_str(), header.length())
-        || !httpSend(client, (const void*) gzipWebPage, sizeZip) )
+      if ( ! httpSend2(client,
+                     header.c_str(), header.length(),
+                     gzipWebPage, sizeZip) )
       {
         NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the zipped page: ") + urlBuffer + std::string("- err: ") + strerror(errno));
         closing=true;
@@ -1031,8 +1183,8 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
     else
     {
       std::string header = getHttpHeader(response.getHttpReturnCodeStr().c_str(), webpageLen, keepAlive, NULL, false, &response);
-      if ( !httpSend(client, (const void*) header.c_str(), header.length())
-        || !httpSend(client, (const void*) webpage, webpageLen) )
+      if ( !httpSend2(client, (const void*) header.c_str(), header.length(),
+                    (const void*) webpage, webpageLen) )
       {
         NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: httpSend failed sending the page: ") + urlBuffer + std::string("- err: ") + strerror(errno));
         closing=true;
@@ -1066,6 +1218,7 @@ bool WebServer::accept_request(ClientSockData* client, bool /*authSSL*/)
   if (mutipartContent != NULL) free (mutipartContent);
   if (mutipartContentParser != NULL) delete mutipartContentParser;
 
+  clearRecvBuffer(client->socketId);
 
   return true;
 }
@@ -1091,7 +1244,7 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
   bool useSSL = client->bio != NULL;
   size_t totalSent=0;
   int sent=0;
-  unsigned char* buffer_left = (unsigned char*) buf;
+  const unsigned char* buffer_left = (const unsigned char*) buf;
 
   fd_set writeset;
   FD_ZERO(&writeset);
@@ -1115,14 +1268,18 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
         if ( errno == EAGAIN || errno == EWOULDBLOCK
           || ( useSSL && BIO_should_retry(client->bio) ) )
         {
-          NVJ_LOG->append(NVJ_ERROR, std::string("Webserver: send buffer full, retrying in 1 second"));
-          sleep (1);
+          NVJ_LOG->append(NVJ_DEBUG, std::string("Webserver: send buffer full"));
+          //sleep (1);
 
           /* retry to send data a second time before returning a failure to caller */
           if ( useSSL )
             sent = BIO_write(client->bio, buffer_left, len - totalSent);
           else
           {
+            FD_ZERO(&writeset);
+            FD_SET(client->socketId, &writeset);
+            tv.tv_sec = 10;
+            tv.tv_usec = 0;
             result = select(client->socketId + 1, NULL, &writeset, NULL, &tv);
 
             if ( (result <= 0) || (!FD_ISSET(client->socketId, &writeset)) )
@@ -1143,12 +1300,12 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
             buffer_left += sent;
           }
         }
-        else if (( errno == EINTR )
-              || ( useSSL && !BIO_should_retry(client->bio) ) )
-        {
-          // write failed
-          //pthread_mutex_unlock (&client->client_mutex);
-          return false;
+        else
+        { 
+          if (errno == EINTR)
+            continue;
+          else
+             return false;
         }
       }
       else
@@ -1171,6 +1328,25 @@ bool WebServer::httpSend(ClientSockData *client, const void *buf, size_t len)
 //  pthread_mutex_unlock( &client->client_mutex );
 
   return totalSent == len;
+}
+
+
+/***********************************************************************
+* httpSend2 - send two buffers to the socket as a single HTTP response
+* @param client - the ClientSockData to use
+* @param buf1 - first data buffer, typically the HTTP header
+* @param len1 - first buffer length
+* @param buf2 - second data buffer, typically the HTTP body
+* @param len2 - second buffer length
+* \return false if it failed
+***********************************************************************/
+
+bool WebServer::httpSend2(ClientSockData *client,
+                          const void *buf1, size_t len1,
+                          const void *buf2, size_t len2)
+{
+  return httpSend(client, buf1, len1)
+      && httpSend(client, buf2, len2);
 }
 
 /***********************************************************************
@@ -1723,6 +1899,8 @@ void WebServer::poolThreadProcessing()
     }
 
     pthread_mutex_unlock( &clientsQueue_mutex );
+
+    setSocketTcpNoDelay(client->socketId, true);
 
     if (accept_request(client, authSSL))
       freeClientSockData (client);

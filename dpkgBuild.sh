@@ -1,5 +1,5 @@
 #!/bin/sh
-LIB_VERSION=1.8
+LIB_VERSION=1.9
 ARCH_NAME=`dpkg --print-architecture`
 
 export DPKG_BUILD_ROOT=debianBuild

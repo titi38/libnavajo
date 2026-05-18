@@ -62,6 +62,8 @@ class WebServer
     bool isAuthorizedDN(const std::string str);
 
     size_t recvLine(int client, char *bufLine, size_t);
+    size_t recvBytes(int client, char *buffer, size_t requestedLength);
+    void clearRecvBuffer(int client);
     bool accept_request(ClientSockData* client, bool authSSL);
     void fatalError(const char *);
     static std::string getHttpHeader(const char *messageType, const size_t len=0, const bool keepAlive=true, const char *authBearerAdditionalHeaders=NULL, const bool zipped=false, HttpResponse* response=NULL);
@@ -337,6 +339,9 @@ class WebServer
     }
 
     static bool httpSend(ClientSockData *client, const void *buf, size_t len);
+    static bool httpSend2(ClientSockData *client,
+                      const void *buf1, size_t len1,
+                      const void *buf2, size_t len2);
 
     inline static void freeClientSockData(ClientSockData *client)
     {
