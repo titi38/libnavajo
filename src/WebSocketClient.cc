@@ -22,11 +22,12 @@
 
 /***********************************************************************/
 
-WebSocketClient::WebSocketClient(WebSocket *ws, HttpRequest *req): websocket(ws), request(req), closing(false)
+WebSocketClient::WebSocketClient(WebSocket *ws, HttpRequest *req): websocket(ws), request(req), closing(false), closeStarted(false)
 {
   snd_maxLatency=ws->getClientSendingMaxLatency();
   pthread_mutex_init(&sendingQueueMutex, NULL);
   pthread_cond_init(&sendingNotification, NULL);
+  pthread_mutex_init(&closeOnce_mutex, NULL);
   gzipcontext.dictInfLength = 0;
   nvj_init_stream(&(gzipcontext.strm_deflate), true);
   noSessionExpiration(request);
@@ -366,10 +367,29 @@ void WebSocketClient::receivingThread()
 
 /***********************************************************************/
 
+/*
+ * Ensure closeWS()/closeSend()/closeRecv() run their teardown (free the
+ * socket, delete request, delete this) exactly once even if two of them
+ * are triggered concurrently from different threads (e.g. a send failure
+ * and a receive failure racing each other, or a send failure racing an
+ * explicit close from the WebSocket owner). Returns true for the caller
+ * that should actually perform the teardown.
+ */
+bool WebSocketClient::closeOnce()
+{
+  pthread_mutex_lock(&closeOnce_mutex);
+  bool first = !closeStarted;
+  closeStarted = true;
+  pthread_mutex_unlock(&closeOnce_mutex);
+  return first;
+}
+
 void WebSocketClient::closeWS()
 {
+  if (!closeOnce()) return;
+
   closing=true;
-  websocket->removeClient(this, true);
+  websocket->removeClient(this);
   websocket->onClosing(this);
 
   pthread_cond_broadcast ( &sendingNotification );
@@ -383,8 +403,10 @@ void WebSocketClient::closeWS()
 
 void WebSocketClient::closeSend()
 {
+  if (!closeOnce()) return;
+
   closing=true;
-  websocket->removeClient(this, false);
+  websocket->removeClient(this);
   websocket->onClosing(this);
 
   WebServer::freeClientSockData( request->getClientSockData() );
@@ -395,8 +417,10 @@ void WebSocketClient::closeSend()
 
 void WebSocketClient::closeRecv()
 {
+  if (!closeOnce()) return;
+
   closing=true;
-  websocket->removeClient(this, false);
+  websocket->removeClient(this);
   websocket->onClosing(this);
 
   pthread_cond_broadcast ( &sendingNotification );

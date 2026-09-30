@@ -221,51 +221,77 @@ class WebSocket
 
     /**
     * Remove and close all Websocket client's Connection
+    *
+    * DEADLOCK FIX: WebSocketClient::closeWS() joins (wait_for_thread) that
+    * client's own sending/receiving threads. Those threads can, on a send or
+    * receive failure, call back into WebSocket::removeClient() (via
+    * closeSend()/closeRecv()) which needs webSocketClientList_mutex. The
+    * previous implementation called closeWS() while still holding that same
+    * mutex: this thread then blocks in wait_for_thread() waiting for the
+    * client thread to exit, while the client thread blocks trying to lock
+    * the mutex this thread is holding - a deadlock. It reproduces only when
+    * a client's send/receive fails at the same time the server (or this
+    * WebSocket) is being shut down, e.g. WebServer::exit(), which is exactly
+    * why it showed up as an intermittent hang rather than every time.
+    *
+    * Fix: only ever touch webSocketClientList itself under the lock; do the
+    * actual closeWS()/thread-joins after releasing it.
     */
     inline void removeAllClients()
     {
       pthread_mutex_lock(&webSocketClientList_mutex);
-      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); )
-      {
-        WebSocketClient *client=*it;
-        it++;
-        client->closeWS();
-      }
+      std::list<WebSocketClient*> clientsToClose;
+      clientsToClose.swap(webSocketClientList);
       pthread_mutex_unlock(&webSocketClientList_mutex);
+
+      for (std::list<WebSocketClient*>::iterator it = clientsToClose.begin(); it != clientsToClose.end(); ++it)
+        (*it)->closeWS();
     }
 
     /**
-    * Remove and close a given Websocket client
+    * Remove a given Websocket client from the tracked list.
     * @param client: the websocket client
-    * @param cs: are we inside the critical section ?
+    * @param cs (deprecated, ignored): this used to let a caller that already
+    * held webSocketClientList_mutex skip locking again. That pattern is what
+    * caused the shutdown deadlock described above (see removeAllClients()),
+    * so this method now always locks internally; the parameter is kept only
+    * for source compatibility with existing callers.
     */
     inline void removeClient(WebSocketClient *client, bool cs=false)
     {
-      if (!cs) pthread_mutex_lock(&webSocketClientList_mutex);
+      (void)cs;
+      pthread_mutex_lock(&webSocketClientList_mutex);
       std::list<WebSocketClient*>::iterator it = std::find(webSocketClientList.begin(), webSocketClientList.end(), client);
       if (it != webSocketClientList.end())
         webSocketClientList.erase(it);
-      if(!cs) pthread_mutex_unlock(&webSocketClientList_mutex);
+      pthread_mutex_unlock(&webSocketClientList_mutex);
     }
 
     /**
     * Remove and close a given Websocket client
     * @param request: the related http request object
+    *
+    * Same fix as removeAllClients(): find and detach the client under the
+    * lock, then call closeWS() (which joins its threads) after releasing it.
     */
     inline void removeClient(HttpRequest *request)
     {
+      WebSocketClient *clientToClose = NULL;
+
       pthread_mutex_lock(&webSocketClientList_mutex);
-      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); )
+      for (std::list<WebSocketClient*>::iterator it = webSocketClientList.begin(); it != webSocketClientList.end(); ++it)
       {
-        WebSocketClient *client=*it;
-        it++;
-        if (client->getHttpRequest() == request)
+        if ((*it)->getHttpRequest() == request)
         {
-          client->closeWS();
+          clientToClose = *it;
+          webSocketClientList.erase(it);
           break;
         }
       }
       pthread_mutex_unlock(&webSocketClientList_mutex);
+
+      if (clientToClose != NULL)
+        clientToClose->closeWS();
     }
 
     /**

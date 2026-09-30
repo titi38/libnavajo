@@ -50,6 +50,20 @@ class WebSocketClient
     volatile bool closing;
     pthread_t receivingThreadId, sendingThreadId;
 
+    /*
+     * closeWS()/closeSend()/closeRecv() can each be triggered independently
+     * (respectively: the owning WebSocket closing the connection, a send
+     * failure detected by the sending thread, a receive failure/close frame
+     * detected by the receiving thread) and nothing previously stopped two
+     * of them from running concurrently on the same client - e.g. a send
+     * failure and a receive failure happening at nearly the same time both
+     * end up freeing 'request' and 'delete this'. closeOnce_mutex/closeStarted
+     * make the teardown run exactly once; see closeOnce() in the .cc file.
+     */
+    pthread_mutex_t closeOnce_mutex;
+    bool closeStarted;
+    bool closeOnce();
+
     void receivingThread();
     void sendingThread();
 
@@ -107,6 +121,7 @@ class WebSocketClient
       nvj_end_stream(&(gzipcontext.strm_deflate));
       pthread_mutex_destroy(&sendingQueueMutex);
       pthread_cond_destroy(&sendingNotification);
+      pthread_mutex_destroy(&closeOnce_mutex);
     }
 
     /**
