@@ -16,7 +16,12 @@ cmake -S . -B "$BUILD_DIR" \
 
 cmake --build "$BUILD_DIR" -j"$(nproc)"
 
-doxygen
+
+if command -v doxygen >/dev/null 2>&1; then
+    doxygen
+else
+    echo "WARNING: doxygen not found, skipping documentation generation."
+fi
 
 cmake --install "$BUILD_DIR"
 
