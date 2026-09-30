@@ -2,7 +2,7 @@
 
 set -e
 
-LIB_VERSION=1.9
+LIB_VERSION=1.9-2
 ARCH_NAME="$(dpkg --print-architecture)"
 
 export DPKG_BUILD_ROOT=debianBuild
