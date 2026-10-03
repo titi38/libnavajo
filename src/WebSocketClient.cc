@@ -384,51 +384,84 @@ bool WebSocketClient::closeOnce()
   return first;
 }
 
+void WebSocketClient::interruptSocket()
+{
+  // Wake a thread blocked in recv()/BIO_read() without freeing the BIO/SSL.
+  // The ClientSockData remains alive until every other WebSocket worker that
+  // may use it has terminated.
+  if (request == NULL)
+    return;
+
+  ClientSockData *client = request->getClientSockData();
+  if (client != NULL && client->socketId >= 0)
+    shutdown(client->socketId, SHUT_RDWR);
+}
+
+void WebSocketClient::finalizeClose(bool waitSending, bool waitReceiving)
+{
+  // closing must be visible before shutdown: after shutdown, blocked I/O wakes
+  // up and both workers must take their exit path rather than parse/send more.
+  closing = true;
+  pthread_cond_broadcast(&sendingNotification);
+  interruptSocket();
+
+  // Never free ClientSockData while a peer worker can still be inside
+  // BIO_read()/SSL_write()/send()/recv().
+  if (waitSending)
+    wait_for_thread(sendingThreadId);
+  if (waitReceiving)
+    wait_for_thread(receivingThreadId);
+
+  ClientSockData *client = request != NULL ? request->getClientSockData() : NULL;
+  if (client != NULL)
+    WebServer::freeClientSockData(client);
+
+  if (request != NULL)
+  {
+    restoreSessionExpiration(request);
+    delete request;
+    request = NULL;
+  }
+
+  delete this;
+}
+
 void WebSocketClient::closeWS()
 {
   if (!closeOnce()) return;
 
-  closing=true;
+  closing = true;
   websocket->removeClient(this);
   websocket->onClosing(this);
 
-  pthread_cond_broadcast ( &sendingNotification );
-  wait_for_thread(sendingThreadId);
-  WebServer::freeClientSockData( request->getClientSockData() );
-  wait_for_thread(receivingThreadId);
-  restoreSessionExpiration(request);
-  delete request;
-  delete this;
+  // Called by an external/owner thread: stop I/O, then join BOTH workers.
+  finalizeClose(true, true);
 }
 
 void WebSocketClient::closeSend()
 {
   if (!closeOnce()) return;
 
-  closing=true;
+  closing = true;
   websocket->removeClient(this);
   websocket->onClosing(this);
 
-  WebServer::freeClientSockData( request->getClientSockData() );
-  restoreSessionExpiration(request);
-  delete request;
-  delete this;
+  // Called from sendingThread(): do not join ourselves.  Interrupt RX first,
+  // wait until it is out of BIO_read()/recv(), then it is safe to free SSL/BIO.
+  finalizeClose(false, true);
 }
 
 void WebSocketClient::closeRecv()
 {
   if (!closeOnce()) return;
 
-  closing=true;
+  closing = true;
   websocket->removeClient(this);
   websocket->onClosing(this);
 
-  pthread_cond_broadcast ( &sendingNotification );
-  wait_for_thread(sendingThreadId);
-  WebServer::freeClientSockData( request->getClientSockData() );
-  restoreSessionExpiration(request);
-  delete request;
-  delete this;
+  // Called from receivingThread(): do not join ourselves.  Wake TX and wait
+  // for it to leave httpSend()/SSL_write() before freeing ClientSockData.
+  finalizeClose(true, false);
 }
 
 /***********************************************************************/
@@ -518,6 +551,11 @@ void WebSocketClient::addSendingQueue(MessageContent *msgContent)
   pthread_mutex_lock(&sendingQueueMutex);
   if (!closing)
     sendingQueue.push(msgContent);
+  else
+  {
+    free(msgContent->message);
+    free(msgContent);
+  }
   pthread_mutex_unlock(&sendingQueueMutex);
   pthread_cond_broadcast ( &sendingNotification );
 }

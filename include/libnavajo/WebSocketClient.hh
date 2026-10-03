@@ -64,6 +64,11 @@ class WebSocketClient
     bool closeStarted;
     bool closeOnce();
 
+    // Closing is two-phase: first shutdown() wakes any blocked socket/BIO I/O,
+    // then the peer worker(s) are joined before ClientSockData/SSL/BIO is freed.
+    void interruptSocket();
+    void finalizeClose(bool waitSending, bool waitReceiving);
+
     void receivingThread();
     void sendingThread();
 
